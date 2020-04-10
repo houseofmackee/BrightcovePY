@@ -6,6 +6,8 @@ Tested versions of Python: 2.7.17 and 3.8.2
 
 # Notable files
 
+**account_config.json**: this is a configuration file used by all the scripts and tools. It contains the Video Cloud account ID, API Client ID and Client Secret as well as, optionally, any other data you want to pass on to your scripts. For example a list of video IDs to be deleted or shared or whatever your script needs to do with a list of videos. The example file in this repository already contains a "video_ids" array which is used by the example scripts to process a speific set of video IDs if it is present in the JSON. If it is not present, or the first entry is "all", then the shell module mackee.py will process all videos in your Video Cloud account.
+
 **mackee.py**: this is a shell module which provides functionality to iterate over all videos in your Video Cloud library or over a subset, specified either by a search query parameter or by a list of video IDs or referene IDs provided in a config file. If executed by itself it will simply list the videos in the library.
 
 **notifications.py**: this is a simple tool to manage CMS notification subscriptions. It is using mackee.py for the CMS API communication.
