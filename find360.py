@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+import mackee
+
+#===========================================
+# callback to find 360 videos 
+#===========================================
+def find360(video):
+	if(video['projection'] == 'equirectangular'):
+		print(video['id']+', "'+video['name']+'"')
+
+#===========================================
+# only run code if it's not imported
+#===========================================
+if __name__ == '__main__':
+	mackee.main(find360)

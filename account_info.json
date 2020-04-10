@@ -1,0 +1,10 @@
+{
+	"account_id":"account ID here",
+    "client_id":"client ID here",
+	"client_secret":"client secret here",
+	"target_account_ids":[
+	],
+	"video_ids":[
+		"all"
+	]
+}
