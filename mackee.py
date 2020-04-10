@@ -7,10 +7,6 @@ import time
 import boto3 # pip3 install boto3
 from os.path import expanduser
 
-# disable certificate warnings
-import urllib3
-urllib3.disable_warnings()
-
 class OAuth:
 	access_token_url = 'https://oauth.brightcove.com/v4/access_token'
 
@@ -397,6 +393,9 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None):
 # parse args and do the thing
 #===========================================
 def main(process_func):
+	# disable certificate warnings
+	requests.urllib3.disable_warnings()
+
 	# init the argument parsing
 	parser = argparse.ArgumentParser(prog=sys.argv[0])
 	parser.add_argument('-i', type=str, help='Name and path of account config information file')
