@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import sys
-import requests
 import json
 import argparse
 import time
+import requests # pip3 install requests
 import boto3 # pip3 install boto3
 from os.path import expanduser
 
