@@ -68,7 +68,7 @@ class CMS:
 		if not searchQuery:
 			searchQuery = ''
 		else:
-			searchQuery = '?=' + searchQuery
+			searchQuery = '?q=' + searchQuery
 
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/count{query}').format(pubid=accountID,query=searchQuery)
