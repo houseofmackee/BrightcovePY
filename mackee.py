@@ -58,16 +58,10 @@ class CMS:
 	#===========================================
 	# get number of videos in an account
 	#===========================================
-	def GetVideoCount(self, accountID=None, searchQuery=None):
-		if not accountID:
-			accountID = self.__oauth.account_id
-		if not searchQuery:
-			searchQuery = ''
-		else:
-			searchQuery = '?q=' + searchQuery
-
+	def GetVideoCount(self, accountID=None, searchQuery=''):
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/count{query}').format(pubid=accountID,query=searchQuery)
+		url = (CMS.base_url+'/videos/count?q={query}').format(pubid=accountID,query=searchQuery)
 		r = requests.get(url, headers=headers)
 		if r.status_code == 200:
 			return r.json().get('count')
@@ -77,8 +71,7 @@ class CMS:
 	# create new video object in an account
 	#===========================================
 	def CreateVideo(self, accountID=None, videoTitle='Video Title', jsonBody=None):
-		if not accountID:
-			accountID = self.__oauth.account_id
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/').format(pubid=accountID)
 		if not jsonBody:
@@ -89,8 +82,7 @@ class CMS:
 	# get a video
 	#===========================================
 	def GetVideo(self, videoID, accountID=None):
-		if not accountID:
-			accountID = self.__oauth.account_id
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}').format(pubid=accountID,videoid=videoID)
 		return requests.get(url=url, headers=headers)
@@ -99,8 +91,7 @@ class CMS:
 	# get a video's sources
 	#===========================================
 	def GetSources(self, videoID, accountID=None):
-		if not accountID:
-			accountID = self.__oauth.account_id
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/sources').format(pubid=accountID,videoid=videoID)
 		return requests.get(url=url, headers=headers)
@@ -109,8 +100,7 @@ class CMS:
 	# delete a video
 	#===========================================
 	def DeleteVideo(self, videoID, accountID=None):
-		if not accountID:
-			accountID = self.__oauth.account_id
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}').format(pubid=accountID,videoid=videoID)
 		return requests.delete(url=url, headers=headers)
@@ -119,8 +109,7 @@ class CMS:
 	# delete a digital master
 	#===========================================
 	def DeleteMaster(self, videoID, accountID=None):
-		if not accountID:
-			accountID = self.__oauth.account_id
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/digital_master').format(pubid=accountID,videoid=videoID)
 		return requests.delete(url=url, headers=headers)
@@ -129,8 +118,7 @@ class CMS:
 	# update a video
 	#===========================================
 	def UpdateVideo(self, videoID, jsonBody, accountID=None):
-		if not accountID:
-			accountID = self.__oauth.account_id
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}').format(pubid=accountID,videoid=videoID)
 		return requests.patch(url, headers=headers, data=jsonBody)
@@ -139,30 +127,26 @@ class CMS:
 	# subscriptions bla bla
 	#===========================================
 	def GetSubscriptionsList(self, accountID=None):
-		if not accountID:
-			accountID = self.__oauth.account_id
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions').format(pubid=accountID)
 		return (requests.get(url, headers=headers))
 
 	def GetSubscription(self, subID, accountID=None):
-		if not accountID:
-			accountID = self.__oauth.account_id
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions/{subid}').format(pubid=accountID, subid=subID)
 		return (requests.get(url, headers=headers))
 
 	def CreateSubscription(self, callbackURL, accountID=None):
-		if not accountID:
-			accountID = self.__oauth.account_id
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions').format(pubid=accountID)
 		jsonBody = ('{ "endpoint":"' + callbackURL + '", "events":["video-change"] }')
 		return (requests.post(url, headers=headers, data=jsonBody))
 
 	def DeleteSubscription(self, subID, accountID=None):
-		if not accountID:
-			accountID = self.__oauth.account_id
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions/{subid}').format(pubid=accountID,subid=subID)
 		return (requests.delete(url, headers=headers))
