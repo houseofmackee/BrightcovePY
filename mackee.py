@@ -359,7 +359,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 
 	currentOffset = 0
 	pageSize = 20
-	retries = 2
+	retries = 10
 
 	while(currentOffset<numVideos):
 		apiRequest = (CMS.base_url+'/videos?limit={pageSize}&offset={offset}&sort=created_at{query}').format(pubid=oauth.account_id, pageSize=pageSize, offset=currentOffset, query='&q=' + searchQuery)
@@ -367,19 +367,29 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 		# good result
 		if (r.status_code in [200,202]):
 			json_data = json.loads(r.text)
-			for video in json_data:
-				processVideo(video)
+			# make sure we actually got some data
+			if(len(json_data) > 0):
+				for video in json_data:
+					processVideo(video)
+				retries = 10
+				currentOffset += pageSize
+			# looks like we got an empty response (it can happen)
+			else:
+				if(retries>0):
+					print('Error: empty API response received, '+retries+' retries left.')
+					headers = oauth.get_headers()
+					retries -= 1
+				else:
+					print('Error: failed to get non-empty API response.')
+					return False
 
-			retries = 2
-			currentOffset += pageSize
-			
 		# token probably expired
 		elif r.status_code == 401:
 			if(retries>0):
 				headers = oauth.get_headers()
 				retries -= 1
 			else:
-				print('Error with OAuth token:')
+				print('Error: problem with OAuth token:')
 				print(r.content)
 				return False
 	return True
