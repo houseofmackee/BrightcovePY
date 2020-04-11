@@ -23,9 +23,12 @@ All the other scripts are simple examples of how to use the mackee.py module to 
 # Command line options
 
 All scripts using mackee.py as a shell have the following command line options available by default:
-**-i** name and path of the account info JSON file to use, e.g. -i c:/custom_config.json
-**-v** video ID of a single video to be processed, e.g. -v 123456789001
-**-q** CMS API search query to filter videos to be processed. Please make sure you put it in quotes, e.g. -q "+state:INACTIVE +name:video"
+
+**-i**: name and path of the account info JSON file to use, e.g. -i c:/custom_config.json
+
+**-v**: video ID of a single video to be processed, e.g. -v 123456789001
+
+**-q**: CMS API search query to filter videos to be processed. Please make sure you put it in quotes, e.g. -q "+state:INACTIVE +name:video"
 
 # Support
 
