@@ -150,6 +150,59 @@ class CMS:
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions/{subid}').format(pubid=accountID,subid=subID)
 		return (requests.delete(url, headers=headers))
+	
+	#===========================================
+	# folders stuff
+	#===========================================
+	def GetFolders(self, accountID=None, pageSize=100, pageOffset=0):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/folders?limit={limit}&offset={offset}').format(pubid=accountID,limit=pageSize, offset=pageOffset)
+		return (requests.get(url, headers=headers))
+
+	def CreateFolder(self, folderName, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/folders').format(pubid=accountID)
+		jsonBody = ('{ "name":"' + folderName + '" }')
+		return (requests.post(url, headers=headers, data=jsonBody))
+
+	def DeleteFolder(self, folderID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/folders/{folderid}').format(pubid=accountID, folderid=folderID)
+		return (requests.delete(url, headers=headers))
+
+	def GetFolderInformation(self, folderID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/folders/{folderid}').format(pubid=accountID, folderid=folderID)
+		return (requests.get(url, headers=headers))
+
+	def UpdateFolderName(self, folderID, folderName, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/folders/{folderid}').format(pubid=accountID, folderid=folderID)
+		jsonBody = ('{ "name":"' + folderName + '" }')
+		return (requests.patch(url, headers=headers, data=jsonBody))
+
+	def AddVideoToFolder(self, folderID, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/folders/{folderid}/videos/{videoid}').format(pubid=accountID, videoid=videoID)
+		return (requests.put(url, headers=headers))
+
+	def RemoveVideoFromFolder(self, folderID, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/folders/{folderid}/videos/{videoid}').format(pubid=accountID, videoid=videoID)
+		return (requests.delete(url, headers=headers))
+
+	def GetVideosInFolder(self, folderID, accountID=None, pageSize=100, pageOffset=0):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/folders/{folderid}/videos?limit={limit}&offset={offset}').format(pubid=accountID,folderid=folderID,limit=pageSize, offset=pageOffset)
+		return (requests.get(url, headers=headers))
 
 class DynamicIngest:
 
@@ -376,7 +429,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 			# looks like we got an empty response (it can happen)
 			else:
 				if(retries>0):
-					print('Error: empty API response received, '+retries+' retries left.')
+					print('Error: empty API response received, '+str(retries)+' retries left.')
 					headers = oauth.get_headers()
 					retries -= 1
 				else:
