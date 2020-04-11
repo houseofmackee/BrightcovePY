@@ -299,7 +299,7 @@ def list_videos(video):
 #===========================================
 # show how to use this script
 #===========================================
-def process_video(inputfile, processVideo=list_videos, searchQuery=None):
+def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=None):
 	global oauth
 	global cms
 	global opts
@@ -311,6 +311,17 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None):
 	
 	oauth = OAuth(accountID,b,c)
 	cms = CMS(oauth)
+
+	# check if we should process a specific video ID
+	if(vidID):
+		print(('Processing video ID {videoid} now.').format(videoid=vidID))
+		video = cms.GetVideo(accountID=accountID, videoID=vidID)
+		if(video.status_code in CMS.success_responses):
+			processVideo(video.json())
+			return True
+		else:
+			print(('Error getting information for video ID {videoid}.').format(videoid=vidID))
+			return False
 
 	# check if we should process a given list of videos
 	videoList = opts.get('video_ids')
@@ -384,12 +395,13 @@ def main(process_func):
 	parser = argparse.ArgumentParser(prog=sys.argv[0])
 	parser.add_argument('-i', type=str, help='Name and path of account config information file')
 	parser.add_argument('-q', type=str, help='CMS API search query')
+	parser.add_argument('-v', type=str, help='Specific video ID to process')
 
 	# parse the args
 	args = parser.parse_args()
 
 	# go through the library and do stuff
-	process_video(inputfile=args.i, processVideo=process_func, searchQuery=args.q)
+	process_video(inputfile=args.i, processVideo=process_func, searchQuery=args.q, vidID=args.v)
 
 #===========================================
 # only run code if it's not imported
