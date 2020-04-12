@@ -21,7 +21,7 @@ class OAuth:
 	def __get_access_token(self):
 		access_token = None
 		r = requests.post(url=OAuth.access_token_url, params='grant_type=client_credentials', auth=(self.client_id, self.client_secret), verify=False)
-		if r.status_code == 200:
+		if(r.status_code == 200):
 			access_token = r.json().get('access_token')
 			self.__request_time = time.time()
 
@@ -63,7 +63,7 @@ class CMS:
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/count?q={query}').format(pubid=accountID,query=searchQuery)
 		r = requests.get(url, headers=headers)
-		if r.status_code == 200:
+		if(r.status_code == 200):
 			return r.json().get('count')
 		return -1
 
@@ -74,7 +74,7 @@ class CMS:
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/').format(pubid=accountID)
-		if not jsonBody:
+		if(not jsonBody):
 			jsonBody = '{"name": "' + videoTitle + '"}'
 		return requests.post(url=url, headers=headers, data=jsonBody)
 
@@ -326,13 +326,12 @@ class DynamicIngest:
 			print (e)
 			return None
 
-
 #===========================================
 # read account info from JSON file
 #===========================================
 def GetAccountInfo(input_filename=None):
 	# if no config file was passed we use the default
-	if not input_filename:
+	if(not input_filename):
 		input_filename = expanduser('~')+'/account_info.json'
 
 	# open the config file
@@ -368,7 +367,7 @@ def list_videos(video):
 	print(video['id']+', "'+video['name']+'"')
 
 #===========================================
-# show how to use this script
+# this is the main loop to process videos
 #===========================================
 def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=None):
 	global oauth
@@ -377,7 +376,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	# get the account info and credentials
 	accountID,b,c,opts = GetAccountInfo(inputfile)
 
-	if (None in [accountID,b,c,opts]):
+	if(None in [accountID,b,c,opts]):
 		return False
 	
 	oauth = OAuth(accountID,b,c)
@@ -445,8 +444,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 				if(retries>0):
 					print('Error: empty API response received.')
 					for remaining in range(10, 0, -1):
-						sys.stdout.write('\r')
-						sys.stdout.write('Retrying in {:2d} seconds.'.format(remaining))
+						sys.stdout.write('\rRetrying in {:2d} seconds.'.format(remaining))
 						sys.stdout.flush()
 						time.sleep(1)
 
@@ -458,13 +456,20 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 					return False
 
 		# token probably expired
-		elif r.status_code == 401:
+		elif(r.status_code == 401):
 			if(retries>0):
 				retries -= 1
 			else:
 				print('Error: possible problem with OAuth token:')
 				print(r.content)
 				return False
+
+		# we received an unexpected status code, let's get out of here
+		else:
+			print('Error: Received unexpected status code {status}:'.format(r.status_code))
+			print(r.json())
+			return False
+
 	return True
 
 #===========================================
