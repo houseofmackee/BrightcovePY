@@ -11,7 +11,7 @@ def downloadVideo(video):
 	sourceURL, sourceW, sourceH = None, 0, 0
 
 	# get sources for the video and try to find the biggest MP4 video
-	sourceList = mackee.cms.GetSources(videoID=videoID).json()
+	sourceList = mackee.cms.GetVideoSources(videoID=videoID).json()
 	for source in sourceList:
 		sourceType = source.get('container')
 		if(sourceType and sourceType=='MP4'):
