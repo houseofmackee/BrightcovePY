@@ -222,6 +222,69 @@ class CMS:
 		url = (CMS.base_url+'/folders/{folderid}/videos?limit={limit}&offset={offset}').format(pubid=accountID,folderid=folderID,limit=pageSize, offset=pageOffset)
 		return (requests.get(url, headers=headers))
 
+	#===========================================
+	# playlists stuff
+	#===========================================
+	def GetVideosInPlaylist(self, playlistID, accountID=None, includeDetails=True):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/playlists/{playlistid}/videos?include_details={details}').format(pubid=accountID, playlistid=playlistID, details=('false','true')[includeDetails])
+		print(url)
+		return (requests.get(url, headers=headers))
+
+	def GetVideoCountInPlaylist(self, playlistID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/counts/playlists/{playlistid}/videos').format(pubid=accountID, playlistid=playlistID)
+		return (requests.get(url, headers=headers))
+
+	def DeletePlaylist(self, playlistID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=accountID, playlistid=playlistID)
+		return (requests.delete(url, headers=headers))
+
+	def UpdatePlaylist(self, playlistID, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=accountID, playlistid=playlistID)
+		return (requests.patch(url, headers=headers, data=jsonBody))
+
+	def GetPlaylistByID(self, playlistID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=accountID, playlistid=playlistID)
+		return (requests.get(url, headers=headers))
+
+	def GetPlaylistCount(self, sort='-updated_at', searchQuery='', accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		if sort not in ['name', 'reference_id', 'created_at', 'published_at', 'updated_at', 'schedule.starts_at', 'schedule.ends_at', 'state', 'plays_total', 'plays_trailing_week', '-name', '-reference_id', '-created_at', '-published_at', '-updated_at', '-schedule.starts_at', '-schedule.ends_at', '-state', '-plays_total', '-plays_trailing_week']:
+			sort = '-updated_at'
+		if(searchQuery != ''):
+			searchQuery = requests.utils.quote(searchQuery)
+
+		url = (CMS.base_url+'/counts/playlists?sort={sort}&q={query}').format(pubid=accountID, sort=sort, query=searchQuery)
+		return (requests.get(url, headers=headers))
+
+	def GetPlaylists(self, sort='-updated_at', searchQuery='', pageSize=100, pageOffset=0, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		if sort not in ['name', 'reference_id', 'created_at', 'published_at', 'updated_at', 'schedule.starts_at', 'schedule.ends_at', 'state', 'plays_total', 'plays_trailing_week', '-name', '-reference_id', '-created_at', '-published_at', '-updated_at', '-schedule.starts_at', '-schedule.ends_at', '-state', '-plays_total', '-plays_trailing_week']:
+			sort = '-updated_at'
+
+		if(searchQuery != ''):
+			searchQuery = requests.utils.quote(searchQuery)
+
+		url = (CMS.base_url+'/playlists?limit={limit}&offset={offset}&sort={sort}&q={query}').format(pubid=accountID, limit=pageSize, offset=pageOffset, sort=sort, query=searchQuery)
+		return (requests.get(url, headers=headers))
+
+	def CreatePlaylist(self, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/playlists').format(pubid=accountID)
+		return (requests.post(url, headers=headers, data=jsonBody))
+
 class DynamicIngest:
 
 	success_responses = [200,201,202,203,204]
