@@ -115,6 +115,15 @@ class CMS:
 		return requests.delete(url=url, headers=headers)
 
 	#===========================================
+	# get a digital master info
+	#===========================================
+	def GetDigitalMasterInfo(self, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/sources').format(pubid=accountID,videoid=videoID)
+		return requests.get(url=url, headers=headers)
+
+	#===========================================
 	# delete a digital master
 	#===========================================
 	def DeleteMaster(self, videoID, accountID=None):
