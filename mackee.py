@@ -88,9 +88,18 @@ class CMS:
 		return requests.get(url=url, headers=headers)
 
 	#===========================================
+	# get videos in an account
+	#===========================================
+	def GetVideos(self, accountID=None, pageSize=20, pageOffset=0, searchQuery=''):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		apiRequest = (CMS.base_url+'/videos?limit={pageSize}&offset={offset}&sort=created_at{query}').format(pubid=accountID, pageSize=pageSize, offset=pageOffset, query='&q=' + searchQuery)
+		return requests.get(apiRequest, headers=headers)
+
+	#===========================================
 	# get a video's sources
 	#===========================================
-	def GetSources(self, videoID, accountID=None):
+	def GetVideoSources(self, videoID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/sources').format(pubid=accountID,videoid=videoID)
@@ -415,8 +424,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	retries = 10
 
 	while(currentOffset<numVideos):
-		apiRequest = (CMS.base_url+'/videos?limit={pageSize}&offset={offset}&sort=created_at{query}').format(pubid=oauth.account_id, pageSize=pageSize, offset=currentOffset, query='&q=' + searchQuery)
-		r = requests.get(apiRequest, headers=headers)
+		r = cms.GetVideos(pageSize=pageSize, pageOffset=currentOffset, searchQuery=searchQuery)
 		# good result
 		if (r.status_code in [200,202]):
 			json_data = json.loads(r.text)
