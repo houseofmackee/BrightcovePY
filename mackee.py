@@ -425,9 +425,6 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 		print(('No videos found in account ID {pubid}''s library.').format(pubid=oauth.account_id))
 		return False
 
-
-	headers = oauth.get_headers()
-
 	currentOffset = 0
 	pageSize = 20
 	retries = 10
@@ -446,9 +443,16 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 			# looks like we got an empty response (it can happen)
 			else:
 				if(retries>0):
-					print('Error: empty API response received, '+str(retries)+' retries left.')
-					headers = oauth.get_headers()
+					print('Error: empty API response received.')
+					for remaining in range(10, 0, -1):
+						sys.stdout.write('\r')
+						sys.stdout.write('Retrying in {:2d} seconds.'.format(remaining))
+						sys.stdout.flush()
+						time.sleep(1)
+
 					retries -= 1
+					sys.stdout.write('\rRetrying now ({retries} retries left).\n'.format(retries))
+
 				else:
 					print('Error: failed to get non-empty API response.')
 					return False
@@ -456,10 +460,9 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 		# token probably expired
 		elif r.status_code == 401:
 			if(retries>0):
-				headers = oauth.get_headers()
 				retries -= 1
 			else:
-				print('Error: problem with OAuth token:')
+				print('Error: possible problem with OAuth token:')
 				print(r.content)
 				return False
 	return True
