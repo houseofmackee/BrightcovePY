@@ -106,6 +106,51 @@ class CMS:
 		return requests.get(url=url, headers=headers)
 
 	#===========================================
+	# get a video's images
+	#===========================================
+	def GetVideoImages(self, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/images').format(pubid=accountID,videoid=videoID)
+		return requests.get(url=url, headers=headers)
+
+	#===========================================
+	# get a video's audio tracks
+	#===========================================
+	def GetVideoAudioTracks(self, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/audio_tracks').format(pubid=accountID,videoid=videoID)
+		return requests.get(url=url, headers=headers)
+
+	#===========================================
+	# get a specific audio track
+	#===========================================
+	def GetVideoAudioTrack(self, videoID, trackID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/audio_tracks/{trackid}').format(pubid=accountID,videoid=videoID,trackid=trackID)
+		return requests.get(url=url, headers=headers)
+
+	#===========================================
+	# delete a specific audio track
+	#===========================================
+	def DeleteVideoAudioTrack(self, videoID, trackID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/audio_tracks/{trackid}').format(pubid=accountID,videoid=videoID,trackid=trackID)
+		return requests.delete(url=url, headers=headers)
+
+	#===========================================
+	# update a specific audio track
+	#===========================================
+	def UpdateVideoAudioTrack(self, videoID, trackID, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/audio_tracks/{trackid}').format(pubid=accountID,videoid=videoID,trackid=trackID)
+		return requests.patch(url=url, headers=headers, data=jsonBody)
+
+	#===========================================
 	# delete a video
 	#===========================================
 	def DeleteVideo(self, videoID, accountID=None):
