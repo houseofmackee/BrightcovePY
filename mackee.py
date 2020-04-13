@@ -187,6 +187,33 @@ class CMS:
 		return requests.patch(url, headers=headers, data=jsonBody)
 
 	#===========================================
+	# get custom fields
+	#===========================================
+	def GetCustomFields(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/video_fields').format(pubid=accountID)
+		return requests.get(url=url, headers=headers)
+
+	#===========================================
+	# get ingest job status for a video
+	#===========================================
+	def GetStatusOfIngestJob(self, videoID, jobID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/ingest_jobs/{jobid}').format(pubid=accountID,videoid=videoID,jobid=jobID)
+		return requests.get(url=url, headers=headers)
+
+	#===========================================
+	# get all ingest jobs status for a video
+	#===========================================
+	def GetStatusOfIngestJobs(self, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/ingest_jobs').format(pubid=accountID,videoid=videoID)
+		return requests.get(url=url, headers=headers)
+
+	#===========================================
 	# subscriptions bla bla
 	#===========================================
 	def GetSubscriptionsList(self, accountID=None):
@@ -270,6 +297,18 @@ class CMS:
 	#===========================================
 	# playlists stuff
 	#===========================================
+	def GetPlaylistsForVideo(self, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/references').format(pubid=accountID, videoid=videoID)
+		return (requests.get(url, headers=headers))
+
+	def RemoveVideoFromAllPlaylists(self, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/references').format(pubid=accountID, videoid=videoID)
+		return (requests.delete(url, headers=headers))
+
 	def GetVideosInPlaylist(self, playlistID, includeDetails=True, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
