@@ -46,6 +46,41 @@ class Base:
 	def __init__(self):
 		pass
 
+class JWT:
+
+	# allowed success response codes
+	success_responses = [200,201,202,203,204]
+	base_url = 'https://playback-auth.api.brightcove.com/v1/accounts/{pubid}'
+
+	def __init__(self, oauth):
+		self.__oauth = oauth
+
+	def RegisterKey(self, keyData, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (JWT.base_url+'/keys').format(pubid=accountID)
+		jsonBody = '{ "value":"'+keyData+'" }'
+		return requests.post(url, headers=headers, data=jsonBody)
+
+	def ListKeys(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (JWT.base_url+'/keys').format(pubid=accountID)
+		return requests.get(url, headers=headers)
+
+	def GetKey(self, keyID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (JWT.base_url+'/keys/{keyid}').format(pubid=accountID,keyid=keyID)
+		return requests.get(url, headers=headers)
+
+	def DeleteKey(self, keyID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (JWT.base_url+'/keys/{keyid}').format(pubid=accountID,keyid=keyID)
+		return requests.delete(url, headers=headers)
+
+
 class CMS:
 
 	# allowed success response codes
