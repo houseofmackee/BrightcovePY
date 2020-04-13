@@ -393,24 +393,28 @@ class DynamicIngest:
 			self.__priorityQueue = None
 		return self.__priorityQueue
 
-	def GetDefaultProfiles(self, accountID):
+	def GetDefaultProfiles(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (DynamicIngest.base_url+'/configuration').format(pubid=accountID)
 		return requests.get(url=url, headers=headers)
 	
-	def GetProfile(self, accountID, profileID):
+	def GetProfile(self, profileID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (DynamicIngest.base_url+'/profiles/{profileid}').format(pubid=accountID, profileid=profileID)
 		return requests.get(url=url, headers=headers)
 
-	def ProfileExists(self, accountID, profileID):
+	def ProfileExists(self, profileID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
 		r = self.GetProfile(accountID=accountID, profileID=profileID)
 		if(r.status_code in DynamicIngest.success_responses):
 			return True
 		else:
 			return False
 	
-	def RetranscodeVideo(self, accountID, videoID, profileID):
+	def RetranscodeVideo(self, videoID, profileID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
 		if(self.ProfileExists(accountID=accountID, profileID=profileID) is False):
 			return None
 		headers = self.__oauth.get_headers()
@@ -418,7 +422,8 @@ class DynamicIngest:
 		data =	'{ "profile":"'+profileID+'", "master": { "use_archived_master": true } }'
 		return requests.post(url=url, headers=headers, data=data)
 
-	def SubmitIngest(self, accountID, videoID, sourceURL, priorityQueue=None, callBacks=None, ingestProfile=None):
+	def SubmitIngest(self, videoID, sourceURL, priorityQueue=None, callBacks=None, ingestProfile=None, accountID=None):
+		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		profile = ''
 		priority = 'normal'
@@ -443,7 +448,8 @@ class DynamicIngest:
 
 	# get_upload_location_and_upload_file first performs an authenticated request to discover
 	# a Brightcove-provided location to securely upload a source file
-	def UploadFile(self, accountID, videoID, fileName, callBack=None):
+	def UploadFile(self, videoID, fileName, callBack=None, accountID=None):
+		accountID = accountID or self.__oauth.account_id
 		# Perform an authorized request to obtain a file upload location
 		url = ('https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/upload-urls/{sourcefilename}').format(pubid=accountID, videoid=videoID, sourcefilename=fileName)
 		r = requests.get(url=url, headers=self.__oauth.get_headers())
