@@ -10,7 +10,7 @@ def deleteMasters(video):
 		if(shared and shared['by_external_acct']):
 			return
 		videoID = video['id']
-		print('Deleting master for video ID '+videoID+': '+ str(mackee.cms.DeleteMaster(videoID).status_code))
+		print('Deleting master for video ID '+videoID+': '+ str(mackee.cms.DeleteMaster(videoID=videoID).status_code))
 
 #===========================================
 # only run code if it's not imported

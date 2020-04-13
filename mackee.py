@@ -58,7 +58,7 @@ class CMS:
 	#===========================================
 	# get number of videos in an account
 	#===========================================
-	def GetVideoCount(self, accountID=None, searchQuery=''):
+	def GetVideoCount(self, searchQuery='', accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/count?q={query}').format(pubid=accountID,query=searchQuery)
@@ -70,7 +70,7 @@ class CMS:
 	#===========================================
 	# create new video object in an account
 	#===========================================
-	def CreateVideo(self, accountID=None, videoTitle='Video Title', jsonBody=None):
+	def CreateVideo(self, videoTitle='Video Title', jsonBody=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/').format(pubid=accountID)
@@ -90,7 +90,7 @@ class CMS:
 	#===========================================
 	# get videos in an account
 	#===========================================
-	def GetVideos(self, accountID=None, pageSize=20, pageOffset=0, searchQuery=''):
+	def GetVideos(self, pageSize=20, pageOffset=0, searchQuery='', accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		apiRequest = (CMS.base_url+'/videos?limit={pageSize}&offset={offset}&sort=created_at{query}').format(pubid=accountID, pageSize=pageSize, offset=pageOffset, query='&q=' + searchQuery)
@@ -217,7 +217,7 @@ class CMS:
 	#===========================================
 	# folders stuff
 	#===========================================
-	def GetFolders(self, accountID=None, pageSize=100, pageOffset=0):
+	def GetFolders(self, pageSize=100, pageOffset=0, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders?limit={limit}&offset={offset}').format(pubid=accountID,limit=pageSize, offset=pageOffset)
@@ -261,7 +261,7 @@ class CMS:
 		url = (CMS.base_url+'/folders/{folderid}/videos/{videoid}').format(pubid=accountID, videoid=videoID)
 		return (requests.delete(url, headers=headers))
 
-	def GetVideosInFolder(self, folderID, accountID=None, pageSize=100, pageOffset=0):
+	def GetVideosInFolder(self, folderID, pageSize=100, pageOffset=0, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}/videos?limit={limit}&offset={offset}').format(pubid=accountID,folderid=folderID,limit=pageSize, offset=pageOffset)
@@ -270,7 +270,7 @@ class CMS:
 	#===========================================
 	# playlists stuff
 	#===========================================
-	def GetVideosInPlaylist(self, playlistID, accountID=None, includeDetails=True):
+	def GetVideosInPlaylist(self, playlistID, includeDetails=True, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists/{playlistid}/videos?include_details={details}').format(pubid=accountID, playlistid=playlistID, details=('false','true')[includeDetails])

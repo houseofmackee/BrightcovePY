@@ -14,7 +14,7 @@ def deleteVideo(video):
 		exit(2)
 	else:
 		videoID = video['id']
-		print('Deleting video ID "'+videoID+''": "+ str(mackee.cms.DeleteVideo(videoID).status_code))
+		print('Deleting video ID "'+videoID+''": "+ str(mackee.cms.DeleteVideo(videoID=videoID).status_code))
 
 #===========================================
 # only run code if it's not imported
