@@ -82,6 +82,61 @@ class JWT:
 		url = (JWT.base_url+'/keys/{keyid}').format(pubid=accountID,keyid=keyID)
 		return requests.delete(url, headers=headers)
 
+class PlaybackRights:
+	success_responses = [200,201,202,203,204]
+	base_url ='https://playback-rights.api.brightcove.com/v1/accounts/{pubid}'
+
+	def __init__(self, oauth):
+		self.__oauth = oauth
+
+	def CreatePlaybackRight(self, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlaybackRights.base_url+'/playback_rights').format(pubid=accountID)
+		return requests.post(url=url, headers=headers, data=jsonBody)
+
+	def GetPlaybackRights(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlaybackRights.base_url+'/playback_rights').format(pubid=accountID)
+		return requests.get(url=url, headers=headers)
+
+	def GetPlaybackRight(self, epaID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlaybackRights.base_url+'/playback_rights/{epaid}').format(pubid=accountID, epaid=epaID)
+		return requests.get(url=url, headers=headers)
+
+	def UpdatePlaybackRight(self, epaID, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlaybackRights.base_url+'/playback_rights/{epaid}').format(pubid=accountID, epaid=epaID)
+		return requests.put(url=url, headers=headers, data=jsonBody)
+
+	def DeletePlaybackRight(self, epaID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlaybackRights.base_url+'/playback_rights/{epaid}').format(pubid=accountID, epaid=epaID)
+		return requests.delete(url=url, headers=headers)
+
+	def GetAllUserDevices(self, userID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlaybackRights.base_url+'/users/{userid}/devices').format(pubid=accountID, userid=userID)
+		return requests.get(url=url, headers=headers)
+
+	def DeleteAllUserDevices(self, userID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlaybackRights.base_url+'/users/{userid}/devices').format(pubid=accountID, userid=userID)
+		return requests.delete(url=url, headers=headers)
+
+	def DeleteUserDevice(self, userID, deviceID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlaybackRights.base_url+'/users/{userid}/devices/{deviceid}').format(pubid=accountID, userid=userID, deviceid=deviceID)
+		return requests.delete(url=url, headers=headers)
+
 class DeliverySystem:
 
 	success_responses = [200,201,202,203,204]
