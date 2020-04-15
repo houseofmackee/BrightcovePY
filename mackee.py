@@ -5,7 +5,9 @@ import argparse
 import time
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
+from requests_toolbelt import MultipartEncoder # pip3 install requests_toolbelt
 from os.path import expanduser
+from os.path import basename
 
 class OAuth:
 	access_token_url = 'https://oauth.brightcove.com/v4/access_token'
@@ -20,7 +22,7 @@ class OAuth:
 
 	def __get_access_token(self):
 		access_token = None
-		r = requests.post(url=OAuth.access_token_url, params='grant_type=client_credentials', auth=(self.client_id, self.client_secret), verify=False)
+		r = requests.post(url=OAuth.access_token_url, params='grant_type=client_credentials', auth=(self.client_id, self.client_secret))
 		if(r.status_code == 200):
 			access_token = r.json().get('access_token')
 			self.__request_time = time.time()
@@ -80,6 +82,57 @@ class JWT:
 		url = (JWT.base_url+'/keys/{keyid}').format(pubid=accountID,keyid=keyID)
 		return requests.delete(url, headers=headers)
 
+class DeliverySystem:
+
+	success_responses = [200,201,202,203,204]
+	base_url = 'https://repos.api.brightcove.com/v1/accounts/{pubid}/repos'
+
+	def __init__(self, oauth):
+		self.__oauth = oauth
+
+	def ListRepositories(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliverySystem.base_url).format(pubid=accountID)
+		return requests.get(url=url, headers=headers)
+
+	def GetRepositoryDetails(self, repoName, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliverySystem.base_url+'/{reponame}').format(pubid=accountID,reponame=repoName)
+		return requests.get(url, headers=headers)
+
+	def DeleteRepository(self, repoName, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliverySystem.base_url+'/{reponame}').format(pubid=accountID,reponame=repoName)
+		return requests.delete(url, headers=headers)
+
+	def CreateRepository(self, repoName, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliverySystem.base_url+'/{reponame}').format(pubid=accountID,reponame=repoName)
+		return requests.put(url, headers=headers)
+
+	def ListFilesInRepository(self, repoName, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliverySystem.base_url+'/{reponame}/files').format(pubid=accountID,reponame=repoName)
+		return requests.get(url, headers=headers)
+
+	def DeleteFileInRepository(self, repoName, fileName, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(pubid=accountID,reponame=repoName,filename=fileName)
+		return requests.delete(url, headers=headers)
+
+	def AddFileToRepository(self, repoName, fileName, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(pubid=accountID,reponame=repoName,filename=basename(fileName))
+		m = MultipartEncoder( fields={'contents': (None, open(fileName, 'rb'), 'text/plain')} )
+		access_token = self.__oauth.get_access_token()
+		headers = { 'Authorization': 'Bearer ' + access_token, 'Content-Type': m.content_type }
+		return requests.put(url, headers=headers, data=m)
 
 class CMS:
 
@@ -664,9 +717,6 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 # parse args and do the thing
 #===========================================
 def main(process_func):
-	# disable certificate warnings
-	requests.urllib3.disable_warnings()
-
 	# init the argument parsing
 	parser = argparse.ArgumentParser(prog=sys.argv[0])
 	parser.add_argument('-i', type=str, help='Name and path of account config information file')
@@ -682,5 +732,9 @@ def main(process_func):
 #===========================================
 # only run code if it's not imported
 #===========================================
+
+# disable certificate warnings
+requests.urllib3.disable_warnings()
+
 if __name__ == '__main__':
 	main(list_videos)
