@@ -181,6 +181,7 @@ def main(dbHistory):
 	parser.add_argument('--dbxfolder', metavar='<Dropbox folder>', type=str, help='Name of the Dropbox folder to ingest from')
 	parser.add_argument('--dbxtoken', metavar='<Dropbox API token>', type=str, help='Token for Dropbox API access')
 	parser.add_argument('--folder', metavar='<path to folder>', type=str, help='Name and path of local folder to ingest from (use / or \\\\)')
+	parser.add_argument('--file', metavar='<path to file>', type=str, help='Name and path of local file to ingest from (use / or \\\\)')
 	parser.add_argument('--account', metavar='<account ID>', type=str, help='Brightcove Account ID to ingest videos into')
 	parser.add_argument('--profile', metavar='<ingest profile name>', type=str, help='Brightcove ingest profile name to use to ingest videos')
 	parser.add_argument('--config', metavar='<path to config file>', type=str, help='Name and path of account config information file')
@@ -217,8 +218,8 @@ def main(dbHistory):
 		localFolder = None
 
 	# error out if we have neither S3 nor Dropbox info
-	if(not s3bucketName and not dbxFolder and not localFolder and not args.dbreset):
-		print('Error: no S3 bucket, Dropbox, local folder or tokens specified.\n')
+	if(not s3bucketName and not dbxFolder and not localFolder and not args.dbreset and not args.file):
+		print('Error: no S3 bucket, Dropbox, local folder, file or tokens specified.\n')
 		return
 
 	# get ingest priority
@@ -247,6 +248,32 @@ def main(dbHistory):
 	oauth = OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret)
 	cms = CMS(oauth)
 	di = DynamicIngest(oAuth=oauth, ingestProfile=ingest_profile, priorityQueue=ingestPriority)
+
+	# this needs moving outside, but for now I'm whatever about it
+	def ingest_single_file(filePath):
+		fileName = os.path.basename(filePath)
+		video = cms.CreateVideo(accountID=account_id, videoTitle=fileName)
+		if(video.status_code in successResponses):
+			videoID=video.json()['id']
+			hashValue = dbHistory.CreateHash(account_id, filePath)
+			ingestRecord = dbHistory.FindHashInIngestHistory(hashValue)
+			if(ingestRecord is None or args.dbignore is True):
+				print('Uploading file "'+filePath+'" to temporary S3 bucket.')
+				upload_url = di.UploadFile(accountID=account_id, videoID=videoID, fileName=filePath,callBack=ProgressPercentage(filePath))
+				if(upload_url):
+					reqID = ingest_video(accountID=account_id, videoID=videoID, sourceURL=upload_url['api_request_url'], priorityQueue=ingestPriority)
+					if(reqID is not None and args.dbignore is False):
+						dbHistory.AddIngestHistory(accountID=account_id, videoID=videoID, requestID=reqID, remoteURL=filePath)
+				else:
+					print('Error: failed to upload "'+filePath+'" to temporary S3 bucket.')
+			else:
+				print('Already ingested on '+ingestRecord[2])
+
+	#===========================================
+	# do a single file ingest
+	#===========================================
+	if(args.file):
+		ingest_single_file(args.file)
 
 	#===========================================
 	# do the S3 bulk ingest
@@ -312,25 +339,7 @@ def main(dbHistory):
 			print('Error: unable to access folder "'+localFolder+'"')
 		else:
 			for filePath in [filePath for filePath in fileList if isVideo(filePath)]:
-				fullPath = (localFolder+'\\'+filePath)
-				fileName = os.path.basename(filePath)
-				print(fullPath)
-				video = cms.CreateVideo(accountID=account_id, videoTitle=fileName)
-				if(video.status_code in successResponses):
-					videoID=video.json()['id']
-					hashValue = dbHistory.CreateHash(account_id, fullPath)
-					ingestRecord = dbHistory.FindHashInIngestHistory(hashValue)
-					if(ingestRecord is None or args.dbignore is True):
-						print('Uploading file "'+filePath+'" to temporary S3 bucket.')
-						upload_url = di.UploadFile(accountID=account_id, videoID=videoID, fileName=fullPath,callBack=ProgressPercentage(fullPath))
-						if(upload_url):
-							reqID = ingest_video(accountID=account_id, videoID=videoID, sourceURL=upload_url['api_request_url'], priorityQueue=ingestPriority)
-							if(reqID is not None and args.dbignore is False):
-								dbHistory.AddIngestHistory(accountID=account_id, videoID=videoID, requestID=reqID, remoteURL=fullPath)
-						else:
-							print('Error: failed to upload "'+filePath+'" to temporary S3 bucket.')
-					else:
-						print('Already ingested on '+ingestRecord[2])
+				ingest_single_file(localFolder+'\\'+filePath)
 
 #===========================================
 # only run code if it's not imported
