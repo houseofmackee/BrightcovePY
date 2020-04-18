@@ -9,8 +9,33 @@ from requests_toolbelt import MultipartEncoder # pip3 install requests_toolbelt
 from os.path import expanduser
 from os.path import basename
 
-class OAuth:
-	access_token_url = 'https://oauth.brightcove.com/v4/access_token'
+# provide abstract class functionality for Python 2 and 3
+import abc
+ABC = abc.ABCMeta('ABC', (object,), {})
+
+class Base(ABC):
+
+	# every derived class must have a base URL
+	@abc.abstractproperty
+	def base_url(self):
+		pass
+
+	API_VERSION = None
+	# generally accepted success responses
+	success_responses = [200,201,202,203,204]
+
+	def __init__(self):
+		pass
+
+class PlayerManagement(Base):
+
+	base_url = 'https://players.api.brightcove.com/v2/{pubid}'
+
+	def __init__(self):
+		pass
+
+class OAuth(Base):
+	base_url = 'https://oauth.brightcove.com/v4/access_token'
 
 	def __init__(self, account_id, client_id, client_secret):
 		self.account_id = account_id
@@ -22,7 +47,7 @@ class OAuth:
 
 	def __get_access_token(self):
 		access_token = None
-		r = requests.post(url=OAuth.access_token_url, params='grant_type=client_credentials', auth=(self.client_id, self.client_secret))
+		r = requests.post(url=OAuth.base_url, params='grant_type=client_credentials', auth=(self.client_id, self.client_secret))
 		if(r.status_code == 200):
 			access_token = r.json().get('access_token')
 			self.__request_time = time.time()
@@ -41,17 +66,8 @@ class OAuth:
 		headers = { 'Authorization': 'Bearer ' + access_token, 'Content-Type': 'application/json' }
 		return headers
 
-class Base:
-	API_VERSION = None
-	BaseURL = ''
+class JWT(Base):
 
-	def __init__(self):
-		pass
-
-class JWT:
-
-	# allowed success response codes
-	success_responses = [200,201,202,203,204]
 	base_url = 'https://playback-auth.api.brightcove.com/v1/accounts/{pubid}'
 
 	def __init__(self, oauth):
@@ -82,8 +98,8 @@ class JWT:
 		url = (JWT.base_url+'/keys/{keyid}').format(pubid=accountID,keyid=keyID)
 		return requests.delete(url, headers=headers)
 
-class PlaybackRights:
-	success_responses = [200,201,202,203,204]
+class PlaybackRights(Base):
+
 	base_url ='https://playback-rights.api.brightcove.com/v1/accounts/{pubid}'
 
 	def __init__(self, oauth):
@@ -137,9 +153,8 @@ class PlaybackRights:
 		url = (PlaybackRights.base_url+'/users/{userid}/devices/{deviceid}').format(pubid=accountID, userid=userID, deviceid=deviceID)
 		return requests.delete(url=url, headers=headers)
 
-class DeliverySystem:
+class DeliverySystem(Base):
 
-	success_responses = [200,201,202,203,204]
 	base_url = 'https://repos.api.brightcove.com/v1/accounts/{pubid}/repos'
 
 	def __init__(self, oauth):
@@ -189,10 +204,7 @@ class DeliverySystem:
 		headers = { 'Authorization': 'Bearer ' + access_token, 'Content-Type': m.content_type }
 		return requests.put(url, headers=headers, data=m)
 
-class CMS:
-
-	# allowed success response codes
-	success_responses = [200,201,202,203,204]
+class CMS(Base):
 	base_url = 'https://cms.api.brightcove.com/v1/accounts/{pubid}'
 
 	def __init__(self, oauth):
@@ -483,15 +495,13 @@ class CMS:
 		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=accountID, playlistid=playlistID)
 		return (requests.get(url, headers=headers))
 
-	def GetPlaylistCount(self, sort='-updated_at', searchQuery='', accountID=None):
+	def GetPlaylistCount(self, searchQuery='', accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		if sort not in ['name', 'reference_id', 'created_at', 'published_at', 'updated_at', 'schedule.starts_at', 'schedule.ends_at', 'state', 'plays_total', 'plays_trailing_week', '-name', '-reference_id', '-created_at', '-published_at', '-updated_at', '-schedule.starts_at', '-schedule.ends_at', '-state', '-plays_total', '-plays_trailing_week']:
-			sort = '-updated_at'
 		if(searchQuery != ''):
 			searchQuery = requests.utils.quote(searchQuery)
 
-		url = (CMS.base_url+'/counts/playlists?sort={sort}&q={query}').format(pubid=accountID, sort=sort, query=searchQuery)
+		url = (CMS.base_url+'/counts/playlists?q={query}').format(pubid=accountID, query=searchQuery)
 		return (requests.get(url, headers=headers))
 
 	def GetPlaylists(self, sort='-updated_at', searchQuery='', pageSize=100, pageOffset=0, accountID=None):
@@ -512,9 +522,8 @@ class CMS:
 		url = (CMS.base_url+'/playlists').format(pubid=accountID)
 		return (requests.post(url, headers=headers, data=jsonBody))
 
-class DynamicIngest:
+class DynamicIngest(Base):
 
-	success_responses = [200,201,202,203,204]
 	base_url = 'https://ingestion.api.brightcove.com/v1/accounts/{pubid}'
 
 	def __init__(self, oAuth, ingestProfile=None, priorityQueue=None):
