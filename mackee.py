@@ -369,6 +369,39 @@ class CMS(Base):
 		return requests.get(url=url, headers=headers)
 
 	#===========================================
+	# variants stuff
+	#===========================================
+	def GetAllVideoVariants(self, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/variants').format(pubid=accountID,videoid=videoID)
+		return requests.get(url=url, headers=headers)
+
+	def CreateVideoVariant(self, videoID, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/variants').format(pubid=accountID,videoid=videoID)
+		return requests.post(url=url, headers=headers, data=jsonBody)
+
+	def GetVideoVariant(self, videoID, language, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/variants/{language}').format(pubid=accountID,videoid=videoID, language=language)
+		return requests.get(url=url, headers=headers)
+
+	def UpdateVideoVariant(self, videoID, language, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/variants/{language}').format(pubid=accountID,videoid=videoID, language=language)
+		return requests.patch(url=url, headers=headers, data=jsonBody)
+
+	def DeleteVideoVariant(self, videoID, language, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/variants/{language}').format(pubid=accountID,videoid=videoID, language=language)
+		return requests.delete(url=url, headers=headers)
+
+	#===========================================
 	# subscriptions bla bla
 	#===========================================
 	def GetSubscriptionsList(self, accountID=None):
@@ -500,7 +533,6 @@ class CMS(Base):
 		headers = self.__oauth.get_headers()
 		if(searchQuery != ''):
 			searchQuery = requests.utils.quote(searchQuery)
-
 		url = (CMS.base_url+'/counts/playlists?q={query}').format(pubid=accountID, query=searchQuery)
 		return (requests.get(url, headers=headers))
 
