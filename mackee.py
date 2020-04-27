@@ -29,10 +29,46 @@ class Base(ABC):
 
 class PlayerManagement(Base):
 
-	base_url = 'https://players.api.brightcove.com/v2/{pubid}'
+	base_url = 'https://players.api.brightcove.com/v2/accounts/{pubid}'
 
-	def __init__(self):
-		pass
+	def __init__(self, oauth):
+		self.__oauth = oauth
+
+	def GetListOfPlayers(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlayerManagement.base_url+'/players').format(pubid=accountID)
+		return requests.get(url, headers=headers)
+
+	def GetSinglePlayer(self, accountID=None, playerID='default'):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlayerManagement.base_url+'/players/{playerid}').format(pubid=accountID, playerid=playerID)
+		return requests.get(url, headers=headers)
+
+	def CreatePlayer(self, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlayerManagement.base_url+'/players').format(pubid=accountID)
+		return requests.post(url, headers=headers, data=jsonBody)
+
+	def DeletePlayer(self, playerID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlayerManagement.base_url+'/players/{playerid}').format(pubid=accountID, playerid=playerID)
+		return requests.delete(url, headers=headers)
+
+	def PublishPlayer(self, playerID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlayerManagement.base_url+'/players/{playerid}/publish').format(pubid=accountID, playerid=playerID)
+		return requests.post(url, headers=headers)
+
+	def UpdatePlayer(self, playerID, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlayerManagement.base_url+'/players/{playerid}').format(pubid=accountID, playerid=playerID)
+		return requests.patch(url, headers=headers, data=jsonBody)
 
 class OAuth(Base):
 	base_url = 'https://oauth.brightcove.com/v4/access_token'
