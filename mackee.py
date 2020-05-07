@@ -70,6 +70,50 @@ class PlayerManagement(Base):
 		url = (PlayerManagement.base_url+'/players/{playerid}').format(pubid=accountID, playerid=playerID)
 		return requests.patch(url, headers=headers, data=jsonBody)
 
+	def GetPlayerConfiguration(self, playerID, branch, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlayerManagement.base_url+'/players/{playerid}/configuration/{branch}').format(pubid=accountID, playerid=playerID, branch=branch)
+		return requests.get(url, headers=headers)
+
+	def UpdatePlayerConfiguration(self, playerID, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlayerManagement.base_url+'/players/{playerid}/configuration').format(pubid=accountID, playerid=playerID)
+		return requests.patch(url, headers=headers, data=jsonBody)
+
+	def GetAllPlugins(self, templateVersion=None):
+		headers = self.__oauth.get_headers()
+		if templateVersion:
+			query = '?template_version='+templateVersion
+		else:
+			query = ''
+		url = 'https://players.api.brightcove.com/v2/plugins'+query
+		return requests.get(url, headers=headers)
+
+	def GetSinglePlugin(self, pluginID):
+		headers = self.__oauth.get_headers()
+		if pluginID:
+			pluginID = pluginID.replace('@', '%40')
+			pluginID = pluginID.replace('/', '%2F')
+		else:
+			pluginID = ''
+		url = 'https://players.api.brightcove.com/v2/plugins/'+pluginID
+		return requests.get(url, headers=headers)
+
+	def GetAllEmbeds(self, playerID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlayerManagement.base_url+'/players/{playerid}/embeds').format(pubid=accountID, playerid=playerID)
+		return requests.get(url, headers=headers)
+
+	def GetEmbed(self, playerID, embedID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (PlayerManagement.base_url+'/players/{playerid}/embeds/{embedid}').format(pubid=accountID, playerid=playerID, embedid=embedID)
+		return requests.get(url, headers=headers)
+
+
 class OAuth(Base):
 	base_url = 'https://oauth.brightcove.com/v4/access_token'
 
