@@ -14,6 +14,10 @@ The scripts will look for this exact file in your home folder by default. If it 
 
 **notifications.py**: this is a simple tool to manage CMS notification subscriptions. It is using mackee.py for the CMS API communication.
 
+**mrss.py**: this is a simple tool to manage social syndications (mrss feeds). It is using mackee.py for the syndication API communication.
+
+**repos.py**: this is a simple tool to manage repositories in an account using the delivery system API. It is using mackee.py for the API communication.
+
 **jwtKeys.py**: this is a simple tool to manage JWT keys. It is using mackee.py for the Playback Auth API communication.
 
 **bulkIngest.py**: this is a tool which allows you to ingest all videos contained in an S3 bucket, a Dropbox folder or a local folder into you Video Cloud account. It also allows what I call delta-ingest: this allows you to run the tool over the same source location again and ignore already ingested video files. To do so it will create a SQLite database called bulkingest.sqlite in your home folder. You can also use this database to review ingest history.
