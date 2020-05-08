@@ -27,6 +27,55 @@ class Base(ABC):
 	def __init__(self):
 		pass
 
+class SocialSyndication(Base):
+
+	base_url = 'https://social.api.brightcove.com/v1/accounts/{pubid}/mrss/syndications'
+
+	def __init__(self, oauth):
+		self.__oauth = oauth
+
+	def GetAllSyndications(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (SocialSyndication.base_url).format(pubid=accountID)
+		return requests.get(url, headers=headers)
+
+	def GetSyndication(self, syndicationID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (SocialSyndication.base_url+'/{syndicationid}').format(pubid=accountID, syndicationid=syndicationID)
+		return requests.get(url, headers=headers)
+
+	def CreateSyndication(self, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (SocialSyndication.base_url).format(pubid=accountID)
+		return requests.post(url, headers=headers, data=jsonBody)
+
+	def DeleteSyndication(self, syndicationID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (SocialSyndication.base_url+'/{syndicationid}').format(pubid=accountID, syndicationid=syndicationID)
+		return requests.delete(url, headers=headers)
+
+	def UpdateSyndication(self, syndicationID, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (SocialSyndication.base_url+'/{syndicationid}').format(pubid=accountID, syndicationid=syndicationID)
+		return requests.patch(url, headers=headers, data=jsonBody)
+
+	def GetTemplate(self, syndicationID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (SocialSyndication.base_url+'/{syndicationid}/template').format(pubid=accountID, syndicationid=syndicationID)
+		return requests.get(url, headers=headers)
+
+	def UploadTemplate(self, syndicationID, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (SocialSyndication.base_url+'/{syndicationid}/template').format(pubid=accountID, syndicationid=syndicationID)
+		return requests.put(url, headers=headers, data=jsonBody)
+
 class PlayerManagement(Base):
 
 	base_url = 'https://players.api.brightcove.com/v2/accounts/{pubid}'
@@ -112,7 +161,6 @@ class PlayerManagement(Base):
 		headers = self.__oauth.get_headers()
 		url = (PlayerManagement.base_url+'/players/{playerid}/embeds/{embedid}').format(pubid=accountID, playerid=playerID, embedid=embedID)
 		return requests.get(url, headers=headers)
-
 
 class OAuth(Base):
 	base_url = 'https://oauth.brightcove.com/v4/access_token'

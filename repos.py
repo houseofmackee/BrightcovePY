@@ -9,7 +9,7 @@ from mackee import GetAccountInfo
 parser = argparse.ArgumentParser(prog=sys.argv[0])
 parser.add_argument('--list', action='store_true', default=False, help='List all repositories or files in account or repository')
 parser.add_argument('--add', action='store_true', default=False, help='Add a repository or file to account or repository')
-parser.add_argument('--delete', action='store_true', default=False, help='Delete a repository orfile in account or repository')
+parser.add_argument('--delete', action='store_true', default=False, help='Delete a repository or file in account or repository')
 parser.add_argument('--repo', metavar='<repository name>', type=str, help='Name of repository')
 parser.add_argument('--file', metavar='<filename>', type=str, help='File name')
 parser.add_argument('--config', metavar='<config filename>', type=str, help='Name and path of account config information file')
