@@ -9,8 +9,8 @@ from mackee import GetAccountInfo
 parser = argparse.ArgumentParser(prog=sys.argv[0])
 parser.add_argument('--list', action='store_true', default=False, help='List all syndications for account')
 parser.add_argument('--get', metavar='<syndication ID>', type=str, help='Get a specific syndication for account')
-parser.add_argument('--delete', metavar='<all|syndication ID>', help='Delete one or all syndications for account')
-parser.add_argument('--add', metavar='<JSON body>', help='Add a syndication to account')
+parser.add_argument('--delete', metavar='<all|syndication ID>', type=str, help='Delete one or all syndications for account')
+parser.add_argument('--add', metavar='<JSON body>', type=str, help='Add a syndication to account')
 parser.add_argument('--config', metavar='<config filename>', type=str, help='Name and path of account config information file')
 parser.add_argument('--account', metavar='<Brightcove Account ID>', type=str, help='Brightcove Account ID to use (if different from ID in config)')
 
