@@ -7,9 +7,9 @@ from mackee import GetAccountInfo
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
-parser.add_argument('--list', action='store_true', default=False, help='List all syndications for an')
-parser.add_argument('--get', metavar='<syndication ID>', type=str, help='List all syndications for an')
-parser.add_argument('--delete', metavar='<all|syndication ID>', help='Delete one or all syndications in account')
+parser.add_argument('--list', action='store_true', default=False, help='List all syndications for account')
+parser.add_argument('--get', metavar='<syndication ID>', type=str, help='Get a specific syndication for account')
+parser.add_argument('--delete', metavar='<all|syndication ID>', help='Delete one or all syndications for account')
 parser.add_argument('--add', metavar='<JSON body>', help='Add a syndication to account')
 parser.add_argument('--config', metavar='<config filename>', type=str, help='Name and path of account config information file')
 parser.add_argument('--account', metavar='<Brightcove Account ID>', type=str, help='Brightcove Account ID to use (if different from ID in config)')
@@ -33,15 +33,18 @@ if(args.add):
 
 # delete one or all syndication
 if(args.delete):
+	# the actual delete function
+	def deleteSID(sID):
+		print( 'Deleting syndication ID '+sID+': '+str(mrss.DeleteSyndication(accountID=account_id, syndicationID=sID).status_code) )
+
 	# delete all?
 	if(args.delete=='all'):
 		synList = mrss.GetAllSyndications(accountID=account_id).json()
 		for syn in synList:
-			sID= syn['id']
-			print( 'Deleting syndication ID '+sID+': '+str(mrss.DeleteSyndication(accountID=account_id, syndicationID=syn['id']).status_code) )
+			deleteSID(syn['id'])
 	# just delete one
 	else:
-		print( 'Deleting syndication ID '+args.delete+': '+str(mrss.DeleteSyndication(accountID=account_id, syndicationID=args.delete).status_code) )
+		deleteSID(args.delete)
 
 # list all syndications in an account
 if(args.list):
