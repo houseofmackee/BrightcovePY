@@ -7,6 +7,13 @@ from mackee import GetAccountInfo
 # get account info from config file
 account_id, client_id, client_secret, _ = GetAccountInfo()
 
+if(account_id is None and client_id is None and client_secret is None):
+	print('Using default values for credentials.')
+	# edit details as required
+	account_id = ''
+	client_id = ''
+	client_secret = ''
+
 # create a Player Management API instance
 pms = PlayerManagement( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
@@ -16,8 +23,10 @@ jsonBody = '{ "video_cloud": { "base_url": "https://edge-elb.api.brightcove.com/
 # list of accounts that need patching
 accountList = [ account_id ]
 
+# process all accounts in the accounts list
 for account in accountList:
 	print('Processing players in account ID '+str(account)+':')
+
 	# get the items in the list of players
 	playerList = pms.GetListOfPlayers(accountID=account).json()['items']
 
