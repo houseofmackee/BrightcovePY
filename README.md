@@ -20,7 +20,7 @@ The scripts will look for this exact file in your home folder by default. If it 
 
 **jwtKeys.py**: this is a simple tool to manage JWT keys. It is using mackee.py for the Playback Auth API communication.
 
-**bulkIngest.py**: this is a tool which allows you to ingest all videos contained in an S3 bucket, a Dropbox folder or a local folder into you Video Cloud account. It also allows what I call delta-ingest: this allows you to run the tool over the same source location again and ignore already ingested video files. To do so it will create a SQLite database called bulkingest.sqlite in your home folder. You can also use this database to review ingest history.
+**bulkIngest.py**: this is a tool which allows you to ingest all videos contained in an S3 bucket, a Dropbox folder or a local folder into your Video Cloud account. It also allows what I call delta-ingest: this allows you to run the tool over the same source location again and ignore already ingested video files. To do so it will create a SQLite database called bulkingest.sqlite in your home folder. You can also use this database to review ingest history.
 
 **downloadVideos.py**: this tool allows you to download the highest resolution MP4 renditions from videos stored in Video Cloud.
 
