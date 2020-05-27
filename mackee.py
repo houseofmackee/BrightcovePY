@@ -682,6 +682,16 @@ class CMS(Base):
 		url = (CMS.base_url+'/playlists').format(pubid=accountID)
 		return (requests.post(url, headers=headers, data=jsonBody))
 
+	#
+	# Assets stuff
+	#
+	def GetDynamicRenditions(self, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/assets/dynamic_renditions').format(pubid=accountID, videoid=videoID)
+		return (requests.get(url, headers=headers))
+
+
 class DynamicIngest(Base):
 
 	base_url = 'https://ingestion.api.brightcove.com/v1/accounts/{pubid}'
