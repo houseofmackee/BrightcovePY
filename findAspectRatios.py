@@ -11,24 +11,33 @@ def calculate_aspect(width: int, height: int):
 
 	return (str(x)+'x'+str(y))
 
-#===========================================
-# callback to find 360 videos 
-#===========================================
+#=============================================
+# callback to find the aspect ratio of videos
+#=============================================
 def findAspectRatios(video):
 	videoID = str(video['id'])
-	sourceW, sourceH = None, None
+	sourceW, sourceH, response = None, None, None
 
-	response = mackee.cms.GetDynamicRenditions(videoID=videoID)
+	if(video['delivery_type'] == 'static_origin'):
+		response = mackee.cms.GetRenditionList(videoID=videoID)
+	else:
+		response = mackee.cms.GetDynamicRenditions(videoID=videoID)
+
 	if(response.status_code in mackee.cms.success_responses):
 		renditions = response.json()
 		for rendition in renditions:
-			if(rendition['media_type'] == 'video'):
+			if(rendition.get('media_type') == 'video' or rendition['audio_only'] == False):
 				sourceW = rendition['frame_width']
 				sourceH = rendition['frame_height']
 				break
 		
 		if(sourceH and sourceW):
-			print(videoID+": "+calculate_aspect(sourceW, sourceH))
+			print(videoID+': '+calculate_aspect(sourceW, sourceH))
+		else:
+			print('No video renditions found for video ID '+videoID+'.')
+
+	else:
+		print('Could not get renditions for video ID '+videoID+'.')
 
 
 #===========================================

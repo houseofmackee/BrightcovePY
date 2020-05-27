@@ -691,6 +691,12 @@ class CMS(Base):
 		url = (CMS.base_url+'/videos/{videoid}/assets/dynamic_renditions').format(pubid=accountID, videoid=videoID)
 		return (requests.get(url, headers=headers))
 
+	def GetRenditionList(self, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (CMS.base_url+'/videos/{videoid}/assets/renditions').format(pubid=accountID, videoid=videoID)
+		return (requests.get(url, headers=headers))
+
 
 class DynamicIngest(Base):
 
