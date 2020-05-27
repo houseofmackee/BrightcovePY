@@ -26,7 +26,7 @@ def findAspectRatios(video):
 	if(response.status_code in mackee.cms.success_responses):
 		renditions = response.json()
 		for rendition in renditions:
-			if(rendition.get('media_type') == 'video' or rendition['audio_only'] == False):
+			if(rendition.get('media_type') == 'video' or rendition.get('audio_only') == False):
 				sourceW = rendition['frame_width']
 				sourceH = rendition['frame_height']
 				break
