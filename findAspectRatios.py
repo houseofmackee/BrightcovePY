@@ -34,7 +34,6 @@ def findAspectRatios(video):
 	else:
 		print('Could not get renditions for video ID '+videoID+'.')
 
-
 #===========================================
 # only run code if it's not imported
 #===========================================
