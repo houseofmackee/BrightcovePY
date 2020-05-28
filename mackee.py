@@ -682,9 +682,9 @@ class CMS(Base):
 		url = (CMS.base_url+'/playlists').format(pubid=accountID)
 		return (requests.post(url, headers=headers, data=jsonBody))
 
-	#
+	#===========================================
 	# Assets stuff
-	#
+	#===========================================
 	def GetDynamicRenditions(self, videoID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
@@ -841,6 +841,30 @@ def GetAccountInfo(input_filename=None):
 	# return the object just in case it's needed later
 	return(account, client, secret, obj)
 
+
+#
+#
+#
+def CalculateAspectRatio(width: int, height: int):
+	def gcd(a, b):
+		return a if b == 0 else gcd(b, a % b)
+
+	temp = 0
+	if(width == height):
+		return 1,1
+
+	if(width < height):
+		temp = width
+		width = height
+		height = temp
+
+	divisor = gcd(width, height)
+
+	x = int(width / divisor) if not temp else int(height / divisor)
+	y = int(height / divisor) if not temp else int(width / divisor)
+
+	return x,y
+	
 #===========================================
 # default processing function
 #===========================================

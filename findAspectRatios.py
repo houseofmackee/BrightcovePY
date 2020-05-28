@@ -1,26 +1,6 @@
 #!/usr/bin/env python3
 import mackee
 
-def calculate_aspect(width: int, height: int):
-	def gcd(a, b):
-		return a if b == 0 else gcd(b, a % b)
-
-	temp = 0
-	if width == height:
-		return '1x1'
-
-	if width < height:
-		temp = width
-		width = height
-		height = temp
-
-	divisor = gcd(width, height)
-
-	x = int(width / divisor) if not temp else int(height / divisor)
-	y = int(height / divisor) if not temp else int(width / divisor)
-
-	return (str(x)+'x'+str(y))
-
 #=============================================
 # callback to find the aspect ratio of videos
 #=============================================
@@ -46,7 +26,8 @@ def findAspectRatios(video):
 				break
 		
 		if(sourceH and sourceW):
-			print(videoID+': '+calculate_aspect(sourceW, sourceH))
+			x,y = mackee.CalculateAspectRatio(sourceW, sourceH)
+			print(videoID+': '+str(x)+'x'+str(y))
 		else:
 			print('No video renditions found for video ID '+videoID+'.')
 
