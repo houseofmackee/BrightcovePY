@@ -5,9 +5,19 @@ def calculate_aspect(width: int, height: int):
 	def gcd(a, b):
 		return a if b == 0 else gcd(b, a % b)
 
-	r = gcd(width, height)
-	x = int(width / r)
-	y = int(height / r)
+	temp = 0
+	if width == height:
+		return '1x1'
+
+	if width < height:
+		temp = width
+		width = height
+		height = temp
+
+	divisor = gcd(width, height)
+
+	x = int(width / divisor) if not temp else int(height / divisor)
+	y = int(height / divisor) if not temp else int(width / divisor)
 
 	return (str(x)+'x'+str(y))
 
@@ -16,12 +26,16 @@ def calculate_aspect(width: int, height: int):
 #=============================================
 def findAspectRatios(video):
 	videoID = str(video['id'])
+	deliveryType = video['delivery_type']
 	sourceW, sourceH, response = None, None, None
 
-	if(video['delivery_type'] == 'static_origin'):
+	if(deliveryType == 'static_origin'):
 		response = mackee.cms.GetRenditionList(videoID=videoID)
-	else:
+	elif(deliveryType == 'dynamic_origin'):
 		response = mackee.cms.GetDynamicRenditions(videoID=videoID)
+	else:
+		print('No video dimensions found for video ID '+videoID+' (delivery type: '+deliveryType+').')
+		return
 
 	if(response.status_code in mackee.cms.success_responses):
 		renditions = response.json()
