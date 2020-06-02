@@ -954,7 +954,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 						time.sleep(1)
 
 					retries -= 1
-					sys.stdout.write('\rRetrying now ({retries} retries left).\n'.format(retries))
+					sys.stdout.write('\rRetrying now ({remaining} retries left).\n'.format(remaining=retries))
 
 				else:
 					print('Error: failed to get non-empty API response.')
