@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+from calendar import monthrange
 from mackee import CMS
 from mackee import OAuth
 from mackee import GetAccountInfo
@@ -50,17 +51,26 @@ stopSearch = False
 while True:
 	print(f'Searching for videos created {currentYear}/{currentMonth:02}:')
 
-	for currentDay in range(1,32):
-		query = f'+created_at:{currentYear}-{currentMonth:02}-{currentDay:02}T00:00:00.000Z..{currentYear}-{currentMonth:02}-{currentDay:02}T23:59:59.000Z'
-		print(str(currentDay)+'. '+str(cms.GetVideoCount(searchQuery=query)) )
+	# get number of days in a month
+	_, daysInMonth =  monthrange(currentYear, currentMonth)
 
+	# find how many videos were created each day in a month
+	for currentDay in range(1,daysInMonth+1):
+		query = f'+created_at:{currentYear}-{currentMonth:02}-{currentDay:02}T00:00:00.000Z..{currentYear}-{currentMonth:02}-{currentDay:02}T23:59:59.000Z'
+		print(f'{currentDay}. {cms.GetVideoCount(searchQuery=query)}')
+
+	# neeeeeext month
 	currentMonth += 1
 
+	# have we reached the target year/month yet?
 	if(currentYear==endYear and currentMonth>endMonth):
 		stopSearch = True # could break here, but doing this way in case we add other exit cases
+
+	# if we are past December move on to next year and reset to January
 	elif(currentMonth>12):
 		currentYear += 1
 		currentMonth = 1
 
+	# check if we should exit the loop
 	if(stopSearch):
 		break
