@@ -48,7 +48,7 @@ currentMonth = startMonth
 stopSearch = False
 
 # loop through each month and find videos created that month
-while True:
+while not stopSearch:
 	print(f'Searching for videos created {currentYear}/{currentMonth:02}:')
 
 	# get number of days in a month
@@ -70,7 +70,3 @@ while True:
 	elif(currentMonth>12):
 		currentYear += 1
 		currentMonth = 1
-
-	# check if we should exit the loop
-	if(stopSearch):
-		break
