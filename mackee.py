@@ -700,7 +700,7 @@ class CMS(Base):
 
 class DynamicIngest(Base):
 
-	base_url = 'https://ingestion.api.brightcove.com/v1/accounts/{pubid}'
+	base_url = 'https://ingest.api.brightcove.com/v1/accounts/{pubid}'
 
 	def __init__(self, oAuth, ingestProfile=None, priorityQueue=None):
 		self.__oauth = oAuth
@@ -746,7 +746,7 @@ class DynamicIngest(Base):
 		if(self.ProfileExists(accountID=accountID, profileID=profileID) is False):
 			return None
 		headers = self.__oauth.get_headers()
-		url = ('https://ingest.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
+		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
 		data =	'{ "profile":"'+profileID+'", "master": { "use_archived_master": true } }'
 		return requests.post(url=url, headers=headers, data=data)
 
@@ -770,7 +770,7 @@ class DynamicIngest(Base):
 		elif(self.__priorityQueue is not None):
 			priority = self.__priorityQueue
 
-		url = ('https://ingest.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
+		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
 		data =	'{ "profile":"'+profile+'", "master": { "url": "'+sourceURL+'" }, "priority": "'+priority+'" }'
 		return requests.post(url=url, headers=headers, data=data)
 
