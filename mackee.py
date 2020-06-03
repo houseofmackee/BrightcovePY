@@ -741,16 +741,16 @@ class DynamicIngest(Base):
 		else:
 			return False
 	
-	def RetranscodeVideo(self, videoID, profileID, accountID=None):
+	def RetranscodeVideo(self, videoID, profileID, captureImages=True, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		if(self.ProfileExists(accountID=accountID, profileID=profileID) is False):
 			return None
 		headers = self.__oauth.get_headers()
 		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
-		data =	'{ "profile":"'+profileID+'", "master": { "use_archived_master": true } }'
+		data =	'{ "profile":"'+profileID+'", "master": { "use_archived_master": true }, "capture-images": '+str(captureImages).lower()+' }'
 		return requests.post(url=url, headers=headers, data=data)
 
-	def SubmitIngest(self, videoID, sourceURL, priorityQueue=None, callBacks=None, ingestProfile=None, accountID=None):
+	def SubmitIngest(self, videoID, sourceURL, captureImages=True, priorityQueue=None, callBacks=None, ingestProfile=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		profile = ''
@@ -771,7 +771,7 @@ class DynamicIngest(Base):
 			priority = self.__priorityQueue
 
 		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
-		data =	'{ "profile":"'+profile+'", "master": { "url": "'+sourceURL+'" }, "priority": "'+priority+'" }'
+		data =	'{ "profile":"'+profile+'", "master": { "url": "'+sourceURL+'" }, "priority": "'+priority+'", "capture-images": '+str(captureImages).lower()+' }'
 		return requests.post(url=url, headers=headers, data=data)
 
 	# get_upload_location_and_upload_file first performs an authenticated request to discover
