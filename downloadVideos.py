@@ -7,7 +7,7 @@ from clint.textui import progress # pip3 install clint
 # download highest res MP4 from a video
 #===========================================
 def downloadVideo(video):
-	videoID = str(video['id'])
+	videoID = str(video.get('id'))
 	sourceURL, sourceW, sourceH = None, 0, 0
 
 	# get sources for the video and try to find the biggest MP4 video
@@ -16,7 +16,7 @@ def downloadVideo(video):
 		sourceType = source.get('container')
 		if(sourceType and sourceType=='MP4'):
 			w, h = source.get('width'), source.get('height')
-			if(w>sourceW):
+			if(h and w and w>sourceW):
 				sourceW, sourceH, sourceURL = w, h, source.get('src')
 
 	# if a source was found download it, using the video ID as filename
