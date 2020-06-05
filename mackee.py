@@ -702,7 +702,7 @@ class DynamicIngest(Base):
 
 	base_url = 'https://ingest.api.brightcove.com/v1/accounts/{pubid}'
 
-	def __init__(self, oAuth, ingestProfile=None, priorityQueue=None):
+	def __init__(self, oAuth, ingestProfile=None, priorityQueue='normal'):
 		self.__oauth = oAuth
 		self.SetIngestProfile(ingestProfile)
 		self.SetPriorityQueue(priorityQueue)
@@ -718,7 +718,7 @@ class DynamicIngest(Base):
 		if(priorityQueue in ['low', 'normal', 'high']):
 			self.__priorityQueue = priorityQueue
 		else:
-			self.__priorityQueue = None
+			self.__priorityQueue = 'normal'
 		return self.__priorityQueue
 
 	def GetDefaultProfiles(self, accountID=None):
@@ -741,22 +741,27 @@ class DynamicIngest(Base):
 		else:
 			return False
 	
-	def RetranscodeVideo(self, videoID, profileID, captureImages=True, accountID=None):
+	def RetranscodeVideo(self, videoID, profileID, captureImages=True, priorityQueue=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		if(self.ProfileExists(accountID=accountID, profileID=profileID) is False):
 			return None
+
+		priority = self.__priorityQueue
+		if(priorityQueue):
+			priority = priorityQueue
+
 		headers = self.__oauth.get_headers()
 		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
-		data =	'{ "profile":"'+profileID+'", "master": { "use_archived_master": true }, "capture-images": '+str(captureImages).lower()+' }'
+		data =	'{ "profile":"'+profileID+'", "master": { "use_archived_master": true }, "priority": "'+priority+'","capture-images": '+str(captureImages).lower()+' }'
 		return requests.post(url=url, headers=headers, data=data)
 
 	def SubmitIngest(self, videoID, sourceURL, captureImages=True, priorityQueue=None, callBacks=None, ingestProfile=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		profile = ''
-		priority = 'normal'
+		priority = self.__priorityQueue
 
-		if(ingestProfile is not None):
+		if(ingestProfile):
 			profile = ingestProfile
 		elif(self.__ingestProfile is None):
 			r = self.GetDefaultProfiles(accountID=accountID)
@@ -765,10 +770,8 @@ class DynamicIngest(Base):
 		else:
 			profile = self.__ingestProfile
 
-		if(priorityQueue is not None):
+		if(priorityQueue):
 			priority = priorityQueue
-		elif(self.__priorityQueue is not None):
-			priority = self.__priorityQueue
 
 		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
 		data =	'{ "profile":"'+profile+'", "master": { "url": "'+sourceURL+'" }, "priority": "'+priority+'", "capture-images": '+str(captureImages).lower()+' }'
@@ -841,10 +844,9 @@ def GetAccountInfo(input_filename=None):
 	# return the object just in case it's needed later
 	return(account, client, secret, obj)
 
-
-#
-#
-#
+#===========================================
+# calculates the aspect ratio of w and h
+#===========================================
 def CalculateAspectRatio(width: int, height: int):
 	def gcd(a, b):
 		return a if b == 0 else gcd(b, a % b)
