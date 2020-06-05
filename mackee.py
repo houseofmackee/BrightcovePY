@@ -700,10 +700,16 @@ class CMS(Base):
 
 class DynamicIngest(Base):
 
-	base_url = 'https://ingest.api.brightcove.com/v1/accounts/{pubid}'
+	# this URL is for profiles ONLY
+	base_url = 'https://ingestion.api.brightcove.com/v1/accounts/{pubid}'
+
+	#this URL is for ingest requests
+	#base_url = 'https://ingest.api.brightcove.com/v1/accounts/{pubid}'
 
 	def __init__(self, oAuth, ingestProfile=None, priorityQueue='normal'):
 		self.__oauth = oAuth
+		self.__previousProfile = None
+		self.__previousAccount = None
 		self.SetIngestProfile(ingestProfile)
 		self.SetPriorityQueue(priorityQueue)
 
@@ -735,45 +741,56 @@ class DynamicIngest(Base):
 
 	def ProfileExists(self, profileID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
+
+		# check if it's a valid cached account/profile combo
+		if(self.__previousProfile == profileID and self.__previousAccount == accountID):
+			return True
+
 		r = self.GetProfile(accountID=accountID, profileID=profileID)
 		if(r.status_code in DynamicIngest.success_responses):
+			self.__previousProfile = profileID
+			self.__previousAccount = accountID
 			return True
 		else:
 			return False
 	
-	def RetranscodeVideo(self, videoID, profileID, captureImages=True, priorityQueue=None, accountID=None):
+	def RetranscodeVideo(self, videoID, profileID=None, captureImages=True, priorityQueue=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
-		if(self.ProfileExists(accountID=accountID, profileID=profileID) is False):
-			return None
+
+		profile = self.__ingestProfile
+		if(profileID and self.ProfileExists(accountID=accountID, profileID=profileID)):
+			profile = profileID
+		elif(self.__ingestProfile is None):
+			r = self.GetDefaultProfiles(accountID=accountID)
+			if r.status_code in DynamicIngest.success_responses:
+				profile = r.json()['default_profile_id']
 
 		priority = self.__priorityQueue
 		if(priorityQueue):
 			priority = priorityQueue
 
 		headers = self.__oauth.get_headers()
-		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
-		data =	'{ "profile":"'+profileID+'", "master": { "use_archived_master": true }, "priority": "'+priority+'","capture-images": '+str(captureImages).lower()+' }'
+		url = ('https://ingest.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
+		data =	'{ "profile":"'+profile+'", "master": { "use_archived_master": true }, "priority": "'+priority+'","capture-images": '+str(captureImages).lower()+' }'
 		return requests.post(url=url, headers=headers, data=data)
 
 	def SubmitIngest(self, videoID, sourceURL, captureImages=True, priorityQueue=None, callBacks=None, ingestProfile=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		profile = ''
+		profile = self.__ingestProfile
 		priority = self.__priorityQueue
 
-		if(ingestProfile):
+		if(ingestProfile and self.ProfileExists(accountID=accountID, profileID=ingestProfile)):
 			profile = ingestProfile
 		elif(self.__ingestProfile is None):
 			r = self.GetDefaultProfiles(accountID=accountID)
 			if r.status_code in DynamicIngest.success_responses:
 				profile = r.json()['default_profile_id']
-		else:
-			profile = self.__ingestProfile
 
 		if(priorityQueue):
 			priority = priorityQueue
 
-		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
+		url = ('https://ingest.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
 		data =	'{ "profile":"'+profile+'", "master": { "url": "'+sourceURL+'" }, "priority": "'+priority+'", "capture-images": '+str(captureImages).lower()+' }'
 		return requests.post(url=url, headers=headers, data=data)
 
@@ -879,6 +896,7 @@ def list_videos(video):
 def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=None):
 	global oauth
 	global cms
+	global di
 	global opts
 	# get the account info and credentials
 	accountID,b,c,opts = GetAccountInfo(inputfile)
@@ -888,6 +906,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	
 	oauth = OAuth(accountID,b,c)
 	cms = CMS(oauth)
+	di = DynamicIngest(oauth)
 
 	# check if we should process a specific video ID
 	if(vidID):
