@@ -697,24 +697,77 @@ class CMS(Base):
 		url = (CMS.base_url+'/videos/{videoid}/assets/renditions').format(pubid=accountID, videoid=videoID)
 		return (requests.get(url, headers=headers))
 
+class IngestProfiles(Base):
+
+	base_url = 'https://ingestion.api.brightcove.com/v1/accounts/{pubid}'
+
+	def __init__(self, oAuth):
+		self.__oauth = oAuth
+		# cache for ProfileExists
+		self.__previousProfile = None
+		self.__previousAccount = None
+		# cache for GetDefaultProfile
+		self.__defaultProfileResponse = None
+		self.__defaultProfileAccount = None
+		# cache for GetProfile
+		self.__getProfileAccount = None
+		self.__getProfileID = None
+		self.__getProfileResponse = None
+
+	def GetDefaultProfiles(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		# if it's not the same as before then find it and cache it
+		if(accountID != self.__defaultProfileAccount):
+			headers = self.__oauth.get_headers()
+			url = (IngestProfiles.base_url+'/configuration').format(pubid=accountID)
+			self.__defaultProfileResponse = requests.get(url=url, headers=headers)
+			self.__defaultProfileAccount = accountID
+		# return cached response
+		return self.__defaultProfileResponse
+	
+	def GetProfile(self, profileID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		# if it's not the same as before then find it and cache it
+		if(self.__getProfileAccount != accountID or self.__getProfileID != profileID):
+			headers = self.__oauth.get_headers()
+			url = (IngestProfiles.base_url+'/profiles/{profileid}').format(pubid=accountID, profileid=profileID)
+			self.__getProfileID = profileID
+			self.__getProfileAccount = accountID
+			self.__getProfileResponse = requests.get(url=url, headers=headers)
+		# return cached response
+		return self.__getProfileResponse
+
+	def ProfileExists(self, profileID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+
+		# check if it's a valid cached account/profile combo
+		if(self.__previousProfile == profileID and self.__previousAccount == accountID):
+			return True
+
+		r = self.GetProfile(accountID=accountID, profileID=profileID)
+		if(r.status_code in IngestProfiles.success_responses):
+			self.__previousProfile = profileID
+			self.__previousAccount = accountID
+			return True
+		else:
+			return False
 
 class DynamicIngest(Base):
 
-	# this URL is for profiles ONLY
-	base_url = 'https://ingestion.api.brightcove.com/v1/accounts/{pubid}'
-
-	#this URL is for ingest requests
-	#base_url = 'https://ingest.api.brightcove.com/v1/accounts/{pubid}'
+	base_url = 'https://ingest.api.brightcove.com/v1/accounts/{pubid}'
 
 	def __init__(self, oAuth, ingestProfile=None, priorityQueue='normal'):
 		self.__oauth = oAuth
 		self.__previousProfile = None
 		self.__previousAccount = None
+		self.__ingestProfile = None
+		self.__priorityQueue = priorityQueue
+		self.__ip = IngestProfiles(oAuth)
 		self.SetIngestProfile(ingestProfile)
 		self.SetPriorityQueue(priorityQueue)
 
 	def SetIngestProfile(self, profileID):
-		if(self.ProfileExists(accountID=self.__oauth.account_id, profileID=profileID)):
+		if(self.__ip.ProfileExists(accountID=self.__oauth.account_id, profileID=profileID)):
 			self.__ingestProfile = profileID
 		else:
 			self.__ingestProfile = None
@@ -726,42 +779,15 @@ class DynamicIngest(Base):
 		else:
 			self.__priorityQueue = 'normal'
 		return self.__priorityQueue
-
-	def GetDefaultProfiles(self, accountID=None):
-		accountID = accountID or self.__oauth.account_id
-		headers = self.__oauth.get_headers()
-		url = (DynamicIngest.base_url+'/configuration').format(pubid=accountID)
-		return requests.get(url=url, headers=headers)
-	
-	def GetProfile(self, profileID, accountID=None):
-		accountID = accountID or self.__oauth.account_id
-		headers = self.__oauth.get_headers()
-		url = (DynamicIngest.base_url+'/profiles/{profileid}').format(pubid=accountID, profileid=profileID)
-		return requests.get(url=url, headers=headers)
-
-	def ProfileExists(self, profileID, accountID=None):
-		accountID = accountID or self.__oauth.account_id
-
-		# check if it's a valid cached account/profile combo
-		if(self.__previousProfile == profileID and self.__previousAccount == accountID):
-			return True
-
-		r = self.GetProfile(accountID=accountID, profileID=profileID)
-		if(r.status_code in DynamicIngest.success_responses):
-			self.__previousProfile = profileID
-			self.__previousAccount = accountID
-			return True
-		else:
-			return False
 	
 	def RetranscodeVideo(self, videoID, profileID=None, captureImages=True, priorityQueue=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 
 		profile = self.__ingestProfile
-		if(profileID and self.ProfileExists(accountID=accountID, profileID=profileID)):
+		if(profileID and self.__ip.ProfileExists(accountID=accountID, profileID=profileID)):
 			profile = profileID
 		elif(self.__ingestProfile is None):
-			r = self.GetDefaultProfiles(accountID=accountID)
+			r = self.__ip.GetDefaultProfiles(accountID=accountID)
 			if r.status_code in DynamicIngest.success_responses:
 				profile = r.json()['default_profile_id']
 
@@ -770,7 +796,7 @@ class DynamicIngest(Base):
 			priority = priorityQueue
 
 		headers = self.__oauth.get_headers()
-		url = ('https://ingest.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
+		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
 		data =	'{ "profile":"'+profile+'", "master": { "use_archived_master": true }, "priority": "'+priority+'","capture-images": '+str(captureImages).lower()+' }'
 		return requests.post(url=url, headers=headers, data=data)
 
@@ -780,17 +806,17 @@ class DynamicIngest(Base):
 		profile = self.__ingestProfile
 		priority = self.__priorityQueue
 
-		if(ingestProfile and self.ProfileExists(accountID=accountID, profileID=ingestProfile)):
+		if(ingestProfile and self.__ip.ProfileExists(accountID=accountID, profileID=ingestProfile)):
 			profile = ingestProfile
 		elif(self.__ingestProfile is None):
-			r = self.GetDefaultProfiles(accountID=accountID)
+			r = self.__ip.GetDefaultProfiles(accountID=accountID)
 			if r.status_code in DynamicIngest.success_responses:
 				profile = r.json()['default_profile_id']
 
 		if(priorityQueue):
 			priority = priorityQueue
 
-		url = ('https://ingest.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
+		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
 		data =	'{ "profile":"'+profile+'", "master": { "url": "'+sourceURL+'" }, "priority": "'+priority+'", "capture-images": '+str(captureImages).lower()+' }'
 		return requests.post(url=url, headers=headers, data=data)
 
@@ -799,7 +825,7 @@ class DynamicIngest(Base):
 	def UploadFile(self, videoID, fileName, callBack=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		# Perform an authorized request to obtain a file upload location
-		url = ('https://cms.api.brightcove.com/v1/accounts/{pubid}/videos/{videoid}/upload-urls/{sourcefilename}').format(pubid=accountID, videoid=videoID, sourcefilename=fileName)
+		url = (CMS.base_url+'/videos/{videoid}/upload-urls/{sourcefilename}').format(pubid=accountID, videoid=videoID, sourcefilename=fileName)
 		r = requests.get(url=url, headers=self.__oauth.get_headers())
 		if(r.status_code in DynamicIngest.success_responses):
 			upload_urls_response = r.json()
