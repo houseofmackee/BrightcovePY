@@ -697,6 +697,26 @@ class CMS(Base):
 		url = (CMS.base_url+'/videos/{videoid}/assets/renditions').format(pubid=accountID, videoid=videoID)
 		return (requests.get(url, headers=headers))
 
+class XDR(Base):
+
+	base_url = 'https://data.brightcove.com/v1/xdr/accounts/{pubid}'
+
+	def __init__(self, oAuth):
+		self.__oauth = oAuth
+
+	def GetViewerPlayheads(self, viewerID, limit=1000, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		limit = 1000 if (limit>10000 or limit<1) else limit
+		url = (XDR.base_url+'/playheads/{viewerid}?limit={limit}').format(pubid=accountID, viewerid=viewerID, limit=limit)
+		return requests.get(url=url, headers=headers)
+
+	def GetViewerVideoPlayheads(self, viewerID, videoID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (XDR.base_url+'/playheads/{viewerid}/{videoid}').format(pubid=accountID, viewerid=viewerID, videoid=videoID)
+		return requests.get(url=url, headers=headers)
+
 class IngestProfiles(Base):
 
 	base_url = 'https://ingestion.api.brightcove.com/v1/accounts/{pubid}'
