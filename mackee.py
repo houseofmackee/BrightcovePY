@@ -714,7 +714,7 @@ class IngestProfiles(Base):
 		self.__getProfileID = None
 		self.__getProfileResponse = None
 
-	def GetDefaultProfiles(self, accountID=None):
+	def GetDefaultProfile(self, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		# if it's not the same as before then find it and cache it
 		if(accountID != self.__defaultProfileAccount):
@@ -725,7 +725,7 @@ class IngestProfiles(Base):
 		# return cached response
 		return self.__defaultProfileResponse
 	
-	def GetProfile(self, profileID, accountID=None):
+	def GetIngestProfile(self, profileID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		# if it's not the same as before then find it and cache it
 		if(self.__getProfileAccount != accountID or self.__getProfileID != profileID):
@@ -744,13 +744,57 @@ class IngestProfiles(Base):
 		if(self.__previousProfile == profileID and self.__previousAccount == accountID):
 			return True
 
-		r = self.GetProfile(accountID=accountID, profileID=profileID)
+		r = self.GetIngestProfile(accountID=accountID, profileID=profileID)
 		if(r.status_code in IngestProfiles.success_responses):
 			self.__previousProfile = profileID
 			self.__previousAccount = accountID
 			return True
 		else:
 			return False
+
+	def UpdateDefaultProfile(self, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		self.__previousProfile = None
+		self.__previousAccount = None
+		headers = self.__oauth.get_headers()
+		url = (IngestProfiles.base_url+'/configuration').format(pubid=accountID)
+		return requests.put(url=url, headers=headers, data=jsonBody)
+
+	def SetDefaultProfile(self, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		self.__previousProfile = None
+		self.__previousAccount = None
+		headers = self.__oauth.get_headers()
+		url = (IngestProfiles.base_url+'/configuration').format(pubid=accountID)
+		return requests.post(url=url, headers=headers, data=jsonBody)
+
+	def DeleteIngestProfile(self, profileID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		self.__previousProfile = None
+		self.__previousAccount = None
+		headers = self.__oauth.get_headers()
+		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(pubid=accountID,profileid=profileID)
+		return requests.delete(url=url, headers=headers)
+
+	def UpdateIngestProfile(self, profileID, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		self.__previousProfile = None
+		self.__previousAccount = None
+		headers = self.__oauth.get_headers()
+		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(pubid=accountID,profileid=profileID)
+		return requests.put(url=url, headers=headers, data=jsonBody)
+
+	def CreateIngestProfile(self, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (IngestProfiles.base_url+'/profiles').format(pubid=accountID)
+		return requests.post(url=url, headers=headers, data=jsonBody)
+
+	def GetAllIngestProfiles(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (IngestProfiles.base_url+'/profiles').format(pubid=accountID)
+		return requests.get(url=url, headers=headers)
 
 class DynamicIngest(Base):
 
@@ -787,7 +831,7 @@ class DynamicIngest(Base):
 		if(profileID and self.__ip.ProfileExists(accountID=accountID, profileID=profileID)):
 			profile = profileID
 		elif(self.__ingestProfile is None):
-			r = self.__ip.GetDefaultProfiles(accountID=accountID)
+			r = self.__ip.GetDefaultProfile(accountID=accountID)
 			if r.status_code in DynamicIngest.success_responses:
 				profile = r.json()['default_profile_id']
 
@@ -809,7 +853,7 @@ class DynamicIngest(Base):
 		if(ingestProfile and self.__ip.ProfileExists(accountID=accountID, profileID=ingestProfile)):
 			profile = ingestProfile
 		elif(self.__ingestProfile is None):
-			r = self.__ip.GetDefaultProfiles(accountID=accountID)
+			r = self.__ip.GetDefaultProfile(accountID=accountID)
 			if r.status_code in DynamicIngest.success_responses:
 				profile = r.json()['default_profile_id']
 
