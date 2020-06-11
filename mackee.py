@@ -954,7 +954,7 @@ def GetAccountInfo(input_filename=None):
 #===========================================
 # calculates the aspect ratio of w and h
 #===========================================
-def CalculateAspectRatio(width: int, height: int):
+def CalculateAspectRatio(width , height):
 	def gcd(a, b):
 		return a if b == 0 else gcd(b, a % b)
 
