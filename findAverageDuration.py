@@ -6,11 +6,9 @@ totalDuration = 0
 
 def convertMillis(millis):
 	millis = int(millis)
-	seconds=(millis/1000)%60
-	seconds = int(seconds)
-	minutes=(millis/(1000*60))%60
-	minutes = int(minutes)
-	hours=int((millis/(1000*60*60))%24)
+	seconds = int((millis/1000)%60)
+	minutes = int((millis/(1000*60))%60)
+	hours = int((millis/(1000*60*60))%24)
 	return f'{hours:02}:{minutes:02}:{seconds:02}'
 
 #===========================================
