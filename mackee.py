@@ -979,10 +979,16 @@ def CalculateAspectRatio(width , height):
 #===========================================
 def ConvertMilliseconds(millis):
 	millis = int(millis)
-	seconds = int((millis/1000)%60)
-	minutes = int((millis/(1000*60))%60)
-	hours = int((millis/(1000*60*60))%24)
-	return '{hours:02}:{minutes:02}:{seconds:02}'.format(hours=hours, minutes=minutes, seconds=seconds)
+	_seconds = int((millis/1000)%60)
+	_minutes = int((millis/(1000*60))%60)
+	_hours = int((millis/(1000*60*60))%24)
+	return '{hours:02}:{minutes:02}:{seconds:02}'.format(hours=_hours, minutes=_minutes, seconds=_seconds)
+
+#===========================================
+# convert seconds to HH:MM:SS string
+#===========================================
+def ConvertSeconds(seconds):
+	return ConvertMilliseconds(int(seconds)*1000)
 
 #===========================================
 # default processing function
