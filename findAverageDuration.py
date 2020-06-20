@@ -14,7 +14,7 @@ def findAverageDuration(video):
 	duration = video.get('duration')
 	if(duration):
 		numberVideos += 1
-		totalDuration += duration
+		totalDuration += (duration/1000)
 
 #===========================================
 # only run code if it's not imported
@@ -22,4 +22,4 @@ def findAverageDuration(video):
 if __name__ == '__main__':
 	mackee.main(findAverageDuration)
 	if(numberVideos>0):
-		print(f'Average duration for {numberVideos} videos is {mackee.ConvertMilliseconds(totalDuration/numberVideos)}')
+		print(f'Average duration for {numberVideos} videos is {mackee.ConvertSeconds(totalDuration/numberVideos)}')
