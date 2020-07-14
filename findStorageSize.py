@@ -5,12 +5,11 @@ import mackee
 # function to get size of master
 #===========================================
 def getMasterStorage(video):
-	if(video['has_digital_master']):
+	if(video.get('has_digital_master')):
 		shared = video.get('sharing')
-		if(shared and shared['by_external_acct']):
+		if(shared and shared.get('by_external_acct')):
 			return 0
-		videoID = video['id']
-		response = mackee.cms.GetDigitalMasterInfo(videoID=videoID)
+		response = mackee.cms.GetDigitalMasterInfo(videoID=video.get('id'))
 		if(response.status_code in mackee.cms.success_responses):
 			return response.json().get('size')
 	else:
@@ -20,9 +19,9 @@ def getMasterStorage(video):
 # function to get size of all renditions
 #===========================================
 def getRenditionSizes(video):
-	videoID = video['id']
 	renSize = 0
-	response = mackee.cms.GetDynamicRenditions(videoID=videoID)
+
+	response = mackee.cms.GetDynamicRenditions(videoID=video.get('id'))
 	if(response.status_code in mackee.cms.success_responses):
 		renditions = response.json()
 		for rendition in renditions:
@@ -34,13 +33,8 @@ def getRenditionSizes(video):
 # callback to delete digital masters
 #===========================================
 def findStorageSize(video):
-	totalSize = 0
-	videoID = video['id']
-
-	totalSize += getMasterStorage(video)
-	totalSize += getRenditionSizes(video)
-
-	print(str(videoID+', '+str(totalSize)))
+	totalSize = getMasterStorage(video) + getRenditionSizes(video)
+	print(str(video.get('id'))+', '+str(totalSize))
 
 #===========================================
 # only run code if it's not imported
