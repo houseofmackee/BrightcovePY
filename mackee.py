@@ -13,6 +13,12 @@ from os.path import basename
 import abc
 ABC = abc.ABCMeta('ABC', (object,), {})
 
+# some globals
+oauth = None
+cms = None
+di = None
+opts = None
+
 class Base(ABC):
 
 	# every derived class must have a base URL
@@ -448,7 +454,7 @@ class CMS(Base):
 	def GetDigitalMasterInfo(self, videoID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{videoid}/sources').format(pubid=accountID,videoid=videoID)
+		url = (CMS.base_url+'/videos/{videoid}/digital_master').format(pubid=accountID,videoid=videoID)
 		return requests.get(url=url, headers=headers)
 
 	#===========================================
@@ -978,10 +984,9 @@ def CalculateAspectRatio(width , height):
 # convert milliseconds to HH:MM:SS string
 #===========================================
 def ConvertMilliseconds(millis):
-	millis = int(millis)
-	_seconds = int((millis/1000)%60)
-	_minutes = int((millis/(1000*60))%60)
-	_hours = int((millis/(1000*60*60))%24)
+	_seconds = int(int(millis)/1000)
+	_hours, _seconds = divmod(_seconds, 60*60)
+	_minutes, _seconds = divmod(_seconds, 60)
 	return '{hours:02}:{minutes:02}:{seconds:02}'.format(hours=_hours, minutes=_minutes, seconds=_seconds)
 
 #===========================================
