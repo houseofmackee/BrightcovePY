@@ -33,6 +33,66 @@ class Base(ABC):
 	def __init__(self):
 		pass
 
+class DeliveryRules(Base):
+	base_url = 'https://delivery-rules.api.brightcove.com/accounts/{pubid}'
+
+	def __init__(self, oauth):
+		self.__oauth = oauth
+
+	def DeliveryRulesEnabled(self, accountID=None):
+		if(self.GetDeliveryRules(accountID=accountID).status_code == 200):
+			return True
+		else:
+			return False
+
+	def GetDeliveryRules(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliveryRules.base_url).format(pubid=accountID)
+		return requests.get(url, headers=headers)
+
+	def GetConditions(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliveryRules.base_url+'/conditions').format(pubid=accountID)
+		return requests.get(url, headers=headers)
+
+	def UpdateConditions(self, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliveryRules.base_url+'/conditions').format(pubid=accountID)
+		return requests.put(url, headers=headers, data=jsonBody)
+
+	def GetActions(self, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliveryRules.base_url+'/actions').format(pubid=accountID)
+		return requests.get(url, headers=headers)
+
+	def GetSpecificAction(self, actionID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliveryRules.base_url+'/actions/{action_id}').format(pubid=accountID, action_id=actionID)
+		return requests.get(url, headers=headers)
+
+	def CreateAction(self, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliveryRules.base_url+'/actions').format(pubid=accountID)
+		return requests.post(url, headers=headers, data=jsonBody)
+
+	def UpdateAction(self, actionID, jsonBody, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliveryRules.base_url+'/actions/{action_id}').format(pubid=accountID, action_id=actionID)
+		return requests.put(url, headers=headers, data=jsonBody)
+
+	def DeleteAction(self, actionID, accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (DeliveryRules.base_url+'/actions/{action_id}').format(pubid=accountID, action_id=actionID)
+		return requests.delete(url, headers=headers)
+
 class SocialSyndication(Base):
 
 	base_url = 'https://social.api.brightcove.com/v1/accounts/{pubid}/mrss/syndications'
