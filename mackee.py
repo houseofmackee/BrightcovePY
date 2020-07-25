@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from __future__ import print_function
 import sys
 import json
 import argparse
@@ -18,6 +19,10 @@ oauth = None
 cms = None
 di = None
 opts = None
+
+# funtion to print to stderr
+def eprint(*args, **kwargs):
+	print(*args, file=sys.stderr, **kwargs)
 
 class Base(ABC):
 
@@ -695,7 +700,6 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists/{playlistid}/videos?include_details={details}').format(pubid=accountID, playlistid=playlistID, details=('false','true')[includeDetails])
-		print(url)
 		return (requests.get(url, headers=headers))
 
 	def GetVideoCountInPlaylist(self, playlistID, accountID=None):
@@ -995,7 +999,7 @@ def GetAccountInfo(input_filename=None):
 	try:
 		myfile = open(input_filename, 'r')
 	except:
-		print(('Error: unable to open {filename}').format(filename=input_filename))
+		eprint(('Error: unable to open {filename}').format(filename=input_filename))
 		return None, None, None, None
 
 	# read and parse config file
@@ -1087,7 +1091,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 			processVideo(video.json())
 			return True
 		else:
-			print(('Error getting information for video ID {videoid}.').format(videoid=vidID))
+			eprint(('Error getting information for video ID {videoid}.').format(videoid=vidID))
 			return False
 
 	# check if we should process a given list of videos
@@ -1101,7 +1105,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 			if(video.status_code in CMS.success_responses):
 				processVideo(video.json())
 			else:
-				print(('Error getting information for video ID {videoid}.').format(videoid=videoID))
+				eprint(('Error getting information for video ID {videoid}.').format(videoid=videoID))
 
 		return True
 
@@ -1139,17 +1143,17 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 			# looks like we got an empty response (it can happen)
 			else:
 				if(retries>0):
-					print('Error: empty API response received.')
+					eprint('Error: empty API response received.')
 					for remaining in range(10, 0, -1):
-						sys.stdout.write('\rRetrying in {:2d} seconds.'.format(remaining))
-						sys.stdout.flush()
+						sys.stderr.write('\rRetrying in {:2d} seconds.'.format(remaining))
+						sys.stderr.flush()
 						time.sleep(1)
 
 					retries -= 1
-					sys.stdout.write('\rRetrying now ({remaining} retries left).\n'.format(remaining=retries))
+					eprint('\rRetrying now ({remaining} retries left).'.format(remaining=retries))
 
 				else:
-					print('Error: failed to get non-empty API response.')
+					eprint('Error: failed to get non-empty API response.')
 					return False
 
 		# token probably expired
@@ -1157,14 +1161,14 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 			if(retries>0):
 				retries -= 1
 			else:
-				print('Error: possible problem with OAuth token:')
-				print(r.content)
+				eprint('Error: possible problem with OAuth token:')
+				eprint(r.content)
 				return False
 
 		# we received an unexpected status code, let's get out of here
 		else:
-			print('Error: Received unexpected status code {status}:'.format(r.status_code))
-			print(r.json())
+			eprint('Error: Received unexpected status code {status}:'.format(r.status_code))
+			eprint(r.json())
 			return False
 
 	return True
