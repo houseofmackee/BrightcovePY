@@ -34,8 +34,8 @@ def getCreatedByReport(video):
 
 	videosProcessed += 1
 	if(videosProcessed%100==0):
-		mackee.sys.stdout.write(f'\r{videosProcessed} processed...')
-		mackee.sys.stdout.flush()
+		mackee.sys.stderr.write(f'\r{videosProcessed} processed...')
+		mackee.sys.stderr.flush()
 
 #===========================================
 # only run code if it's not imported
@@ -43,7 +43,7 @@ def getCreatedByReport(video):
 if __name__ == '__main__':
 	mackee.main(getCreatedByReport)
 
-	print(f'\r{videosProcessed} processed...')
-
+	mackee.eprint(f'\r{videosProcessed} processed...')
+	print('user_id, number_videos')
 	for x in createdByDict:
 		print(f'{x}, {createdByDict[x]}')
