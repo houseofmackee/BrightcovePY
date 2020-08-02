@@ -10,6 +10,27 @@ try:
 except ImportError:
 	pandas = None
 
+cms = None
+
+# function to check if a video ID is valid and then delete it
+def deleteVideo(videoID):
+	global cms
+	# is it a float?
+	if(type(videoID) is float):
+		if(not math.isnan(videoID)):
+			videoID = int(videoID)
+		else:
+			videoID = None
+	# is it a string?
+	elif (type(videoID) is str):
+		try:
+			videoID = int(videoID)
+		except:
+			videoID = None
+	# is it an int?
+	if(type(videoID) is int):
+		print('Deleting video ID "'+str(videoID)+''": "+ str(cms.DeleteVideo(videoID=videoID).status_code))
+
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
 parser.add_argument('--config', metavar='<config filename>', type=str, help='Name and path of account config information file')
@@ -36,21 +57,7 @@ cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client
 if(pandas and args.xls and args.column):
 	data = pandas.read_excel(args.xls) 
 	for videoID in data[args.column]:
-		# is it a float?
-		if(type(videoID) is float):
-			if(not math.isnan(videoID)):
-				videoID = int(videoID)
-			else:
-				videoID = None
-		# is it a string?
-		elif (type(videoID) is str):
-			try:
-				videoID = int(videoID)
-			except:
-				videoID = None
-		# is it an int?
-		if(type(videoID) is int):
-			print('Deleting video ID "'+str(videoID)+''": "+ str(cms.DeleteVideo(videoID=videoID).status_code))
+		deleteVideo(videoID)
 
 # no pandas, so just use the options from the config file
 else:
@@ -59,8 +66,8 @@ else:
 
 	# either no list or "all" was found -> bail
 	if(not videoList or videoList[0] == 'all'):
-		print('Error: detected "all" option -> exiting because it is dangerous')
-	# delete 'am all
+		print('Error: invalid or missing list of videos in config file.')
+	# delete 'em
 	else:
 		for videoID in videoList:
-			print('Deleting video ID "'+str(videoID)+''": "+ str(cms.DeleteVideo(videoID=videoID).status_code))
+			deleteVideo(videoID)
