@@ -41,7 +41,19 @@ if(args.delete):
 
 # add a key
 if(args.add):
-	print(jwt.RegisterKey(keyData=args.add).text)
+	private_key = ''
+	try:
+		with open(args.add, 'r') as file:
+			lines = file.readlines()
+
+			for line in lines:
+				if(not '-----' in line):
+					private_key += line.strip()
+	except:
+		print('Error trying to access private keyfile "'+str(args.keyfile)+'".')
+		sys.exit(2)
+
+	print(jwt.RegisterKey(keyData=private_key).text)
 
 # show all keys
 if(args.list):
