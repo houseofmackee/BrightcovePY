@@ -10,7 +10,13 @@ try:
 except ImportError:
 	pandas = None
 
+# account/API credentials (can be None to use user defaults)
+account_id = None
+client_id = None
+client_secret = None
+
 cms = None
+opts = None
 
 # function to check if a video ID is valid and then delete it
 def deleteVideo(videoID):
@@ -43,8 +49,9 @@ if(pandas):
 # parse the args
 args = parser.parse_args()
 
-# get account info from config file
-account_id, client_id, client_secret, opts = GetAccountInfo(args.config)
+# get account info from config file if not hardcoded
+if( account_id is None and client_id is None and client_secret is None):
+	account_id, client_id, client_secret, opts = GetAccountInfo(args.config)
 
 # if account ID was provided override the one from config
 if(args.account):
@@ -60,7 +67,7 @@ if(pandas and args.xls and args.column):
 		deleteVideo(videoID)
 
 # no pandas, so just use the options from the config file
-else:
+elif(opts):
 	# get list of videos from config file
 	videoList = opts.get('video_ids')
 
