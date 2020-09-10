@@ -15,6 +15,8 @@ account_id = None
 client_id = None
 client_secret = None
 
+column_name = 'video_id'
+
 cms = None
 opts = None
 
@@ -57,13 +59,17 @@ if( account_id is None and client_id is None and client_secret is None):
 if(args.account):
 	account_id = args.account
 
+# if a column name was passed then use that
+if(args.column):
+	column_name = args.column
+
 # create a CMS API instance
 cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # if we have pandas and an xls and column then use that
-if(pandas and args.xls and args.column):
+if(pandas and args.xls):
 	data = pandas.read_excel(args.xls) 
-	for videoID in data[args.column]:
+	for videoID in data[column_name]:
 		deleteVideo(videoID)
 
 # no pandas, so just use the options from the config file
