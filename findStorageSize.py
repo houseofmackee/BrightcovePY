@@ -5,15 +5,16 @@ import mackee
 # function to get size of master
 #===========================================
 def getMasterStorage(video):
+	masterSize = 0
 	if(video.get('has_digital_master')):
 		shared = video.get('sharing')
 		if(shared and shared.get('by_external_acct')):
 			return 0
 		response = mackee.cms.GetDigitalMasterInfo(videoID=video.get('id'))
-		if(response.status_code in mackee.cms.success_responses):
-			return response.json().get('size')
-	else:
-		return 0
+		if(response.status_code == 200):
+			masterSize = response.json().get('size')
+
+	return masterSize
 
 #===========================================
 # function to get size of all renditions
