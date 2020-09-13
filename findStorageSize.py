@@ -31,7 +31,7 @@ def getRenditionSizes(video):
 	return renSize
 
 #===========================================
-# callback to delete digital masters
+# callback getting storage sizes
 #===========================================
 def findStorageSize(video):
 	totalSize = getMasterStorage(video) + getRenditionSizes(video)
