@@ -18,7 +18,7 @@ def getMasterStorage(video):
 	return masterSize
 
 #===========================================
-# callback to delete digital masters
+# callback to get digital master size
 #===========================================
 def findStorageSize(video):
 	print(str(video.get('id'))+', '+str(getMasterStorage(video)))
