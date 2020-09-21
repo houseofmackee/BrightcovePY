@@ -19,6 +19,7 @@ oauth = None
 cms = None
 di = None
 opts = None
+args = None
 
 # funtion to print to stderr
 def eprint(*args, **kwargs):
@@ -1182,8 +1183,10 @@ def main(process_func):
 	parser.add_argument('-i', type=str, help='Name and path of account config information file')
 	parser.add_argument('-q', type=str, help='CMS API search query')
 	parser.add_argument('-v', type=str, help='Specific video ID to process')
+	parser.add_argument('-o', type=str, help='Output filename')
 
 	# parse the args
+	global args
 	args = parser.parse_args()
 
 	# go through the library and do stuff
