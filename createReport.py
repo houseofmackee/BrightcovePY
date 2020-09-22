@@ -3,7 +3,7 @@ import mackee
 import json
 import csv
 
-row_list = [ ['id', 'name', 'status', 'reference_id', 'created_at', 'tags'] ]
+row_list = [ ['id', 'name', 'state', 'reference_id', 'created_at', 'tags'] ]
 
 videosProcessed = 0
 
@@ -35,6 +35,12 @@ if __name__ == '__main__':
 	showProgress(videosProcessed)
 
 	#write list to file
-	with open('report.csv' if not mackee.args.o else mackee.args.o, 'w', newline='', encoding='utf-8') as file:
-		writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
-		writer.writerows(row_list)
+	try:
+		with open('report.csv' if not mackee.args.o else mackee.args.o, 'w', newline='', encoding='utf-8') as file:
+			try:
+				writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
+				writer.writerows(row_list)
+			except Exception as e:
+				mackee.eprint(f'\nError writing CSV data to file: {e}')
+	except Exception as e:
+		mackee.eprint(f'\nError creating outputfile: {e}')
