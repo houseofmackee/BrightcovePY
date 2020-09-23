@@ -74,17 +74,36 @@ if(args.xls):
 
 	# check if all ref IDs are unique
 	numRows = len(data)
-	if( data[ref_id_col].nunique() != numRows ):
-		print('Error: not all ref IDs are unique.')
+
+	# get the columns
+	ref_data = data[ref_id_col]
+	video_data = data[video_id_col]
+
+	# check if all ref IDs are unique
+	# can't use if( data[ref_id_col].nunique() != numRows ):
+	isUnique = True
+	for countA in range(numRows-1):
+		valueA = ref_data[countA]
+		for countB in range(countA+1, numRows):
+			valueB = ref_data[countB]
+			if(valueA==valueB):
+				print(f'Error: ref IDs are not unique -> {countA+2}, {countB+2}, {valueA}')
+				isUnique = False
+
+	if(video_data.nunique() != numRows):
+		print('Error: video IDs are not unique')
+		isUnique = False
+
+	if(not isUnique):
 		sys.exit(2)
 
 	if(args.validate):
-		print('Reference IDs are unique.')
+		print('Reference IDs and video IDs are unique.')
 		sys.exit(2)
 
 	for row in range(0, len(data) ):
-		videoID = int(data[video_id_col].values[row])
-		refID = str(data[ref_id_col].values[row])
+		videoID = int(video_data[row])
+		refID = str(ref_data[row])
 
 		jsonBody = ('{ "reference_id":"' + refID + '" }')
 
