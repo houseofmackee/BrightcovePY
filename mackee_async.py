@@ -1078,6 +1078,8 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	global di
 	global opts
 
+	max_threads = 10
+
 	# worker class for multithreading
 	class Worker(threading.Thread):
 		def __init__(self, q, *args, **kwargs):
@@ -1114,7 +1116,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 
 	# check if we should process a specific video ID
 	if(vidID):
-		print(('Processing video ID {videoid} now.').format(videoid=vidID))
+		eprint(('Processing video ID {videoid} now.').format(videoid=vidID))
 		video = cms.GetVideo(accountID=accountID, videoID=vidID)
 		if(video.status_code in CMS.success_responses):
 			processVideo(video.json())
@@ -1126,20 +1128,17 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	# check if we should process a given list of videos
 	videoList = opts.get('video_ids')
 	if(videoList and videoList[0] != 'all'):
-		print(('Found {numVideos} videos in options file. Processing them now.').format(numVideos=len(videoList)))
-
+		eprint(('Found {numVideos} videos in options file. Processing them now.').format(numVideos=len(videoList)))
+		# let's put all video IDs in a queue
 		q = queue.Queue(maxsize=0)
-		num_threads = min(10, len(videoList))
-
 		for videoID in videoList:
 			q.put_nowait(videoID)
-
-		#Starting worker threads on queue processing
+		# starting worker threads on queue processing
+		num_threads = min(max_threads, len(videoList))
 		for _ in range(num_threads):
 			Worker(q).start()
-		#now we wait until the queue has been processed
+		# now we wait until the queue has been processed
 		q.join()
-
 		return True
 
 	# if a query was passed along URI encode it
@@ -1153,9 +1152,9 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	numVideos = cms.GetVideoCount(searchQuery=searchQuery)
 
 	if(numVideos>0):
-		print(('Found {numVideos} videos in library. Processing them now.').format(numVideos=numVideos))
+		eprint(('Found {numVideos} videos in library. Processing them now.').format(numVideos=numVideos))
 	else:
-		print(('No videos found in account ID {pubid}''s library.').format(pubid=oauth.account_id))
+		eprint(('No videos found in account ID {pubid}''s library.').format(pubid=oauth.account_id))
 		return False
 
 	currentOffset = 0
@@ -1169,21 +1168,20 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 			json_data = json.loads(r.text)
 			# make sure we actually got some data
 			if(len(json_data) > 0):
-
+				# let's put all videos in a queue
 				q = queue.Queue(maxsize=0)
-				num_threads = min(10, len(json_data))
-
 				for video in json_data:
 					q.put_nowait(video)
-
-				#Starting worker threads on queue processing
+				# starting worker threads on queue processing
+				num_threads = min(max_threads, len(json_data))
 				for _ in range(num_threads):
 					Worker(q).start()
-				#now we wait until the queue has been processed
+				# now we wait until the queue has been processed
 				q.join()
-
+				# reset retries count and increase page offset
 				retries = 10
 				currentOffset += pageSize
+
 			# looks like we got an empty response (it can happen)
 			else:
 				if(retries>0):
