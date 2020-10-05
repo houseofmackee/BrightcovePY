@@ -12,7 +12,6 @@ from requests_toolbelt import MultipartEncoder # pip3 install requests_toolbelt
 from os.path import expanduser
 from os.path import basename
 
-
 # provide abstract class functionality for Python 2 and 3
 import abc
 ABC = abc.ABCMeta('ABC', (object,), {})
