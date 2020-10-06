@@ -1,8 +1,10 @@
 #!/usr/bin/env python3
 import mackee
 from threading import Thread
+from threading import Lock
 
 videosProcessed = 0
+counter_lock = Lock()
 
 def showProgress(progress):
 	mackee.sys.stderr.write(f'\r{progress} processed...\r')
@@ -65,7 +67,9 @@ def findStorageSize(video):
 
 	print(f'{videoId}, {masterSize}, {renditionSize}')
 
+	counter_lock.acquire()
 	videosProcessed += 1
+	counter_lock.release()
 	if(videosProcessed%100==0):
 		showProgress(videosProcessed)
 
