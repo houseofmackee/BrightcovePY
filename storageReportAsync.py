@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import mackee_async as mackee
+import mackee
 from threading import Thread
 
 videosProcessed = 0
