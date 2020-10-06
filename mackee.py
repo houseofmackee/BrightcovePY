@@ -4,6 +4,8 @@ import sys
 import json
 import argparse
 import time
+import queue
+import threading
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
 from requests_toolbelt import MultipartEncoder # pip3 install requests_toolbelt
@@ -98,6 +100,37 @@ class DeliveryRules(Base):
 		headers = self.__oauth.get_headers()
 		url = (DeliveryRules.base_url+'/actions/{action_id}').format(pubid=accountID, action_id=actionID)
 		return requests.delete(url, headers=headers)
+
+class Social(Base):
+
+	base_url = 'https://edge.social.api.brightcove.com/v1/accounts/{pubid}'
+
+	def __init__(self, oauth):
+		self.__oauth = oauth
+
+	def ListStatusForVideos(self, searchQuery='', accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (Social.base_url+'/videos/status?{query_string}').format(pubid=accountID, query_string=searchQuery)
+		return requests.get(url, headers=headers)
+
+	def ListStatusForVideo(self, videoID, searchQuery='', accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (Social.base_url+'/videos/{video_id}/status?{query_string}').format(pubid=accountID, video_id=videoID, query_string=searchQuery)
+		return requests.get(url, headers=headers)
+
+	def ListHistoryForVideos(self, searchQuery='', accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (Social.base_url+'/videos/history?{query_string}').format(pubid=accountID, query_string=searchQuery)
+		return requests.get(url, headers=headers)
+
+	def ListHistoryForVideo(self, videoID, searchQuery='', accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (Social.base_url+'/videos/{video_id}/history?{query_string}').format(pubid=accountID, video_id=videoID, query_string=searchQuery)
+		return requests.get(url, headers=headers)
 
 class SocialSyndication(Base):
 
@@ -1074,6 +1107,31 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	global cms
 	global di
 	global opts
+
+	# worker class for multithreading
+	class Worker(threading.Thread):
+		def __init__(self, q, *args, **kwargs):
+			self.q = q
+			super().__init__(*args, **kwargs)
+		def run(self):
+			while True:
+				try:
+					work = self.q.get(timeout=3)  # 3s timeout
+				except queue.Empty:
+					return
+				# do whatever work you have to do on work
+
+				if(type(work) == dict):
+					processVideo(work)
+				else:
+					video = cms.GetVideo(accountID=accountID, videoID=work)
+					if(video.status_code in CMS.success_responses):
+						processVideo(video.json())
+					else:
+						eprint(('Error getting information for video ID {videoid}.').format(videoid=work))
+
+				self.q.task_done()
+
 	# get the account info and credentials
 	accountID,b,c,opts = GetAccountInfo(inputfile)
 
@@ -1083,6 +1141,9 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	oauth = OAuth(accountID,b,c)
 	cms = CMS(oauth)
 	di = DynamicIngest(oauth)
+
+	# if async is enabled use more than one thread
+	max_threads = 10 if args.a else 1
 
 	# check if we should process a specific video ID
 	if(vidID):
@@ -1098,16 +1159,17 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	# check if we should process a given list of videos
 	videoList = opts.get('video_ids')
 	if(videoList and videoList[0] != 'all'):
-		print(('Found {numVideos} videos in options file. Processing them now.').format(numVideos=len(videoList)))
+		eprint(('Found {numVideos} videos in options file. Processing them now.').format(numVideos=len(videoList)))
+		# let's put all video IDs in a queue
+		q = queue.Queue(maxsize=0)
 		for videoID in videoList:
-			#if(videoID=='all'): # not needed?
-			#	continue
-			video = cms.GetVideo(accountID=accountID, videoID=videoID)
-			if(video.status_code in CMS.success_responses):
-				processVideo(video.json())
-			else:
-				eprint(('Error getting information for video ID {videoid}.').format(videoid=videoID))
-
+			q.put_nowait(videoID)
+		# starting worker threads on queue processing
+		num_threads = min(max_threads, len(videoList))
+		for _ in range(num_threads):
+			Worker(q).start()
+		# now we wait until the queue has been processed
+		q.join()
 		return True
 
 	# if a query was passed along URI encode it
@@ -1121,9 +1183,9 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	numVideos = cms.GetVideoCount(searchQuery=searchQuery)
 
 	if(numVideos>0):
-		print(('Found {numVideos} videos in library. Processing them now.').format(numVideos=numVideos))
+		eprint(('Found {numVideos} videos in library. Processing them now.').format(numVideos=numVideos))
 	else:
-		print(('No videos found in account ID {pubid}''s library.').format(pubid=oauth.account_id))
+		eprint(('No videos found in account ID {pubid}''s library.').format(pubid=oauth.account_id))
 		return False
 
 	currentOffset = 0
@@ -1137,10 +1199,20 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 			json_data = json.loads(r.text)
 			# make sure we actually got some data
 			if(len(json_data) > 0):
+				# let's put all videos in a queue
+				q = queue.Queue(maxsize=0)
 				for video in json_data:
-					processVideo(video)
+					q.put_nowait(video)
+				# starting worker threads on queue processing
+				num_threads = min(max_threads, len(json_data))
+				for _ in range(num_threads):
+					Worker(q).start()
+				# now we wait until the queue has been processed
+				q.join()
+				# reset retries count and increase page offset
 				retries = 10
 				currentOffset += pageSize
+
 			# looks like we got an empty response (it can happen)
 			else:
 				if(retries>0):
@@ -1184,6 +1256,7 @@ def main(process_func):
 	parser.add_argument('-q', type=str, help='CMS API search query')
 	parser.add_argument('-v', type=str, help='Specific video ID to process')
 	parser.add_argument('-o', type=str, help='Output filename')
+	parser.add_argument('-a', action='store_true', default=False, help='Async processing of videos')
 
 	# parse the args
 	global args
