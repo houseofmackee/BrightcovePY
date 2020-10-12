@@ -2,6 +2,8 @@
 import sys
 import argparse
 import math
+import concurrent.futures
+from mackee import eprint
 from mackee import CMS
 from mackee import OAuth
 from mackee import GetAccountInfo
@@ -37,7 +39,7 @@ def deleteVideo(videoID):
 			videoID = None
 	# is it an int?
 	if(type(videoID) is int):
-		print('Deleting video ID "'+str(videoID)+''": "+ str(cms.DeleteVideo(videoID=videoID).status_code))
+		return [videoID,  cms.DeleteVideo(videoID=videoID).status_code]
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -66,21 +68,34 @@ if(args.column):
 # create a CMS API instance
 cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
+# list to contain all video IDs
+videoList = None
+
 # if we have pandas and an xls and column then use that
 if(pandas and args.xls):
+	videoList = []
 	data = pandas.read_excel(args.xls) 
 	for videoID in data[column_name]:
-		deleteVideo(videoID)
+		videoList.append(videoID)
 
 # no pandas, so just use the options from the config file
 elif(opts):
 	# get list of videos from config file
 	videoList = opts.get('video_ids')
 
-	# either no list or "all" was found -> bail
-	if(not videoList or videoList[0] == 'all'):
-		print('Error: invalid or missing list of videos in config file.')
-	# delete 'em
-	else:
-		for videoID in videoList:
-			deleteVideo(videoID)
+# either no list or "all" was found -> bail
+if(not videoList or videoList[0] == 'all'):
+	eprint('Error: invalid or missing list of videos in config file.')
+
+# delete 'em
+else:
+	with concurrent.futures.ThreadPoolExecutor(max_workers = 5) as executor:
+		future_to_videoid = {executor.submit(deleteVideo, videoID): videoID for videoID in videoList}
+		for future in concurrent.futures.as_completed(future_to_videoid):
+			video = future_to_videoid[future]
+			try:
+				data = future.result()
+			except Exception as exc:
+				eprint(f'{video} generated an exception: {exc}')
+			else:
+				print(f'delete, {data[0]}, {data[1]}')
