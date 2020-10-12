@@ -1,14 +1,18 @@
 #!/usr/bin/env python3
 import mackee
+from threading import Lock
 import json
 import csv
 
 row_list = [ ['id', 'name', 'state', 'reference_id', 'created_at', 'tags'] ]
 
+counter_lock = Lock()
+data_lock = Lock()
+
 videosProcessed = 0
 
 def showProgress(progress):
-	mackee.sys.stderr.write(f'\r{progress} processed...')
+	mackee.sys.stderr.write(f'\r{progress} processed...\r')
 	mackee.sys.stderr.flush()
 
 def createCSV(video):
@@ -20,9 +24,12 @@ def createCSV(video):
 		value = video.get(field)
 		row.append(str('' if not value else value))
 
-	row_list.append(row)
+	with data_lock:
+		row_list.append(row)
 
-	videosProcessed += 1
+	with counter_lock:
+		videosProcessed += 1
+
 	if(videosProcessed%100==0):
 		showProgress(videosProcessed)
 
