@@ -5,8 +5,8 @@ import mackee
 # callback to find the aspect ratio of videos
 #=============================================
 def findAspectRatios(video):
-	videoID = str(video['id'])
-	deliveryType = video['delivery_type']
+	videoID = str(video.get('id'))
+	deliveryType = video.get('delivery_type')
 	sourceW, sourceH, response = None, None, None
 
 	if(deliveryType == 'static_origin'):
@@ -21,8 +21,8 @@ def findAspectRatios(video):
 		renditions = response.json()
 		for rendition in renditions:
 			if(rendition.get('media_type') == 'video' or rendition.get('audio_only') == False):
-				sourceW = rendition['frame_width']
-				sourceH = rendition['frame_height']
+				sourceW = rendition.get('frame_width')
+				sourceH = rendition.get('frame_height')
 				break
 		
 		if(sourceH and sourceW):

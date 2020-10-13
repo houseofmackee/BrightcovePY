@@ -6,8 +6,8 @@ import mackee
 #===========================================
 def findShared(video):
 	shared = video.get('sharing')
-	if(shared and shared['by_external_acct']):
-		print(video['id']+': '+str(shared))
+	if(shared and shared.get('by_external_acct')):
+		print(str(video.get('id'))+', '+str(shared))
 
 #===========================================
 # only run code if it's not imported

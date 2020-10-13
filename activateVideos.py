@@ -5,8 +5,8 @@ import mackee
 # callback to activate a video
 #===========================================
 def activateVideo(video):
-	if(video['state']=='INACTIVE'):
-		videoID = video['id']
+	if(video.get('state')=='INACTIVE'):
+		videoID = str(video.get('id'))
 		json = '{ "state": "ACTIVE" }'
 		print('Activating video ID '+videoID+': '+ str(mackee.cms.UpdateVideo(videoID=videoID, jsonBody=json).status_code))
 

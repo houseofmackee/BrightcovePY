@@ -5,8 +5,8 @@ import mackee
 # callback to find 360 videos 
 #===========================================
 def find360(video):
-	if(video['projection'] == 'equirectangular'):
-		print(video['id']+', "'+video['name']+'"')
+	if(video.get('projection') == 'equirectangular'):
+		print(str(video.get('id'))+', "'+video.get('name')+'"')
 
 #===========================================
 # only run code if it's not imported

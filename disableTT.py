@@ -9,13 +9,13 @@ def disableTT(video):
 	# flag to signal we found and changed a default track
 	gotHit = False
 	# try to get all text tracks
-	tts = video['text_tracks']
+	tts = video.get('text_tracks')
 	# check if we found some
-	if(len(tts)>0):
+	if(tts and len(tts)>0):
 		# go through all tracks
 		for track in tts:
 			#check if it's a default track
-			if(track['default']==True):
+			if(track.get('default')==True):
 				# change the setting
 				track['default'] = False
 				# set the flag so we know we found one
@@ -24,7 +24,7 @@ def disableTT(video):
 		# check if we found and changed one
 		if(gotHit):
 			# get the video ID
-			videoID = video['id']
+			videoID = str(video.get('id'))
 			# create the JSON body
 			jsonBody = ('{ "text_tracks":'+json.dumps(tts)+'}')
 			# make the PATCH call

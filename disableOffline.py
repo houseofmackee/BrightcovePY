@@ -9,7 +9,7 @@ def disableOffline(video):
 	isOfflineEnabled = video.get('offline_enabled')
 	if(isOfflineEnabled is not None and isOfflineEnabled==True):
 		# get the video ID
-		videoID = video['id']
+		videoID = str(video.get('id'))
 		# create the JSON body
 		jsonBody = ('{ "offline_enabled": false }')
 		# make the PATCH call

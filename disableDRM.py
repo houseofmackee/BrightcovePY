@@ -9,7 +9,7 @@ def disableDRM(video):
 	isDRMDisabled = video.get('drm_disabled')
 	if(isDRMDisabled is not None and isDRMDisabled==False):
 		# get the video ID
-		videoID = video['id']
+		videoID = str(video.get('id'))
 		# create the JSON body
 		jsonBody = ('{ "drm_disabled": true }')
 		# make the PATCH call

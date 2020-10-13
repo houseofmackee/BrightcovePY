@@ -5,8 +5,8 @@ import mackee
 # callback to deactivate a video
 #===========================================
 def deactivateVideo(video):
-	if(video['state']=='ACTIVE'):
-		videoID = video['id']
+	if(video.get('state')=='ACTIVE'):
+		videoID = str(video.get('id'))
 		json = '{ "state": "INACTIVE" }'
 		print('Deactivating video ID '+videoID+': '+ str(mackee.cms.UpdateVideo(videoID=videoID, jsonBody=json).status_code))
 

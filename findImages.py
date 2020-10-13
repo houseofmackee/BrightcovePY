@@ -10,7 +10,7 @@ def findImages(video):
 		poster = images.get('poster')
 		thumb  = images.get('thumbnail')
 
-		line = video.get('id')+','
+		line = str(video.get('id'))+','
 		line += (str(poster.get('src'))+',') if poster else ','
 		line += (str(thumb.get('src'))) if thumb else ''
 

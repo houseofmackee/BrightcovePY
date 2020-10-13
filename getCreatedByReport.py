@@ -23,9 +23,9 @@ def getCreatedByReport(video):
 			createdByDict['API'] += 1
 		elif (ctype=='user'):
 			creator = createdBy.get('email')
-			if creator in createdByDict:
+			try:
 				createdByDict[creator] += 1
-			else:
+			except KeyError:
 				createdByDict[creator] = 1
 		else:
 			createdByDict['Unknown'] += 1
