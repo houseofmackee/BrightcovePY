@@ -24,6 +24,8 @@ The scripts will look for this exact file in your home folder by default. If it 
 
 **downloadVideos.py**: this tool allows you to download the highest resolution MP4 renditions from videos stored in Video Cloud.
 
+**storageReportAsync.py**: this tool generates an CSV file with the storage used by a video's digital master and the video renditions.
+
 All the other scripts are simple examples of how to use the mackee.py module to simplify some common tasks, such as find all Legacy Delivery videos, find all 360/VR videos, etc etc.
 
 # Command line options
@@ -35,6 +37,10 @@ All scripts using mackee.py as a shell have the following command line options a
 **-v**: video ID of a single video to be processed, e.g. -v 123456789001
 
 **-q**: CMS API search query to filter videos to be processed. Please make sure you put it in quotes, e.g. -q "+state:INACTIVE +name:video"
+
+**-a**: run processing async using multi-threading (only use if you know what you are doing)
+
+**-o**: name and path for an outputfile (if supported by the utility script)
 
 # Support
 
