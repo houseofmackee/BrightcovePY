@@ -1,0 +1,13 @@
+ignoreme
+pytest
+__pycache__
+*.pyc
+packages
+[Bb]in
+[Oo]bj
+.vs
+.vscode
+*.user
+*Test.py
+test_*.py
+test*.py
