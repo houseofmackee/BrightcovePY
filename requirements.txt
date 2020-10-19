@@ -1,0 +1,9 @@
+dropbox==9.5.0
+selenium==3.141.0
+boto3==1.12.29
+requests==2.23.0
+requests_toolbelt==0.9.1
+boxsdk==2.10.0
+clint==0.5.1
+urllib3==1.25.8
+pandas==1.1.3
