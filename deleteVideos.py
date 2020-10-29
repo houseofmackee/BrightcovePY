@@ -39,7 +39,13 @@ def deleteVideo(videoID):
 			videoID = None
 	# is it an int?
 	if(type(videoID) is int):
-		return [videoID,  cms.DeleteVideo(videoID=videoID).status_code]
+		response = cms.DeleteVideo(videoID=videoID).status_code
+		# if it failed try to remove it from playlists and try again
+		if(response==409):
+			cms.RemoveVideoFromAllPlaylists(videoID=videoID)
+			response = cms.DeleteVideo(videoID=videoID).status_code
+
+		return [videoID, response]
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -73,10 +79,8 @@ videoList = None
 
 # if we have pandas and an xls and column then use that
 if(pandas and args.xls):
-	videoList = []
 	data = pandas.read_excel(args.xls) 
-	for videoID in data[column_name]:
-		videoList.append(videoID)
+	videoList = [videoID for videoID in data[column_name]]
 
 # no pandas, so just use the options from the config file
 elif(opts):
