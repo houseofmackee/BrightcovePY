@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import mackee
 from threading import Lock
-import json
 import csv
 
 row_list = [ ['id', 'name', 'state', 'reference_id', 'created_at', 'tags'] ]
@@ -19,10 +18,7 @@ def createCSV(video):
 	global row_list
 	global videosProcessed
 
-	row = []
-	for field in row_list[0]:
-		value = video.get(field)
-		row.append(str('' if not value else value))
+	row = [ video.get(field) for field in row_list[0] ]
 
 	with data_lock:
 		row_list.append(row)
