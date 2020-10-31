@@ -45,12 +45,7 @@ while(keep_running):
 		videos = body.get('videos')
 		if(videos):
 			for video in videos:
-
-				row = []
-				for field in row_list[0]:
-					value = video.get(field)
-					row.append(str('' if not value else value))
-
+				row = [ video.get(field) for field in row_list[0] ]
 				row_list.append(row)
 
 				videos_processed += 1
