@@ -36,9 +36,15 @@ def getMasterStorage(video, result, index):
 #===========================================
 def getRenditionSizes(video, result, index):
 	renSize = 0
+	response = None
+	delivery_type = video.get('delivery_type')
 
-	response = mackee.cms.GetDynamicRenditions(videoID=video.get('id'))
-	if(response.status_code in mackee.cms.success_responses):
+	if(delivery_type == 'static_origin'):
+		response = mackee.cms.GetRenditionList(videoID=video.get('id'))
+	elif(delivery_type == 'dynamic_origin'):
+		response = mackee.cms.GetDynamicRenditions(videoID=video.get('id'))
+
+	if(response and response.status_code in mackee.cms.success_responses):
 		renditions = response.json()
 		for rendition in renditions:
 			renSize += rendition.get('size')
