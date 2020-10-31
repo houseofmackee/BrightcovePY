@@ -1,4 +1,5 @@
 ignoreme
+environments
 pytest
 __pycache__
 *.pyc
