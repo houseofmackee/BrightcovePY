@@ -1,12 +1,21 @@
 #!/usr/bin/env python3
 import mackee
+import time
+import csv
+from threading import Lock
+
+videosProcessed = 0
+counter_lock = Lock()
+data_lock = Lock()
 
 createdByDict = {
 	'Unknown':0,
 	'API':0
 }
 
-videosProcessed = 0
+def showProgress(progress):
+	mackee.sys.stderr.write(f'\r{progress} processed...\r')
+	mackee.sys.stderr.flush()
 
 #===========================================
 # callback to check who uploaded the video
@@ -15,35 +24,47 @@ def getCreatedByReport(video):
 	global createdByDict
 	global videosProcessed
 
+	creator = 'Unknown'
 	createdBy = video.get('created_by')
 	if(createdBy):
 		ctype = createdBy.get('type')
-
 		if(ctype=='api_key'):
-			createdByDict['API'] += 1
+			creator = 'API'
 		elif (ctype=='user'):
 			creator = createdBy.get('email')
-			try:
-				createdByDict[creator] += 1
-			except KeyError:
-				createdByDict[creator] = 1
-		else:
-			createdByDict['Unknown'] += 1
-	else:
-		createdByDict['Unknown'] += 1
 
-	videosProcessed += 1
+	with data_lock:
+		try:
+			createdByDict[creator] += 1
+		except KeyError:
+			createdByDict[creator] = 1
+
+	with counter_lock:
+		videosProcessed += 1
 	if(videosProcessed%100==0):
-		mackee.sys.stderr.write(f'\r{videosProcessed} processed...')
-		mackee.sys.stderr.flush()
+		showProgress(videosProcessed)
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
+	s = time.perf_counter()
 	mackee.main(getCreatedByReport)
+	showProgress(videosProcessed)
+	elapsed = time.perf_counter() - s
+	mackee.eprint(f"\n{__file__} executed in {elapsed:0.2f} seconds.\n")	
 
-	mackee.eprint(f'\r{videosProcessed} processed...')
-	print('user_id, number_videos')
-	for x in createdByDict:
-		print(f'{x}, {createdByDict[x]}')
+	row_list = [ ['user_id','number_videos'] ]
+	for x,y in createdByDict.items():
+		row_list.append([x,y])
+
+	#write list to file
+	try:
+		with open('report.csv' if not mackee.args.o else mackee.args.o, 'w', newline='', encoding='utf-8') as file:
+			try:
+				writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
+				writer.writerows(row_list)
+			except Exception as e:
+				mackee.eprint(f'\nError writing CSV data to file: {e}')
+	except Exception as e:
+		mackee.eprint(f'\nError creating outputfile: {e}')
