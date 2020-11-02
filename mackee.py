@@ -1124,8 +1124,13 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 				if(type(work) == dict):
 					processVideo(work)
 				else:
-					video = cms.GetVideo(accountID=accountID, videoID=work)
-					if(video.status_code in CMS.success_responses):
+					video = None
+					try:
+						video = cms.GetVideo(accountID=accountID, videoID=work)
+					except Exception as e:
+						video = None
+
+					if(video and video.status_code in CMS.success_responses):
 						processVideo(video.json())
 					else:
 						eprint(('Error getting information for video ID {videoid}.').format(videoid=work))
@@ -1148,8 +1153,12 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	# check if we should process a specific video ID
 	if(vidID):
 		print(('Processing video ID {videoid} now.').format(videoid=vidID))
-		video = cms.GetVideo(accountID=accountID, videoID=vidID)
-		if(video.status_code in CMS.success_responses):
+		video = None
+		try:
+			video = cms.GetVideo(accountID=accountID, videoID=vidID)
+		except Exception as e:
+			video = None
+		if(video and video.status_code in CMS.success_responses):
 			processVideo(video.json())
 			return True
 		else:
