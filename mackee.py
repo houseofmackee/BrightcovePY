@@ -1143,7 +1143,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	di = DynamicIngest(oauth)
 
 	# if async is enabled use more than one thread
-	max_threads = 10 if args.a else 1
+	max_threads = args.a if args.a else 1
 
 	# check if we should process a specific video ID
 	if(vidID):
@@ -1189,7 +1189,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 		return False
 
 	currentOffset = 0
-	pageSize = 20
+	pageSize = 50
 	retries = 10
 
 	while(currentOffset<numVideos):
@@ -1256,7 +1256,7 @@ def main(process_func):
 	parser.add_argument('-q', type=str, help='CMS API search query')
 	parser.add_argument('-v', type=str, help='Specific video ID to process')
 	parser.add_argument('-o', type=str, help='Output filename')
-	parser.add_argument('-a', action='store_true', default=False, help='Async processing of videos')
+	parser.add_argument('-a', type=int, const=10, nargs='?', help='Async processing of videos')
 
 	# parse the args
 	global args
