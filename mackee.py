@@ -1193,9 +1193,16 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	retries = 10
 
 	while(currentOffset<numVideos):
-		r = cms.GetVideos(pageSize=pageSize, pageOffset=currentOffset, searchQuery=searchQuery)
+		r = None
+		status = 0
+		try:
+			r = cms.GetVideos(pageSize=pageSize, pageOffset=currentOffset, searchQuery=searchQuery)
+			status = r.status_code
+		except Exception as e:
+			status = -1
+
 		# good result
-		if (r.status_code in [200,202]):
+		if (status in [200,202]):
 			json_data = json.loads(r.text)
 			# make sure we actually got some data
 			if(len(json_data) > 0):
@@ -1215,34 +1222,38 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 
 			# looks like we got an empty response (it can happen)
 			else:
-				if(retries>0):
-					eprint('Error: empty API response received.')
-					for remaining in range(10, 0, -1):
-						sys.stderr.write('\rRetrying in {:2d} seconds.'.format(remaining))
-						sys.stderr.flush()
-						time.sleep(1)
-
-					retries -= 1
-					eprint('\rRetrying now ({remaining} retries left).'.format(remaining=retries))
-
-				else:
-					eprint('Error: failed to get non-empty API response.')
-					return False
+				status = -1
 
 		# token probably expired
-		elif(r.status_code == 401):
+		elif(status == 401):
 			if(retries>0):
-				retries -= 1
+				status = -1
 			else:
 				eprint('Error: possible problem with OAuth token:')
 				eprint(r.content)
 				return False
 
 		# we received an unexpected status code, let's get out of here
-		else:
+		elif(status != -1):
 			eprint('Error: Received unexpected status code {status}:'.format(r.status_code))
 			eprint(r.json())
 			return False
+
+		# we hit a retryable error
+		if(status == -1):
+			if(retries>0):
+				eprint('Error: problem during API call.')
+				for remaining in range(10, 0, -1):
+					sys.stderr.write('\rRetrying in {:2d} seconds.'.format(remaining))
+					sys.stderr.flush()
+					time.sleep(1)
+
+				retries -= 1
+				eprint('\rRetrying now ({remaining} retries left).'.format(remaining=retries))
+
+			else:
+				eprint('Error: fatal failure during API call.')
+				return False
 
 	return True
 

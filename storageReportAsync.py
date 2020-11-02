@@ -20,13 +20,21 @@ def showProgress(progress):
 #===========================================
 def getMasterStorage(video, result, index):
 	masterSize = 0
+	response = None
+
 	if(video.get('has_digital_master')):
 		shared = video.get('sharing')
 		if(shared and shared.get('by_external_acct')):
 			result[index] = 0
 			return
-		response = mackee.cms.GetDigitalMasterInfo(videoID=video.get('id'))
-		if(response.status_code == 200):
+		
+		try:
+			response = mackee.cms.GetDigitalMasterInfo(videoID=video.get('id'))
+		except Exception as e:
+			response = None
+			masterSize = -1
+
+		if(response and response.status_code == 200):
 			masterSize = response.json().get('size')
 
 	result[index] = masterSize
@@ -37,12 +45,16 @@ def getMasterStorage(video, result, index):
 def getRenditionSizes(video, result, index):
 	renSize = 0
 	response = None
-	delivery_type = video.get('delivery_type')
 
-	if(delivery_type == 'static_origin'):
-		response = mackee.cms.GetRenditionList(videoID=video.get('id'))
-	elif(delivery_type == 'dynamic_origin'):
-		response = mackee.cms.GetDynamicRenditions(videoID=video.get('id'))
+	try:
+		delivery_type = video.get('delivery_type')
+		if(delivery_type == 'static_origin'):
+			response = mackee.cms.GetRenditionList(videoID=video.get('id'))
+		elif(delivery_type == 'dynamic_origin'):
+			response = mackee.cms.GetDynamicRenditions(videoID=video.get('id'))
+	except Exception as e:
+		response = None
+		renSize = -1
 
 	if(response and response.status_code in mackee.cms.success_responses):
 		renditions = response.json()
