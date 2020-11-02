@@ -2,7 +2,6 @@
 import mackee
 import csv
 import time
-from threading import Thread
 from threading import Lock
 
 videosProcessed = 0
@@ -18,16 +17,11 @@ def showProgress(progress):
 #===========================================
 # function to get size of master
 #===========================================
-def getMasterStorage(video, result, index):
+def getMasterStorage(video):
 	masterSize = 0
 	response = None
 
 	if(video.get('has_digital_master')):
-		shared = video.get('sharing')
-		if(shared and shared.get('by_external_acct')):
-			result[index] = 0
-			return
-		
 		try:
 			response = mackee.cms.GetDigitalMasterInfo(videoID=video.get('id'))
 		except Exception as e:
@@ -37,12 +31,12 @@ def getMasterStorage(video, result, index):
 		if(response and response.status_code == 200):
 			masterSize = response.json().get('size')
 
-	result[index] = masterSize
+	return masterSize
 
 #===========================================
 # function to get size of all renditions
 #===========================================
-def getRenditionSizes(video, result, index):
+def getRenditionSizes(video):
 	renSize = 0
 	response = None
 
@@ -61,32 +55,22 @@ def getRenditionSizes(video, result, index):
 		for rendition in renditions:
 			renSize += rendition.get('size')
 
-	result[index] = renSize
+	return renSize
 
 #===========================================
 # callback getting storage sizes
 #===========================================
 def findStorageSize(video):
 	global videosProcessed
+	row = []
 
-	threads = []
-	functions = [getMasterStorage, getRenditionSizes]
-	results = [0 for x in functions]
-
-	# In this case 'functions' is a list of functions to be executed per video ID
-	for i in range(len(functions)):
-		# We start one thread per function present
-		thread = Thread(target=functions[i], args=[video, results, i])
-		thread.start()
-		threads.append(thread)
-
-	# We now pause execution on the main thread by 'joining' all of our started threads.
-	# This ensures that each has finished processing the functions
-	for thread in threads:
-		thread.join()
+	shared = video.get('sharing')
+	if(shared and shared.get('by_external_acct')):
+		row = [ video.get('id'), 0, 0 ]
+	else:
+		row = [ video.get('id'), getMasterStorage(video), getRenditionSizes(video) ]
 
 	# add a new row to the CSV data
-	row = [ video.get('id'), results[0], results[1] ]
 	with data_lock:
 		row_list.append(row)
 
