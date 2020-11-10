@@ -2,10 +2,10 @@
 import sys
 from mackee import PlayerManagement
 from mackee import OAuth
-from mackee import GetAccountInfo
+from mackee import LoadAccountInfo
 
 # get account info from config file
-account_id, client_id, client_secret, _ = GetAccountInfo()
+account_id, client_id, client_secret, _ = LoadAccountInfo()
 
 if(account_id is None and client_id is None and client_secret is None):
 	print('Using default values for credentials.')

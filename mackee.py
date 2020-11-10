@@ -1024,7 +1024,7 @@ class DynamicIngest(Base):
 #===========================================
 # read account info from JSON file
 #===========================================
-def GetAccountInfo(input_filename=None):
+def LoadAccountInfo(input_filename=None):
 	# if no config file was passed we use the default
 	if(not input_filename):
 		input_filename = expanduser('~')+'/account_info.json'
@@ -1148,7 +1148,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 				self.q.task_done()
 
 	# get the account info and credentials
-	accountID,b,c,opts = GetAccountInfo(inputfile)
+	accountID,b,c,opts = LoadAccountInfo(inputfile)
 
 	if(None in [accountID,b,c,opts]):
 		return False

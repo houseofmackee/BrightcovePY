@@ -3,7 +3,7 @@ import sys
 import argparse
 from mackee import CMS
 from mackee import OAuth
-from mackee import GetAccountInfo
+from mackee import LoadAccountInfo
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -17,7 +17,7 @@ parser.add_argument('--account', metavar='<Brightcove Account ID>', type=str, he
 args = parser.parse_args()
 
 # get account info from config file
-account_id, client_id, client_secret, _ = GetAccountInfo(args.config)
+account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
 
 # if account ID was provided override the one from config
 if(args.account):

@@ -6,7 +6,7 @@ import concurrent.futures
 from mackee import eprint
 from mackee import CMS
 from mackee import OAuth
-from mackee import GetAccountInfo
+from mackee import LoadAccountInfo
 try:
 	import pandas
 except ImportError:
@@ -61,7 +61,7 @@ args = parser.parse_args()
 
 # get account info from config file if not hardcoded
 if( account_id is None and client_id is None and client_secret is None):
-	account_id, client_id, client_secret, opts = GetAccountInfo(args.config)
+	account_id, client_id, client_secret, opts = LoadAccountInfo(args.config)
 
 # if account ID was provided override the one from config
 if(args.account):

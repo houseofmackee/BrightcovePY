@@ -4,7 +4,7 @@ import argparse
 from calendar import monthrange
 from mackee import CMS
 from mackee import OAuth
-from mackee import GetAccountInfo
+from mackee import LoadAccountInfo
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -37,7 +37,7 @@ if(startYear==endYear and startMonth>endMonth):
 	sys.exit(2)
 
 # get account info from config file
-account_id, client_id, client_secret, _ = GetAccountInfo()
+account_id, client_id, client_secret, _ = LoadAccountInfo()
 
 # create a CMS API instance
 cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )

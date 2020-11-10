@@ -3,7 +3,7 @@ import sys
 import csv
 from mackee import Social
 from mackee import OAuth
-from mackee import GetAccountInfo
+from mackee import LoadAccountInfo
 
 videos_processed = 0
 hits_to_process = 0
@@ -22,7 +22,7 @@ report_name = 'social_report.csv'
 
 # get account info from config file if not hardcoded
 if( account_id is None and client_id is None and client_secret is None):
-	account_id, client_id, client_secret, _ = GetAccountInfo()
+	account_id, client_id, client_secret, _ = LoadAccountInfo()
 
 # create a Social API instance
 social = Social( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )

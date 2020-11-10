@@ -2,7 +2,7 @@
 
 from mackee import CMS
 from mackee import OAuth
-from mackee import GetAccountInfo
+from mackee import LoadAccountInfo
 from mackee import DynamicIngest
 import sys
 import json
@@ -230,7 +230,7 @@ def main(dbHistory):
 		return
 
 	# create the OAuth token from the account config info file
-	account_id, client_id, client_secret, _ = GetAccountInfo(args.config)
+	account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
 
 	# override target account ID if specified
 	if(args.account):
