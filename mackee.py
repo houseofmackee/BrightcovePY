@@ -1094,6 +1094,16 @@ def ConvertSeconds(seconds):
 	return ConvertMilliseconds(int(seconds)*1000)
 
 #===========================================
+# test if a value is a valid JSON string
+#===========================================
+def is_json(myjson):
+	try:
+		_ = json.loads(myjson)
+	except Exception as e:
+		return False
+	return True
+
+#===========================================
 # default processing function
 #===========================================
 def list_videos(video):
