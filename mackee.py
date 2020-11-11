@@ -1141,7 +1141,10 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 						video = None
 
 					if(video and video.status_code in CMS.success_responses):
-						processVideo(video.json())
+						try:
+							processVideo(video.json())
+						except Exception as e:
+							eprint(('Error executing callback for video ID {videoid}: {error}').format(videoid=work, error=e))
 					else:
 						eprint(('Error getting information for video ID {videoid}.').format(videoid=work))
 
