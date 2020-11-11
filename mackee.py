@@ -681,10 +681,10 @@ class CMS(Base):
 	#===========================================
 	# folders stuff
 	#===========================================
-	def GetFolders(self, pageSize=100, pageOffset=0, accountID=None):
+	def GetFolders(self, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/folders?limit={limit}&offset={offset}').format(pubid=accountID,limit=pageSize, offset=pageOffset)
+		url = (CMS.base_url+'/folders').format(pubid=accountID)
 		return (requests.get(url, headers=headers))
 
 	def CreateFolder(self, folderName, accountID=None):
