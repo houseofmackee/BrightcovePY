@@ -1273,7 +1273,7 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 
 		# we received an unexpected status code, let's get out of here
 		elif(status != -1):
-			eprint('Error: Received unexpected status code {status}:'.format(r.status_code))
+			eprint('Error: Received unexpected status code {status_code}:'.format(status_code=r.status_code))
 			eprint(r.json())
 			return False
 
