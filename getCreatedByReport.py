@@ -24,14 +24,7 @@ def getCreatedByReport(video):
 	global createdByDict
 	global videosProcessed
 
-	creator = 'Unknown'
-	createdBy = video.get('created_by')
-	if(createdBy):
-		ctype = createdBy.get('type')
-		if(ctype=='api_key'):
-			creator = 'API'
-		elif (ctype=='user'):
-			creator = createdBy.get('email')
+	creator = mackee.CMS.GetCreatedBy(video)
 
 	with data_lock:
 		try:

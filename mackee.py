@@ -444,6 +444,22 @@ class CMS(Base):
 		self.__oauth = oauth
 
 	#===========================================
+	# get who created a video
+	#===========================================
+	@staticmethod
+	def GetCreatedBy(video):
+		creator = 'Unknown'
+		if(video):
+			createdBy = video.get('created_by')
+			if(createdBy):
+				ctype = createdBy.get('type')
+				if(ctype=='api_key'):
+					creator = 'API'
+				elif (ctype=='user'):
+					creator = createdBy.get('email')
+		return(creator)
+
+	#===========================================
 	# get number of videos in an account
 	#===========================================
 	def GetVideoCount(self, searchQuery='', accountID=None):
