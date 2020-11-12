@@ -91,7 +91,8 @@ def getRenditionSizes(video):
 						dyd_mp4.add(rendition.get('size'))
 				
 				for size in dyd_mp4:
-					sizes['mp4_size'] += size
+					if(size):
+						sizes['mp4_size'] += size
 
 	return sizes
 
