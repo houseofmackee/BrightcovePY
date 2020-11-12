@@ -1171,7 +1171,11 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 
 	if(None in [accountID,b,c,opts]):
 		return False
-	
+
+	# update account ID if passed in command line
+	if(args.t):
+		accountID = args.t
+
 	oauth = OAuth(accountID,b,c)
 	cms = CMS(oauth)
 	di = DynamicIngest(oauth)
@@ -1303,6 +1307,7 @@ def main(process_func):
 	parser = argparse.ArgumentParser(prog=sys.argv[0])
 	parser.add_argument('-i', type=str, help='Name and path of account config information file')
 	parser.add_argument('-q', type=str, help='CMS API search query')
+	parser.add_argument('-t', type=str, help='Target account ID')
 	parser.add_argument('-v', type=str, help='Specific video ID to process')
 	parser.add_argument('-o', type=str, help='Output filename')
 	parser.add_argument('-a', type=int, const=10, nargs='?', help='Async processing of videos')

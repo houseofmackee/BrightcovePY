@@ -36,6 +36,8 @@ All scripts using mackee.py as a shell have the following command line options a
 
 **-v**: video ID of a single video to be processed, e.g. -v 123456789001
 
+**-t**: account ID for account to use if different from ID in the JSON, e.g. -v 123456789001
+
 **-q**: CMS API search query to filter videos to be processed. Please make sure you put it in quotes, e.g. -q "+state:INACTIVE +name:video"
 
 **-a**: run processing async using multi-threading (only use if you know what you are doing)
