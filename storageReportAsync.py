@@ -38,24 +38,26 @@ def getMasterStorage(video):
 #===========================================
 def getRenditionSizes(video):
 	sizes = {
-		"hls_size":0,
-		"mp4_size":0,
-		"audio_size":0
+		'hls_size':0,
+		'mp4_size':0,
+		'audio_size':0
 	}
 
 	response = None
+	delivery_type = None
+	video_id=video.get('id')
 
 	try:
 		delivery_type = video.get('delivery_type')
 		if(delivery_type == 'static_origin'):
-			response = mackee.cms.GetRenditionList(videoID=video.get('id'))
+			response = mackee.cms.GetRenditionList(videoID=video_id)
 		elif(delivery_type == 'dynamic_origin'):
-			response = mackee.cms.GetDynamicRenditions(videoID=video.get('id'))
+			response = mackee.cms.GetDynamicRenditions(videoID=video_id)
 	except Exception as e:
 		response = None
-		sizes = {	"hls_size":-1,
-					"mp4_size":-1,
-					"audio_size":-1
+		sizes = {	'hls_size':-1,
+					'mp4_size':-1,
+					'audio_size':-1
 		}
 
 	if(response and response.status_code in mackee.cms.success_responses):
@@ -63,15 +65,33 @@ def getRenditionSizes(video):
 		for rendition in renditions:
 			# legacy mp4 and hls
 			if(rendition.get('video_container') == 'MP4'):
-				sizes["mp4_size"] += rendition.get('size')
+				sizes['mp4_size'] += rendition.get('size')
 			elif(rendition.get('video_container') == 'M2TS'):
-				sizes["hls_size"] += rendition.get('size')
+				sizes['hls_size'] += rendition.get('size')
 
 			# dyd audio and video
 			elif(rendition.get('media_type') == 'audio'):
-				sizes["audio_size"] += rendition.get('size')
+				sizes['audio_size'] += rendition.get('size')
 			elif(rendition.get('media_type') == 'video'):
-				sizes["hls_size"] += rendition.get('size')
+				sizes['hls_size'] += rendition.get('size')
+		
+		# if it's Dynamic Delivery we need to get MP4 sizes from the sources endpoint
+		if(delivery_type=='dynamic_origin' and sizes['mp4_size']==0):
+			try:
+				response = mackee.cms.GetVideoSources(videoID=video_id)
+			except Exception as e:
+				response = None
+				sizes['mp4_size'] = -1
+
+			if(response and response.status_code in mackee.cms.success_responses):
+				renditions = response.json()
+				dyd_mp4 = set()
+				for rendition in renditions:
+					if(rendition.get('container') == 'MP4'):
+						dyd_mp4.add(rendition.get('size'))
+				
+				for size in dyd_mp4:
+					sizes['mp4_size'] += size
 
 	return sizes
 
