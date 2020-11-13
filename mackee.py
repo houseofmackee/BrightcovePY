@@ -5,7 +5,8 @@ import json
 import argparse
 import time
 import queue
-import threading
+from threading import Thread
+import logging
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
 from requests_toolbelt import MultipartEncoder # pip3 install requests_toolbelt
@@ -22,6 +23,7 @@ cms = None
 di = None
 opts = None
 args = None
+search_query = None
 
 # funtion to print to stderr
 def eprint(*args, **kwargs):
@@ -973,7 +975,7 @@ class DynamicIngest(Base):
 		elif(self.__ingestProfile is None):
 			r = self.__ip.GetDefaultProfile(accountID=accountID)
 			if r.status_code in DynamicIngest.success_responses:
-				profile = r.json()['default_profile_id']
+				profile = r.json().get('default_profile_id')
 
 		priority = self.__priorityQueue
 		if(priorityQueue):
@@ -995,7 +997,7 @@ class DynamicIngest(Base):
 		elif(self.__ingestProfile is None):
 			r = self.__ip.GetDefaultProfile(accountID=accountID)
 			if r.status_code in DynamicIngest.success_responses:
-				profile = r.json()['default_profile_id']
+				profile = r.json().get('default_profile_id')
 
 		if(priorityQueue):
 			priority = priorityQueue
@@ -1021,9 +1023,9 @@ class DynamicIngest(Base):
 			# This example uses the boto3 library to perform a multipart upload
 			# This is the recommended method for uploading large source files
 			s3 = boto3.resource('s3',
-				aws_access_key_id=upload_urls_response['access_key_id'],
-				aws_secret_access_key=upload_urls_response['secret_access_key'],
-				aws_session_token=upload_urls_response['session_token'])
+				aws_access_key_id=upload_urls_response.get('access_key_id'),
+				aws_secret_access_key=upload_urls_response.get('secret_access_key'),
+				aws_session_token=upload_urls_response.get('session_token'))
 			
 			def emptyCB(muu):
 				pass
@@ -1031,7 +1033,7 @@ class DynamicIngest(Base):
 			if(callBack is None):
 				callBack = emptyCB
 
-			s3.Object(upload_urls_response['bucket'], upload_urls_response['object_key']).upload_file(fileName, Callback=callBack)
+			s3.Object(upload_urls_response.get('bucket'), upload_urls_response.get('object_key')).upload_file(fileName, Callback=callBack)
 			return upload_urls_response
 		except Exception as e:
 			print (e)
@@ -1123,19 +1125,96 @@ def is_json(myjson):
 # default processing function
 #===========================================
 def list_videos(video):
-	print(video['id']+', "'+video['name']+'"')
+	print(video.get('id')+', "'+video.get('name')+'"')
+
+#===========================================
+# function to fill queue with all videos
+# from a Video Cloud account
+#===========================================
+def process_account(work_queue: queue.Queue):
+	# ok, let's process all videos
+	# get number of videos in account
+	num_videos = cms.GetVideoCount(searchQuery=search_query)
+
+	if(num_videos>0):
+		eprint(('Found {numVideos} videos in library. Processing them now.').format(numVideos=num_videos))
+	else:
+		eprint(('No videos found in account ID {pubid}''s library.').format(pubid=oauth.account_id))
+		return False
+
+	current_offset = 0
+	page_size = 50
+	retries = 10
+
+	while(current_offset<num_videos):
+		response = None
+		status = 0
+		try:
+			response = cms.GetVideos(pageSize=page_size, pageOffset=current_offset, searchQuery=search_query)
+			status = response.status_code
+		except Exception as e:
+			status = -1
+
+		# good result
+		if (status in [200,202]):
+			json_data = json.loads(response.text)
+			# make sure we actually got some data
+			if(len(json_data) > 0):
+				# let's put all videos in a queue
+
+				for video in json_data:
+					work_queue.put_nowait(video)
+				# reset retries count and increase page offset
+				retries = 10
+				current_offset += page_size
+
+			# looks like we got an empty response (it can happen)
+			else:
+				status = -1
+
+		# token probably expired
+		elif(status == 401):
+			if(retries>0):
+				status = -1
+			else:
+				eprint('Error: possible problem with OAuth token:')
+				eprint(response.content)
+				return False
+
+		# we received an unexpected status code, let's get out of here
+		elif(status != -1):
+			eprint('Error: Received unexpected status code {status_code}:'.format(status_code=response.status_code))
+			eprint(response.json())
+			return False
+
+		# we hit a retryable error
+		if(status == -1):
+			if(retries>0):
+				eprint('Error: problem during API call.')
+				for remaining in range(5, 0, -1):
+					sys.stderr.write('\rRetrying in {:2d} seconds.'.format(remaining))
+					sys.stderr.flush()
+					time.sleep(1)
+
+				retries -= 1
+				eprint('\rRetrying now ({remaining} retries left).'.format(remaining=retries))
+
+			else:
+				eprint('Error: fatal failure during API call.')
+				return False
 
 #===========================================
 # this is the main loop to process videos
 #===========================================
-def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=None):
+def process_video(inputfile, processVideo=list_videos, vidID=None):
 	global oauth
 	global cms
 	global di
 	global opts
+	global search_query
 
 	# worker class for multithreading
-	class Worker(threading.Thread):
+	class Worker(Thread):
 		def __init__(self, q, *args, **kwargs):
 			self.q = q
 			super().__init__(*args, **kwargs)
@@ -1144,11 +1223,16 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 				try:
 					work = self.q.get(timeout=3)  # 3s timeout
 				except queue.Empty:
+					logging.info('Queue empty -> exiting worker thread')
 					return
 				# do whatever work you have to do on work
 
 				if(type(work) == dict):
 					processVideo(work)
+				elif(work == 'EXIT'):
+					logging.info('EXIT found -> exiting worker thread')
+					self.q.task_done()
+					return
 				else:
 					video = None
 					try:
@@ -1183,7 +1267,11 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 	# if async is enabled use more than one thread
 	max_threads = args.a if args.a else 1
 
+	#=========================================================
+	#=========================================================
 	# check if we should process a specific video ID
+	#=========================================================
+	#=========================================================
 	if(vidID):
 		print(('Processing video ID {videoid} now.').format(videoid=vidID))
 		video = None
@@ -1198,104 +1286,52 @@ def process_video(inputfile, processVideo=list_videos, searchQuery=None, vidID=N
 			eprint(('Error getting information for video ID {videoid}.').format(videoid=vidID))
 			return False
 
+	# create the work queue because everything below uses it
+	work_queue = queue.Queue(maxsize=0)
+
+	#=========================================================
+	#=========================================================
 	# check if we should process a given list of videos
+	#=========================================================
+	#=========================================================
 	videoList = opts.get('video_ids')
 	if(videoList and videoList[0] != 'all'):
 		eprint(('Found {numVideos} videos in options file. Processing them now.').format(numVideos=len(videoList)))
 		# let's put all video IDs in a queue
-		q = queue.Queue(maxsize=0)
 		for videoID in videoList:
-			q.put_nowait(videoID)
+			work_queue.put_nowait(videoID)
 		# starting worker threads on queue processing
 		num_threads = min(max_threads, len(videoList))
 		for _ in range(num_threads):
-			Worker(q).start()
+			work_queue.put_nowait("EXIT")
+			Worker(work_queue).start()
 		# now we wait until the queue has been processed
-		q.join()
+		work_queue.join()
 		return True
 
-	# if a query was passed along URI encode it
-	if(not searchQuery):
-		searchQuery = ''
-	else:
-		searchQuery = requests.utils.quote(searchQuery)
+	#=========================================================
+	#=========================================================
+	# here we process the whole account
+	#=========================================================
+	#=========================================================
 
-	# ok, let's process all videos
-	# get number of videos in account
-	numVideos = cms.GetVideoCount(searchQuery=searchQuery)
+	# start thread to fill the queue
+	account_page_thread = Thread(target=process_account, args=[work_queue])
+	account_page_thread.start()
 
-	if(numVideos>0):
-		eprint(('Found {numVideos} videos in library. Processing them now.').format(numVideos=numVideos))
-	else:
-		eprint(('No videos found in account ID {pubid}''s library.').format(pubid=oauth.account_id))
-		return False
+	# starting worker threads on queue processing
+	for _ in range(max_threads):
+		Worker(work_queue).start()
 
-	currentOffset = 0
-	pageSize = 50
-	retries = 10
+	# first wait for the queue filling thread to finish
+	account_page_thread.join()
 
-	while(currentOffset<numVideos):
-		r = None
-		status = 0
-		try:
-			r = cms.GetVideos(pageSize=pageSize, pageOffset=currentOffset, searchQuery=searchQuery)
-			status = r.status_code
-		except Exception as e:
-			status = -1
+	# once the queue is filled with videos add exit signals
+	for _ in range(max_threads):
+		work_queue.put_nowait("EXIT")
 
-		# good result
-		if (status in [200,202]):
-			json_data = json.loads(r.text)
-			# make sure we actually got some data
-			if(len(json_data) > 0):
-				# let's put all videos in a queue
-				q = queue.Queue(maxsize=0)
-				for video in json_data:
-					q.put_nowait(video)
-				# starting worker threads on queue processing
-				num_threads = min(max_threads, len(json_data))
-				for _ in range(num_threads):
-					Worker(q).start()
-				# now we wait until the queue has been processed
-				q.join()
-				# reset retries count and increase page offset
-				retries = 10
-				currentOffset += pageSize
-
-			# looks like we got an empty response (it can happen)
-			else:
-				status = -1
-
-		# token probably expired
-		elif(status == 401):
-			if(retries>0):
-				status = -1
-			else:
-				eprint('Error: possible problem with OAuth token:')
-				eprint(r.content)
-				return False
-
-		# we received an unexpected status code, let's get out of here
-		elif(status != -1):
-			eprint('Error: Received unexpected status code {status_code}:'.format(status_code=r.status_code))
-			eprint(r.json())
-			return False
-
-		# we hit a retryable error
-		if(status == -1):
-			if(retries>0):
-				eprint('Error: problem during API call.')
-				for remaining in range(10, 0, -1):
-					sys.stderr.write('\rRetrying in {:2d} seconds.'.format(remaining))
-					sys.stderr.flush()
-					time.sleep(1)
-
-				retries -= 1
-				eprint('\rRetrying now ({remaining} retries left).'.format(remaining=retries))
-
-			else:
-				eprint('Error: fatal failure during API call.')
-				return False
+	# now we wait until the queue has been processed
+	work_queue.join()
 
 	return True
 
@@ -1311,13 +1347,24 @@ def main(process_func):
 	parser.add_argument('-v', type=str, help='Specific video ID to process')
 	parser.add_argument('-o', type=str, help='Output filename')
 	parser.add_argument('-a', type=int, const=10, nargs='?', help='Async processing of videos')
+	parser.add_argument('-d', action='store_true', default=False, help='Show debug info messages')
 
 	# parse the args
 	global args
 	args = parser.parse_args()
 
+	# if a query was passed along URI encode it
+	global search_query
+	if(not args.q):
+		search_query = ''
+	else:
+		search_query = requests.utils.quote(args.q)
+
+	if(args.d):
+		logging.basicConfig(level=logging.INFO, format='[%(levelname)s:%(lineno)d]: %(message)s')
+
 	# go through the library and do stuff
-	process_video(inputfile=args.i, processVideo=process_func, searchQuery=args.q, vidID=args.v)
+	process_video(inputfile=args.i, processVideo=process_func, vidID=args.v)
 
 #===========================================
 # only run code if it's not imported
