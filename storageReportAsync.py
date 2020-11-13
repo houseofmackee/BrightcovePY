@@ -10,14 +10,14 @@ data_lock = Lock()
 
 row_list = [ ['video_id','delivery_type','master_size','hls_renditions_size','mp4_renditions_size','audio_renditions_size'] ]
 
-def showProgress(progress):
+def showProgress(progress: int) -> None:
 	mackee.sys.stderr.write(f'\r{progress} processed...\r')
 	mackee.sys.stderr.flush()
 
 #===========================================
 # function to get size of master
 #===========================================
-def getMasterStorage(video):
+def getMasterStorage(video: dict) -> int:
 	masterSize = 0
 	response = None
 
@@ -36,7 +36,7 @@ def getMasterStorage(video):
 #===========================================
 # function to get size of all renditions
 #===========================================
-def getRenditionSizes(video):
+def getRenditionSizes(video: dict) -> dict:
 	sizes = {
 		'hls_size':0,
 		'mp4_size':0,
@@ -44,39 +44,36 @@ def getRenditionSizes(video):
 	}
 
 	response = None
-	delivery_type = None
-	video_id=video.get('id')
+	delivery_type = video.get('delivery_type')
+	video_id = video.get('id')
 
 	try:
-		delivery_type = video.get('delivery_type')
 		if(delivery_type == 'static_origin'):
 			response = mackee.cms.GetRenditionList(videoID=video_id)
 		elif(delivery_type == 'dynamic_origin'):
 			response = mackee.cms.GetDynamicRenditions(videoID=video_id)
 	except Exception as e:
 		response = None
-		sizes = {	'hls_size':-1,
-					'mp4_size':-1,
-					'audio_size':-1
-		}
+		sizes = { key:-1 for key in sizes }
 
 	if(response and response.status_code in mackee.cms.success_responses):
 		renditions = response.json()
 		for rendition in renditions:
+			size = rendition.get('size')
 			# legacy mp4 and hls
 			if(rendition.get('video_container') == 'MP4'):
-				sizes['mp4_size'] += rendition.get('size')
+				sizes['mp4_size'] += size
 			elif(rendition.get('video_container') == 'M2TS'):
-				sizes['hls_size'] += rendition.get('size')
+				sizes['hls_size'] += size
 
 			# dyd audio and video
 			elif(rendition.get('media_type') == 'audio'):
-				sizes['audio_size'] += rendition.get('size')
+				sizes['audio_size'] += size
 			elif(rendition.get('media_type') == 'video'):
-				sizes['hls_size'] += rendition.get('size')
+				sizes['hls_size'] += size
 		
 		# if it's Dynamic Delivery we need to get MP4 sizes from the sources endpoint
-		if(delivery_type=='dynamic_origin' and sizes['mp4_size']==0):
+		if(delivery_type == 'dynamic_origin' and sizes['mp4_size'] == 0):
 			try:
 				response = mackee.cms.GetVideoSources(videoID=video_id)
 			except Exception as e:
@@ -99,7 +96,7 @@ def getRenditionSizes(video):
 #===========================================
 # callback getting storage sizes
 #===========================================
-def findStorageSize(video):
+def findStorageSize(video: dict) -> None:
 	global videosProcessed
 
 	row = [ video.get('id'), video.get('delivery_type') ]
