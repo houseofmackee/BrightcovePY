@@ -1311,7 +1311,9 @@ def process_video(inputfile, process_callback=list_videos, video_id=None) -> boo
 			work_queue.put_nowait("EXIT")
 			Worker(work_queue).start()
 		# now we wait until the queue has been processed
-		work_queue.join()
+		if(not work_queue.empty()):
+			work_queue.join()
+
 		return True
 
 	#=========================================================
@@ -1336,7 +1338,8 @@ def process_video(inputfile, process_callback=list_videos, video_id=None) -> boo
 		work_queue.put_nowait("EXIT")
 
 	# now we wait until the queue has been processed
-	work_queue.join()
+	if(not work_queue.empty()):
+		work_queue.join()
 
 	return True
 
