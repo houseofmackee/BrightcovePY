@@ -5,10 +5,10 @@ import json
 import argparse
 import time
 import queue
-from threading import Thread
 import logging
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
+from threading import Thread
 from requests_toolbelt import MultipartEncoder # pip3 install requests_toolbelt
 from os.path import expanduser
 from os.path import basename
@@ -449,7 +449,7 @@ class CMS(Base):
 	# get who created a video
 	#===========================================
 	@staticmethod
-	def GetCreatedBy(video):
+	def GetCreatedBy(video: dict) -> str:
 		creator = 'Unknown'
 		if(video):
 			createdBy = video.get('created_by')
@@ -1114,7 +1114,7 @@ def ConvertSeconds(seconds):
 #===========================================
 # test if a value is a valid JSON string
 #===========================================
-def is_json(myjson):
+def is_json(myjson) -> bool:
 	try:
 		_ = json.loads(myjson)
 	except Exception as e:
@@ -1206,7 +1206,7 @@ def process_account(work_queue: queue.Queue):
 #===========================================
 # this is the main loop to process videos
 #===========================================
-def process_video(inputfile, processVideo=list_videos, vidID=None):
+def process_video(inputfile, process_callback=list_videos, video_id=None) -> bool:
 	global oauth
 	global cms
 	global di
@@ -1225,10 +1225,10 @@ def process_video(inputfile, processVideo=list_videos, vidID=None):
 				except queue.Empty:
 					logging.info('Queue empty -> exiting worker thread')
 					return
-				# do whatever work you have to do on work
 
+				# do whatever work you have to do on work
 				if(type(work) == dict):
-					processVideo(work)
+					process_callback(work)
 				elif(work == 'EXIT'):
 					logging.info('EXIT found -> exiting worker thread')
 					self.q.task_done()
@@ -1236,13 +1236,13 @@ def process_video(inputfile, processVideo=list_videos, vidID=None):
 				else:
 					video = None
 					try:
-						video = cms.GetVideo(accountID=accountID, videoID=work)
+						video = cms.GetVideo(accountID=account_id, videoID=work)
 					except Exception as e:
 						video = None
 
 					if(video and video.status_code in CMS.success_responses):
 						try:
-							processVideo(video.json())
+							process_callback(video.json())
 						except Exception as e:
 							eprint(('Error executing callback for video ID {videoid}: {error}').format(videoid=work, error=e))
 					else:
@@ -1251,16 +1251,16 @@ def process_video(inputfile, processVideo=list_videos, vidID=None):
 				self.q.task_done()
 
 	# get the account info and credentials
-	accountID,b,c,opts = LoadAccountInfo(inputfile)
+	account_id,b,c,opts = LoadAccountInfo(inputfile)
 
-	if(None in [accountID,b,c,opts]):
+	if(None in [account_id,b,c,opts]):
 		return False
 
 	# update account ID if passed in command line
 	if(args.t):
-		accountID = args.t
+		account_id = args.t
 
-	oauth = OAuth(accountID,b,c)
+	oauth = OAuth(account_id,b,c)
 	cms = CMS(oauth)
 	di = DynamicIngest(oauth)
 
@@ -1272,18 +1272,23 @@ def process_video(inputfile, processVideo=list_videos, vidID=None):
 	# check if we should process a specific video ID
 	#=========================================================
 	#=========================================================
-	if(vidID):
-		print(('Processing video ID {videoid} now.').format(videoid=vidID))
-		video = None
+	if(video_id):
+		print(('Processing video ID {videoid} now.').format(videoid=video_id))
+		response = None
 		try:
-			video = cms.GetVideo(accountID=accountID, videoID=vidID)
+			response = cms.GetVideo(accountID=account_id, videoID=video_id)
 		except Exception as e:
-			video = None
-		if(video and video.status_code in CMS.success_responses):
-			processVideo(video.json())
+			response = None
+
+		if(response and response.status_code in CMS.success_responses):
+			try:
+				process_callback(response.json())
+			except Exception as e:
+				eprint(('Error executing callback for video ID {videoid}: {error}').format(videoid=video_id, error=e))
+
 			return True
 		else:
-			eprint(('Error getting information for video ID {videoid}.').format(videoid=vidID))
+			eprint(('Error getting information for video ID {videoid}.').format(videoid=video_id))
 			return False
 
 	# create the work queue because everything below uses it
@@ -1294,14 +1299,14 @@ def process_video(inputfile, processVideo=list_videos, vidID=None):
 	# check if we should process a given list of videos
 	#=========================================================
 	#=========================================================
-	videoList = opts.get('video_ids')
-	if(videoList and videoList[0] != 'all'):
-		eprint(('Found {numVideos} videos in options file. Processing them now.').format(numVideos=len(videoList)))
+	video_list = opts.get('video_ids')
+	if(video_list and video_list[0] != 'all'):
+		eprint(('Found {num_videos} videos in options file. Processing them now.').format(num_videos=len(video_list)))
 		# let's put all video IDs in a queue
-		for videoID in videoList:
-			work_queue.put_nowait(videoID)
+		for video_id in video_list:
+			work_queue.put_nowait(video_id)
 		# starting worker threads on queue processing
-		num_threads = min(max_threads, len(videoList))
+		num_threads = min(max_threads, len(video_list))
 		for _ in range(num_threads):
 			work_queue.put_nowait("EXIT")
 			Worker(work_queue).start()
@@ -1355,16 +1360,13 @@ def main(process_func):
 
 	# if a query was passed along URI encode it
 	global search_query
-	if(not args.q):
-		search_query = ''
-	else:
-		search_query = requests.utils.quote(args.q)
+	search_query = '' if not args.q else requests.utils.quote(args.q)
 
 	if(args.d):
 		logging.basicConfig(level=logging.INFO, format='[%(levelname)s:%(lineno)d]: %(message)s')
 
 	# go through the library and do stuff
-	process_video(inputfile=args.i, processVideo=process_func, vidID=args.v)
+	process_video(inputfile=args.i, process_callback=process_func, video_id=args.v)
 
 #===========================================
 # only run code if it's not imported
