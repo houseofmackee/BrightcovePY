@@ -6,6 +6,7 @@ import argparse
 import time
 import queue
 import logging
+import functools
 from typing import Callable
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
@@ -1085,6 +1086,7 @@ def LoadAccountInfo(input_filename=None):
 #===========================================
 # calculates the aspect ratio of w and h
 #===========================================
+@functools.lru_cache()
 def CalculateAspectRatio(width , height) -> int:
 	def gcd(a, b):
 		return a if b == 0 else gcd(b, a % b)
@@ -1108,6 +1110,7 @@ def CalculateAspectRatio(width , height) -> int:
 #===========================================
 # convert milliseconds to HH:MM:SS string
 #===========================================
+@functools.lru_cache()
 def ConvertMilliseconds(millis) -> str:
 	_seconds = int(int(millis)/1000)
 	_hours, _seconds = divmod(_seconds, 60*60)
@@ -1117,12 +1120,14 @@ def ConvertMilliseconds(millis) -> str:
 #===========================================
 # convert seconds to HH:MM:SS string
 #===========================================
-def ConvertSeconds(seconds):
+@functools.lru_cache()
+def ConvertSeconds(seconds) -> str:
 	return ConvertMilliseconds(int(seconds)*1000)
 
 #===========================================
 # test if a value is a valid JSON string
 #===========================================
+@functools.lru_cache()
 def is_json(myjson: str) -> bool:
 	"""Function to check if a string is valid JSON
 
