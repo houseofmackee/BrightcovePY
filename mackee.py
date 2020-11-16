@@ -1059,13 +1059,12 @@ def LoadAccountInfo(input_filename=None):
 
 	# open the config file
 	try:
-		myfile = open(input_filename, 'r')
+		with open(input_filename, 'r') as f:
+			# read and parse config file
+			obj = json.loads( f.read() )
 	except:
 		eprint(('Error: unable to open {filename}').format(filename=input_filename))
 		return None, None, None, None
-
-	# read and parse config file
-	obj = json.loads( myfile.read() )
 
 	# grab data, make it strings and strip it
 	account = obj.get('account_id')
@@ -1154,11 +1153,11 @@ def process_account(work_queue: queue.Queue) -> None:
 	# get number of videos in account
 	num_videos = cms.GetVideoCount(searchQuery=search_query)
 
-	if(num_videos<=0):
-		eprint(('No videos found in account ID {pubid}''s library.').format(pubid=oauth.account_id))
+	if(num_videos <= 0):
+		eprint(f'No videos found in account ID {oauth.account_id}''s library.')
 		return
 
-	eprint(('Found {numVideos} videos in library. Processing them now.').format(numVideos=num_videos))
+	eprint(f'Found {num_videos} videos in library. Processing them now.')
 
 	current_offset = 0
 	page_size = 50
@@ -1175,7 +1174,7 @@ def process_account(work_queue: queue.Queue) -> None:
 			status = -1
 
 		# good result
-		if (status in [200,202]):
+		if(status in [200,202]):
 			json_data = response.json()
 			# make sure we actually got some data
 			if(len(json_data) > 0):
@@ -1193,24 +1192,25 @@ def process_account(work_queue: queue.Queue) -> None:
 
 		# we hit a retryable error
 		if(status == -1):
-			if(retries>0):
-				eprint('Error: problem during API call ({code}).'.format(code=response.status_code if response else 'unknown'))
+			code = response.status_code if response else 'unknown'
+			if(retries > 0):
+				eprint(f'Error: problem during API call ({code}).')
 				for remaining in range(5, 0, -1):
-					sys.stderr.write('\rRetrying in {:2d} seconds.'.format(remaining))
+					sys.stderr.write(f'\rRetrying in {remaining:2d} seconds.')
 					sys.stderr.flush()
 					time.sleep(1)
 
 				retries -= 1
-				eprint('\rRetrying now ({remaining} retries left).'.format(remaining=retries))
+				eprint(f'\rRetrying now ({retries} retries left).')
 
 			else:
-				eprint('Error: fatal failure during API call.')
+				eprint(f'Error: fatal failure during API call ({code}).')
 				return
 
 #===========================================
 # this is the main loop to process videos
 #===========================================
-def process_video(inputfile, process_callback=list_videos, video_id=None) -> bool:
+def process_video(inputfile=None, process_callback=list_videos, video_id=None) -> bool:
 	global oauth
 	global cms
 	global di
@@ -1238,21 +1238,27 @@ def process_video(inputfile, process_callback=list_videos, video_id=None) -> boo
 				elif(type(work) == dict):
 					process_callback(work)
 				else:
-					video = None
-					try:
-						video = cms.GetVideo(accountID=account_id, videoID=work)
-					except Exception as e:
-						video = None
-
-					if(video and video.status_code in CMS.success_responses):
-						try:
-							process_callback(video.json())
-						except Exception as e:
-							eprint(('Error executing callback for video ID {videoid}: {error}').format(videoid=work, error=e))
-					else:
-						eprint(('Error getting information for video ID {videoid}.').format(videoid=work))
+					process_single_video_id(work)
 
 				self.q.task_done()
+
+	def process_single_video_id(video_id) -> bool:
+		response = None
+		try:
+			response = cms.GetVideo(accountID=account_id, videoID=video_id)
+		except Exception as e:
+			response = None
+
+		if(response and response.status_code in CMS.success_responses):
+			try:
+				process_callback(response.json())
+			except Exception as e:
+				eprint(('Error executing callback for video ID {videoid}: {error}').format(videoid=video_id, error=e))
+			return True
+
+		else:
+			eprint(('Error getting information for video ID {videoid}.').format(videoid=video_id))
+			return False
 
 	# get the account info and credentials
 	account_id,b,c,opts = LoadAccountInfo(inputfile)
@@ -1277,23 +1283,8 @@ def process_video(inputfile, process_callback=list_videos, video_id=None) -> boo
 	#=========================================================
 	#=========================================================
 	if(video_id):
-		print(('Processing video ID {videoid} now.').format(videoid=video_id))
-		response = None
-		try:
-			response = cms.GetVideo(accountID=account_id, videoID=video_id)
-		except Exception as e:
-			response = None
-
-		if(response and response.status_code in CMS.success_responses):
-			try:
-				process_callback(response.json())
-			except Exception as e:
-				eprint(('Error executing callback for video ID {videoid}: {error}').format(videoid=video_id, error=e))
-
-			return True
-		else:
-			eprint(('Error getting information for video ID {videoid}.').format(videoid=video_id))
-			return False
+		print(f'Processing video ID {video_id} now.')
+		return process_single_video_id(video_id)
 
 	# create the work queue because everything below uses it
 	work_queue = queue.Queue(maxsize=0)
@@ -1305,12 +1296,13 @@ def process_video(inputfile, process_callback=list_videos, video_id=None) -> boo
 	#=========================================================
 	video_list = opts.get('video_ids')
 	if(video_list and video_list[0] != 'all'):
-		eprint(('Found {num_videos} videos in options file. Processing them now.').format(num_videos=len(video_list)))
+		num_videos = len(video_list)
+		eprint(f'Found {num_videos} videos in options file. Processing them now.')
 		# let's put all video IDs in a queue
 		for video_id in video_list:
 			work_queue.put_nowait(video_id)
 		# starting worker threads on queue processing
-		num_threads = min(max_threads, len(video_list))
+		num_threads = min(max_threads, num_videos)
 		for _ in range(num_threads):
 			work_queue.put_nowait("EXIT")
 			Worker(work_queue).start()
