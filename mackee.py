@@ -6,6 +6,7 @@ import argparse
 import time
 import queue
 import logging
+from typing import Callable
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
 from threading import Thread
@@ -500,6 +501,15 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		apiRequest = (CMS.base_url+'/videos?limit={pageSize}&offset={offset}&sort=created_at{query}').format(pubid=accountID, pageSize=pageSize, offset=pageOffset, query='&q=' + searchQuery)
+		return requests.get(apiRequest, headers=headers)
+
+	#===========================================
+	# get light version of videos in an account
+	#===========================================
+	def GetLightVideos(self, pageSize=20, pageOffset=0, searchQuery='', accountID=None):
+		accountID = accountID or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		apiRequest = (CMS.base_url+'/lightvideos?limit={pageSize}&offset={offset}&sort=created_at{query}').format(pubid=accountID, pageSize=pageSize, offset=pageOffset, query='&q=' + searchQuery)
 		return requests.get(apiRequest, headers=headers)
 
 	#===========================================
@@ -1076,7 +1086,7 @@ def LoadAccountInfo(input_filename=None):
 #===========================================
 # calculates the aspect ratio of w and h
 #===========================================
-def CalculateAspectRatio(width , height):
+def CalculateAspectRatio(width , height) -> int:
 	def gcd(a, b):
 		return a if b == 0 else gcd(b, a % b)
 
@@ -1099,7 +1109,7 @@ def CalculateAspectRatio(width , height):
 #===========================================
 # convert milliseconds to HH:MM:SS string
 #===========================================
-def ConvertMilliseconds(millis):
+def ConvertMilliseconds(millis) -> str:
 	_seconds = int(int(millis)/1000)
 	_hours, _seconds = divmod(_seconds, 60*60)
 	_minutes, _seconds = divmod(_seconds, 60)
@@ -1114,7 +1124,15 @@ def ConvertSeconds(seconds):
 #===========================================
 # test if a value is a valid JSON string
 #===========================================
-def is_json(myjson) -> bool:
+def is_json(myjson: str) -> bool:
+	"""Function to check if a string is valid JSON
+
+	Args:
+		myjson (str): string to check
+
+	Returns:
+		bool: true if myjson is valid JSON, false otherwise
+	"""
 	try:
 		_ = json.loads(myjson)
 	except Exception as e:
@@ -1124,29 +1142,30 @@ def is_json(myjson) -> bool:
 #===========================================
 # default processing function
 #===========================================
-def list_videos(video):
+def list_videos(video: dict) -> None:
 	print(video.get('id')+', "'+video.get('name')+'"')
 
 #===========================================
 # function to fill queue with all videos
 # from a Video Cloud account
 #===========================================
-def process_account(work_queue: queue.Queue):
+def process_account(work_queue: queue.Queue) -> None:
 	# ok, let's process all videos
 	# get number of videos in account
 	num_videos = cms.GetVideoCount(searchQuery=search_query)
 
-	if(num_videos>0):
-		eprint(('Found {numVideos} videos in library. Processing them now.').format(numVideos=num_videos))
-	else:
+	if(num_videos<=0):
 		eprint(('No videos found in account ID {pubid}''s library.').format(pubid=oauth.account_id))
-		return False
+		return
+
+	eprint(('Found {numVideos} videos in library. Processing them now.').format(numVideos=num_videos))
 
 	current_offset = 0
 	page_size = 50
 	retries = 10
 
-	while(current_offset<num_videos):
+	while(current_offset < num_videos):
+
 		response = None
 		status = 0
 		try:
@@ -1157,40 +1176,25 @@ def process_account(work_queue: queue.Queue):
 
 		# good result
 		if (status in [200,202]):
-			json_data = json.loads(response.text)
+			json_data = response.json()
 			# make sure we actually got some data
 			if(len(json_data) > 0):
 				# let's put all videos in a queue
-
 				for video in json_data:
 					work_queue.put_nowait(video)
 				# reset retries count and increase page offset
 				retries = 10
 				current_offset += page_size
+				num_videos = cms.GetVideoCount(searchQuery=search_query)
 
 			# looks like we got an empty response (it can happen)
 			else:
 				status = -1
 
-		# token probably expired
-		elif(status == 401):
-			if(retries>0):
-				status = -1
-			else:
-				eprint('Error: possible problem with OAuth token:')
-				eprint(response.content)
-				return False
-
-		# we received an unexpected status code, let's get out of here
-		elif(status != -1):
-			eprint('Error: Received unexpected status code {status_code}:'.format(status_code=response.status_code))
-			eprint(response.json())
-			return False
-
 		# we hit a retryable error
 		if(status == -1):
 			if(retries>0):
-				eprint('Error: problem during API call.')
+				eprint('Error: problem during API call ({code}).'.format(code=response.status_code if response else 'unknown'))
 				for remaining in range(5, 0, -1):
 					sys.stderr.write('\rRetrying in {:2d} seconds.'.format(remaining))
 					sys.stderr.flush()
@@ -1201,7 +1205,7 @@ def process_account(work_queue: queue.Queue):
 
 			else:
 				eprint('Error: fatal failure during API call.')
-				return False
+				return
 
 #===========================================
 # this is the main loop to process videos
@@ -1221,18 +1225,18 @@ def process_video(inputfile, process_callback=list_videos, video_id=None) -> boo
 		def run(self):
 			while True:
 				try:
-					work = self.q.get(timeout=3)  # 3s timeout
+					work = self.q.get()
 				except queue.Empty:
 					logging.info('Queue empty -> exiting worker thread')
 					return
-
-				# do whatever work you have to do on work
-				if(type(work) == dict):
-					process_callback(work)
-				elif(work == 'EXIT'):
+				# is it the exit signal?
+				if(work == 'EXIT'):
 					logging.info('EXIT found -> exiting worker thread')
 					self.q.task_done()
 					return
+				# do whatever work you have to do on work
+				elif(type(work) == dict):
+					process_callback(work)
 				else:
 					video = None
 					try:
@@ -1346,7 +1350,7 @@ def process_video(inputfile, process_callback=list_videos, video_id=None) -> boo
 #===========================================
 # parse args and do the thing
 #===========================================
-def main(process_func):
+def main(process_func: Callable[[], None]) -> None:
 	# init the argument parsing
 	parser = argparse.ArgumentParser(prog=sys.argv[0])
 	parser.add_argument('-i', type=str, help='Name and path of account config information file')
