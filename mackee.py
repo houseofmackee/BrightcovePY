@@ -24,7 +24,6 @@ oauth = None
 cms = None
 opts = None
 args = None
-search_query = None
 
 # funtion to print to stderr
 def eprint(*args, **kwargs):
@@ -116,29 +115,42 @@ class Social(Base):
 
 	base_url = 'https://edge.social.api.brightcove.com/v1/accounts/{pubid}'
 
-	def __init__(self, oauth):
+	def __init__(self, oauth, query=None):
 		self.__oauth = oauth
+		self.search_query = query
 
-	def ListStatusForVideos(self, searchQuery='', accountID=None):
+	@property
+	def search_query(self) -> str:
+		return self.__search_query
+	
+	@search_query.setter
+	def search_query(self, query: str):
+		self.__search_query = '' if not query else requests.utils.quote(query)
+
+	def ListStatusForVideos(self, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
+		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (Social.base_url+'/videos/status?{query_string}').format(pubid=accountID, query_string=searchQuery)
 		return requests.get(url, headers=headers)
 
-	def ListStatusForVideo(self, videoID, searchQuery='', accountID=None):
+	def ListStatusForVideo(self, videoID, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
+		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (Social.base_url+'/videos/{video_id}/status?{query_string}').format(pubid=accountID, video_id=videoID, query_string=searchQuery)
 		return requests.get(url, headers=headers)
 
-	def ListHistoryForVideos(self, searchQuery='', accountID=None):
+	def ListHistoryForVideos(self, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
+		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (Social.base_url+'/videos/history?{query_string}').format(pubid=accountID, query_string=searchQuery)
 		return requests.get(url, headers=headers)
 
-	def ListHistoryForVideo(self, videoID, searchQuery='', accountID=None):
+	def ListHistoryForVideo(self, videoID, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
+		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (Social.base_url+'/videos/{video_id}/history?{query_string}').format(pubid=accountID, video_id=videoID, query_string=searchQuery)
 		return requests.get(url, headers=headers)
@@ -451,8 +463,17 @@ class DeliverySystem(Base):
 class CMS(Base):
 	base_url = 'https://cms.api.brightcove.com/v1/accounts/{pubid}'
 
-	def __init__(self, oauth):
+	def __init__(self, oauth, query=None):
 		self.__oauth = oauth
+		self.search_query = query
+
+	@property
+	def search_query(self) -> str:
+		return self.__search_query
+	
+	@search_query.setter
+	def search_query(self, query: str):
+		self.__search_query = '' if not query else requests.utils.quote(query)
 
 	#===========================================
 	# get who created a video
@@ -473,8 +494,9 @@ class CMS(Base):
 	#===========================================
 	# get number of videos in an account
 	#===========================================
-	def GetVideoCount(self, searchQuery='', accountID=None):
+	def GetVideoCount(self, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
+		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/count?q={query}').format(pubid=accountID,query=searchQuery)
 		r = requests.get(url, headers=headers)
@@ -505,8 +527,9 @@ class CMS(Base):
 	#===========================================
 	# get videos in an account
 	#===========================================
-	def GetVideos(self, pageSize=20, pageOffset=0, searchQuery='', accountID=None):
+	def GetVideos(self, pageSize=20, pageOffset=0, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
+		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		apiRequest = (CMS.base_url+'/videos?limit={pageSize}&offset={offset}&sort=created_at{query}').format(pubid=accountID, pageSize=pageSize, offset=pageOffset, query='&q=' + searchQuery)
 		return requests.get(apiRequest, headers=headers)
@@ -514,8 +537,9 @@ class CMS(Base):
 	#===========================================
 	# get light version of videos in an account
 	#===========================================
-	def GetLightVideos(self, pageSize=20, pageOffset=0, searchQuery='', accountID=None):
+	def GetLightVideos(self, pageSize=20, pageOffset=0, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
+		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		apiRequest = (CMS.base_url+'/lightvideos?limit={pageSize}&offset={offset}&sort=created_at{query}').format(pubid=accountID, pageSize=pageSize, offset=pageOffset, query='&q=' + searchQuery)
 		return requests.get(apiRequest, headers=headers)
@@ -796,23 +820,19 @@ class CMS(Base):
 		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=accountID, playlistid=playlistID)
 		return (requests.get(url, headers=headers))
 
-	def GetPlaylistCount(self, searchQuery='', accountID=None):
+	def GetPlaylistCount(self, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
+		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
-		if(searchQuery != ''):
-			searchQuery = requests.utils.quote(searchQuery)
 		url = (CMS.base_url+'/counts/playlists?q={query}').format(pubid=accountID, query=searchQuery)
 		return (requests.get(url, headers=headers))
 
-	def GetPlaylists(self, sort='-updated_at', searchQuery='', pageSize=100, pageOffset=0, accountID=None):
+	def GetPlaylists(self, sort='-updated_at', searchQuery=None, pageSize=100, pageOffset=0, accountID=None):
 		accountID = accountID or self.__oauth.account_id
+		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		if sort not in ['name', 'reference_id', 'created_at', 'published_at', 'updated_at', 'schedule.starts_at', 'schedule.ends_at', 'state', 'plays_total', 'plays_trailing_week', '-name', '-reference_id', '-created_at', '-published_at', '-updated_at', '-schedule.starts_at', '-schedule.ends_at', '-state', '-plays_total', '-plays_trailing_week']:
 			sort = '-updated_at'
-
-		if(searchQuery != ''):
-			searchQuery = requests.utils.quote(searchQuery)
-
 		url = (CMS.base_url+'/playlists?limit={limit}&offset={offset}&sort={sort}&q={query}').format(pubid=accountID, limit=pageSize, offset=pageOffset, sort=sort, query=searchQuery)
 		return (requests.get(url, headers=headers))
 
@@ -995,9 +1015,7 @@ class DynamicIngest(Base):
 			if r.status_code in DynamicIngest.success_responses:
 				profile = r.json().get('default_profile_id')
 
-		priority = self.__priorityQueue
-		if(priorityQueue):
-			priority = priorityQueue
+		priority = priorityQueue or self.__priorityQueue
 
 		headers = self.__oauth.get_headers()
 		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
@@ -1008,7 +1026,6 @@ class DynamicIngest(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		profile = self.__ingestProfile
-		priority = self.__priorityQueue
 
 		if(ingestProfile and self.__ip.ProfileExists(accountID=accountID, profileID=ingestProfile)):
 			profile = ingestProfile
@@ -1017,8 +1034,7 @@ class DynamicIngest(Base):
 			if r.status_code in DynamicIngest.success_responses:
 				profile = r.json().get('default_profile_id')
 
-		if(priorityQueue):
-			priority = priorityQueue
+		priority = priorityQueue or self.__priorityQueue
 
 		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
 		data =	'{ "profile":"'+profile+'", "master": { "url": "'+sourceURL+'" }, "priority": "'+priority+'", "capture-images": '+str(captureImages).lower()+' }'
@@ -1093,7 +1109,7 @@ def LoadAccountInfo(input_filename=None):
 # calculates the aspect ratio of w and h
 #===========================================
 @functools.lru_cache()
-def CalculateAspectRatio(width , height) -> int:
+def CalculateAspectRatio(width: int , height: int) -> int:
 	def gcd(a, b):
 		return a if b == 0 else gcd(b, a % b)
 
@@ -1134,9 +1150,10 @@ def ConvertSeconds(seconds) -> str:
 # returns a DI instance
 #===========================================
 @static_vars(di=None)
-def GetDI():
+def GetDI() -> DynamicIngest:
 	if(not GetDI.di):
 		GetDI.di = DynamicIngest(oauth)
+		logging.info('Obtained DI instance')
 
 	return GetDI.di
 
@@ -1172,7 +1189,7 @@ def list_videos(video: dict) -> None:
 def process_account(work_queue: queue.Queue) -> None:
 	# ok, let's process all videos
 	# get number of videos in account
-	num_videos = cms.GetVideoCount(searchQuery=search_query)
+	num_videos = cms.GetVideoCount()
 
 	if(num_videos <= 0):
 		eprint(f'No videos found in account ID {oauth.account_id}''s library.')
@@ -1189,7 +1206,7 @@ def process_account(work_queue: queue.Queue) -> None:
 		response = None
 		status = 0
 		try:
-			response = cms.GetVideos(pageSize=page_size, pageOffset=current_offset, searchQuery=search_query)
+			response = cms.GetVideos(pageSize=page_size, pageOffset=current_offset)
 			status = response.status_code
 		except Exception as e:
 			status = -1
@@ -1204,7 +1221,7 @@ def process_account(work_queue: queue.Queue) -> None:
 				# reset retries count and increase page offset
 				retries = 10
 				current_offset += page_size
-				num_videos = cms.GetVideoCount(searchQuery=search_query)
+				num_videos = cms.GetVideoCount()
 
 			# looks like we got an empty response (it can happen)
 			else:
@@ -1234,7 +1251,6 @@ def process_video(inputfile=None, process_callback=list_videos, video_id=None) -
 	global oauth
 	global cms
 	global opts
-	global search_query
 
 	# worker class for multithreading
 	class Worker(Thread):
@@ -1242,7 +1258,8 @@ def process_video(inputfile=None, process_callback=list_videos, video_id=None) -
 			self.q = q
 			super().__init__(*args, **kwargs)
 		def run(self):
-			while True:
+			keep_working = True
+			while keep_working:
 				try:
 					work = self.q.get()
 				except queue.Empty:
@@ -1251,8 +1268,7 @@ def process_video(inputfile=None, process_callback=list_videos, video_id=None) -
 				# is it the exit signal?
 				if(work == 'EXIT'):
 					logging.info('EXIT found -> exiting worker thread')
-					self.q.task_done()
-					return
+					keep_working = False
 				# do whatever work you have to do on work
 				elif(type(work) == dict):
 					process_callback(work)
@@ -1286,14 +1302,14 @@ def process_video(inputfile=None, process_callback=list_videos, video_id=None) -
 		return False
 
 	# update account ID if passed in command line
-	if(args.t):
-		account_id = args.t
+	account_id = args.t or account_id
 
 	oauth = OAuth(account_id,b,c)
-	cms = CMS(oauth)
+	cms = CMS(oauth=oauth, query=args.q)
 
 	# if async is enabled use more than one thread
-	max_threads = args.a if args.a else 1
+	max_threads = args.a or 1
+	logging.info(f'Using {max_threads} thread(s) for processing')
 
 	#=========================================================
 	#=========================================================
@@ -1371,10 +1387,6 @@ def main(process_func: Callable[[], None]) -> None:
 	# parse the args
 	global args
 	args = parser.parse_args()
-
-	# if a query was passed along URI encode it
-	global search_query
-	search_query = '' if not args.q else requests.utils.quote(args.q)
 
 	if(args.d):
 		logging.basicConfig(level=logging.INFO, format='[%(levelname)s:%(lineno)d]: %(message)s')
