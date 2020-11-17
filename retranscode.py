@@ -28,9 +28,8 @@ def retranscode(video):
 
 	# if it has a master then use that for retranscode
 	if(hasMaster):
-		print(videoID+': retranscoding using digital master -> '+str(mackee.di.RetranscodeVideo(videoID=videoID, profileID=ingestProfile,captureImages=captureImages, priorityQueue=priority).status_code))
+		print(videoID+': retranscoding using digital master -> '+str(mackee.GetDI().RetranscodeVideo(videoID=videoID, profileID=ingestProfile,captureImages=captureImages, priorityQueue=priority).status_code))
 
-	
 	# otherwise try to find a high resolution MP4 rendition and use that
 	else:
 		# get sources for the video and try to find the biggest MP4 video
@@ -38,14 +37,14 @@ def retranscode(video):
 		sourceList = mackee.cms.GetVideoSources(videoID=videoID).json()
 		for source in sourceList:
 			sourceType = source.get('container')
-			if(sourceType and sourceType=='MP4'):
+			if(sourceType=='MP4'):
 				w, h = source.get('width'), source.get('height')
 				if(h and w and w>sourceW): # checking w/h to avoid error by audio only renditions
 					sourceW, sourceH, sourceURL = w, h, source.get('src')
 
 		# if a source was found download it, using the video ID as filename
 		if(sourceURL):
-			print(videoID+': retranscoding using highest resolution MP4 ('+str(sourceW)+'x'+str(sourceH)+') -> '+str(mackee.di.SubmitIngest(videoID=videoID, sourceURL=sourceURL, ingestProfile=ingestProfile,captureImages=captureImages, priorityQueue=priority).status_code))
+			print(videoID+': retranscoding using highest resolution MP4 ('+str(sourceW)+'x'+str(sourceH)+') -> '+str(mackee.GetDI().SubmitIngest(videoID=videoID, sourceURL=sourceURL, ingestProfile=ingestProfile,captureImages=captureImages, priorityQueue=priority).status_code))
 
 		else:
 			print(videoID+': can not be retranscoded (no master or MP4 video rendition)')

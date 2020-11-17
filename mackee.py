@@ -22,7 +22,6 @@ ABC = abc.ABCMeta('ABC', (object,), {})
 # some globals
 oauth = None
 cms = None
-di = None
 opts = None
 args = None
 search_query = None
@@ -30,6 +29,14 @@ search_query = None
 # funtion to print to stderr
 def eprint(*args, **kwargs):
 	print(*args, file=sys.stderr, **kwargs)
+
+# decorator for static variables
+def static_vars(**kwargs):
+	def decorate(func):
+		for k in kwargs:
+			setattr(func, k, kwargs[k])
+		return func
+	return decorate
 
 class Base(ABC):
 
@@ -1055,8 +1062,7 @@ class DynamicIngest(Base):
 #===========================================
 def LoadAccountInfo(input_filename=None):
 	# if no config file was passed we use the default
-	if(not input_filename):
-		input_filename = expanduser('~')+'/account_info.json'
+	input_filename = input_filename or expanduser('~')+'/account_info.json'
 
 	# open the config file
 	try:
@@ -1125,6 +1131,16 @@ def ConvertSeconds(seconds) -> str:
 	return ConvertMilliseconds(int(seconds)*1000)
 
 #===========================================
+# returns a DI instance
+#===========================================
+@static_vars(di=None)
+def GetDI():
+	if(not GetDI.di):
+		GetDI.di = DynamicIngest(oauth)
+
+	return GetDI.di
+
+#===========================================
 # test if a value is a valid JSON string
 #===========================================
 @functools.lru_cache()
@@ -1184,8 +1200,7 @@ def process_account(work_queue: queue.Queue) -> None:
 			# make sure we actually got some data
 			if(len(json_data) > 0):
 				# let's put all videos in a queue
-				for video in json_data:
-					work_queue.put_nowait(video)
+				[ work_queue.put_nowait(video) for video in json_data ]
 				# reset retries count and increase page offset
 				retries = 10
 				current_offset += page_size
@@ -1218,7 +1233,6 @@ def process_account(work_queue: queue.Queue) -> None:
 def process_video(inputfile=None, process_callback=list_videos, video_id=None) -> bool:
 	global oauth
 	global cms
-	global di
 	global opts
 	global search_query
 
@@ -1277,7 +1291,6 @@ def process_video(inputfile=None, process_callback=list_videos, video_id=None) -
 
 	oauth = OAuth(account_id,b,c)
 	cms = CMS(oauth)
-	di = DynamicIngest(oauth)
 
 	# if async is enabled use more than one thread
 	max_threads = args.a if args.a else 1
@@ -1304,8 +1317,7 @@ def process_video(inputfile=None, process_callback=list_videos, video_id=None) -
 		num_videos = len(video_list)
 		eprint(f'Found {num_videos} videos in options file. Processing them now.')
 		# let's put all video IDs in a queue
-		for video_id in video_list:
-			work_queue.put_nowait(video_id)
+		[ work_queue.put_nowait(video_id) for video_id in video_list ]
 		# starting worker threads on queue processing
 		num_threads = min(max_threads, num_videos)
 		for _ in range(num_threads):
@@ -1328,15 +1340,13 @@ def process_video(inputfile=None, process_callback=list_videos, video_id=None) -
 	account_page_thread.start()
 
 	# starting worker threads on queue processing
-	for _ in range(max_threads):
-		Worker(work_queue).start()
+	[ Worker(work_queue).start() for _ in range(max_threads) ]
 
 	# first wait for the queue filling thread to finish
 	account_page_thread.join()
 
 	# once the queue is filled with videos add exit signals
-	for _ in range(max_threads):
-		work_queue.put_nowait("EXIT")
+	[ work_queue.put_nowait("EXIT") for _ in range(max_threads) ]
 
 	# now we wait until the queue has been processed
 	if(not work_queue.empty()):
