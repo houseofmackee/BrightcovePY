@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-import math
+import csv
 import concurrent.futures
 from mackee import eprint
 from mackee import CMS
 from mackee import OAuth
+from mackee import wrangle_id
 from mackee import LoadAccountInfo
 try:
 	import pandas
@@ -22,38 +23,33 @@ column_name = 'video_id'
 cms = None
 opts = None
 
+def showProgress(progress: int) -> None:
+	sys.stderr.write(f'\r{progress} processed...\r')
+	sys.stderr.flush()
+
 # function to check if a video ID is valid and then delete it
-def deleteVideo(videoID):
+def deleteVideo(video_id):
 	global cms
-	# is it a float?
-	if(type(videoID) is float):
-		if(not math.isnan(videoID)):
-			videoID = int(videoID)
-		else:
-			videoID = None
-	# is it a string?
-	elif (type(videoID) is str):
-		try:
-			videoID = int(videoID)
-		except:
-			videoID = None
-	# is it an int?
-	if(type(videoID) is int):
-		response = cms.DeleteVideo(videoID=videoID).status_code
+	_, work_id = wrangle_id(video_id)
+	if(work_id):
+		response = cms.DeleteVideo(videoID=work_id).status_code
 		# if it failed try to remove it from playlists and try again
 		if(response==409):
-			cms.RemoveVideoFromAllPlaylists(videoID=videoID)
-			response = cms.DeleteVideo(videoID=videoID).status_code
-
-		return [videoID, response]
+			cms.RemoveVideoFromAllPlaylists(videoID=work_id)
+			response = cms.DeleteVideo(videoID=work_id).status_code
+	
+		return [video_id, response]
+	
+	return [video_id, 'invalid video ID']
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
-parser.add_argument('--config', metavar='<config filename>', type=str, help='Name and path of account config information file')
+parser.add_argument('--config', metavar='<filename>', type=str, help='Name and path of account config information file')
 parser.add_argument('--account', metavar='<Brightcove account ID>', type=str, help='Brightcove account ID to use (if different from ID in config)')
+parser.add_argument('--report', metavar='<filename>', type=str, help='Name for deletion report')
 # if we have pandas add xls/column arguments
 if(pandas):
-	parser.add_argument('--xls', metavar='<XLS file>', type=str, help='Name of input XLS file')
+	parser.add_argument('--xls', metavar='<XLS/CSV file>', type=str, help='Name of input XLS or CSV file')
 	parser.add_argument('--column', metavar='<column name>', type=str, help='Name of video ID column in XLS file')
 
 # parse the args
@@ -79,8 +75,16 @@ videoList = None
 
 # if we have pandas and an xls and column then use that
 if(pandas and args.xls):
-	data = pandas.read_excel(args.xls) 
-	videoList = [videoID for videoID in data[column_name]]
+	try:
+		if(args.xls.lower().endswith('csv')):
+			data = pandas.read_csv(args.xls) 
+		else:
+			data = pandas.read_excel(args.xls)
+	except Exception as e:
+		eprint(f'Error while trying to read {args.xls}: {e}')
+		sys.exit(2)
+	else:
+		videoList = [videoID for videoID in data[column_name]]
 
 # no pandas, so just use the options from the config file
 elif(opts):
@@ -93,6 +97,8 @@ if(not videoList or videoList[0] == 'all'):
 
 # delete 'em
 else:
+	videosProcessed = 0
+	row_list = [['operation','video_id','result']]
 	with concurrent.futures.ThreadPoolExecutor(max_workers = 5) as executor:
 		future_to_videoid = {executor.submit(deleteVideo, videoID): videoID for videoID in videoList}
 		for future in concurrent.futures.as_completed(future_to_videoid):
@@ -102,4 +108,22 @@ else:
 			except Exception as exc:
 				eprint(f'{video} generated an exception: {exc}')
 			else:
-				print(f'delete, {data[0]}, {data[1]}')
+				# display counter every 100 videos
+				videosProcessed += 1
+				if(videosProcessed%100==0):
+					showProgress(videosProcessed)
+				if(data):
+					row_list.append(['delete', data[0], data[1]])
+
+	showProgress(videosProcessed)
+
+	#write list to file
+	try:
+		with open('report.csv' if not args.report else args.report, 'w', newline='', encoding='utf-8') as file:
+			try:
+				writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
+				writer.writerows(row_list)
+			except Exception as e:
+				eprint(f'\nError writing CSV data to file: {e}')
+	except Exception as e:
+		eprint(f'\nError creating outputfile: {e}')
