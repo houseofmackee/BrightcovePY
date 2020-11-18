@@ -49,7 +49,15 @@ class Base(ABC):
 	success_responses = [200,201,202,203,204]
 
 	def __init__(self):
-		pass
+		self.__search_query = ''
+
+	@property
+	def search_query(self) -> str:
+		return self.__search_query
+	
+	@search_query.setter
+	def search_query(self, query: str):
+		self.__search_query = '' if not query else requests.utils.quote(query)
 
 class DeliveryRules(Base):
 	base_url = 'https://delivery-rules.api.brightcove.com/accounts/{pubid}'
@@ -118,14 +126,6 @@ class Social(Base):
 	def __init__(self, oauth, query=None):
 		self.__oauth = oauth
 		self.search_query = query
-
-	@property
-	def search_query(self) -> str:
-		return self.__search_query
-	
-	@search_query.setter
-	def search_query(self, query: str):
-		self.__search_query = '' if not query else requests.utils.quote(query)
 
 	def ListStatusForVideos(self, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
@@ -466,14 +466,6 @@ class CMS(Base):
 	def __init__(self, oauth, query=None):
 		self.__oauth = oauth
 		self.search_query = query
-
-	@property
-	def search_query(self) -> str:
-		return self.__search_query
-	
-	@search_query.setter
-	def search_query(self, query: str):
-		self.__search_query = '' if not query else requests.utils.quote(query)
 
 	#===========================================
 	# get who created a video
@@ -1177,6 +1169,88 @@ def is_json(myjson: str) -> bool:
 	return True
 
 #===========================================
+# converts asset ID to string
+#===========================================
+@functools.lru_cache()
+def normalize_id(asset_id) -> str:
+	"""Converts an asset ID to string
+
+	Args:
+		asset_id (any): video or playlist ID
+
+	Returns:
+		str: string representation of the ID, None if invalid ID
+	"""
+	_, response = wrangle_id(asset_id)
+	return response
+
+#===========================================
+# test if a value is a valid ID
+#===========================================
+@functools.lru_cache()
+def is_valid_id(asset_id) -> bool:
+	"""Function to check if a given value is a valid asset ID
+
+	Args:
+		asset_id (any): value to check
+
+	Returns:
+		bool: True if it's a valid ID, False otherwise
+	"""
+	response, _ = wrangle_id(asset_id)
+	return response
+
+#===========================================
+# test if a value is a valid ID and convert
+# to string
+#===========================================
+@functools.lru_cache()
+def wrangle_id(asset_id):
+	"""Converts ID to string and checks if it's a valid ID
+
+	Args:
+		asset_id (any): asset ID (video or playlist)
+
+	Returns:
+		(bool, str): True and string representation of ID if valid, False and None otherwise
+	"""
+	is_valid = False
+	work_id = None
+
+	# is it a float?
+	if(type(asset_id) is float):
+		if(asset_id.is_integer()):
+			work_id = str(int(asset_id))
+			is_valid = True
+		else:
+			is_valid = False
+
+	# is it a string?
+	elif (type(asset_id) is str):
+		if(asset_id.lower().startswith('ref:') and len(asset_id)<=154):
+			work_id = asset_id
+			is_valid = True
+		else:
+			try:
+				work_id = str(int(asset_id))
+			except:
+				is_valid = False
+			else:
+				is_valid = True
+
+	# is it an int?
+	elif (type(asset_id) is int):
+		if(asset_id>0):
+			try:
+				work_id = str(int(asset_id))
+			except:
+				is_valid = False
+			else:
+				is_valid = True
+
+	return is_valid, work_id
+
+#===========================================
 # default processing function
 #===========================================
 def list_videos(video: dict) -> None:
@@ -1292,7 +1366,11 @@ def process_video(inputfile=None, process_callback=list_videos, video_id=None) -
 			return True
 
 		else:
-			eprint(('Error getting information for video ID {videoid}.').format(videoid=video_id))
+			if(response):
+				code = response.status_code
+			else:
+				code = 'exception'
+			eprint(('Error getting information for video ID {videoid} ({error}).').format(videoid=video_id,error=code))
 			return False
 
 	# get the account info and credentials
@@ -1381,6 +1459,7 @@ def main(process_func: Callable[[], None]) -> None:
 	parser.add_argument('-t', type=str, help='Target account ID')
 	parser.add_argument('-v', type=str, help='Specific video ID to process')
 	parser.add_argument('-o', type=str, help='Output filename')
+	parser.add_argument('-x', type=str, help='XLS input filename')
 	parser.add_argument('-a', type=int, const=10, nargs='?', help='Async processing of videos')
 	parser.add_argument('-d', action='store_true', default=False, help='Show debug info messages')
 
