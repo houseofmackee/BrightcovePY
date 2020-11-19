@@ -2,7 +2,7 @@
 
 This repository contains tools and modules written in Python to deal with Brightcove related APIs and simplifying tasks such as iterating over the full video library and performing actions on the videos.
 
-Tested version(s) of Python: 3.8.2 (most scripts are also working with 2.7.17, but going forward I can't guarantee compatibility)
+Tested version(s) of Python: 3.8.3
 
 # Notable files
 
