@@ -3,15 +3,13 @@ import mackee
 import time
 import csv
 from threading import Lock
+from collections import defaultdict
 
 videosProcessed = 0
 counter_lock = Lock()
 data_lock = Lock()
 
-createdByDict = {
-	'Unknown':0,
-	'API':0
-}
+createdByDict = defaultdict(int)
 
 def showProgress(progress):
 	mackee.sys.stderr.write(f'\r{progress} processed...\r')
@@ -27,10 +25,7 @@ def getCreatedByReport(video):
 	creator = mackee.CMS.GetCreatedBy(video)
 
 	with data_lock:
-		try:
-			createdByDict[creator] += 1
-		except KeyError:
-			createdByDict[creator] = 1
+		createdByDict[creator] += 1
 
 	with counter_lock:
 		videosProcessed += 1
