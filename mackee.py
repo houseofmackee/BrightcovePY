@@ -7,7 +7,8 @@ import time
 import queue
 import logging
 import functools
-from typing import Callable
+import pandas
+from typing import Callable, List, Tuple
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
 from threading import Thread
@@ -18,6 +19,9 @@ from os.path import basename
 # provide abstract class functionality for Python 2 and 3
 import abc
 ABC = abc.ABCMeta('ABC', (object,), {})
+
+# disable certificate warnings
+requests.urllib3.disable_warnings()
 
 # some globals
 oauth = None
@@ -66,10 +70,7 @@ class DeliveryRules(Base):
 		self.__oauth = oauth
 
 	def DeliveryRulesEnabled(self, accountID=None):
-		if(self.GetDeliveryRules(accountID=accountID).status_code == 200):
-			return True
-		else:
-			return False
+		return (self.GetDeliveryRules(accountID=accountID).status_code == 200)
 
 	def GetDeliveryRules(self, accountID=None):
 		accountID = accountID or self.__oauth.account_id
@@ -1068,7 +1069,15 @@ class DynamicIngest(Base):
 #===========================================
 # read account info from JSON file
 #===========================================
-def LoadAccountInfo(input_filename=None):
+def LoadAccountInfo(input_filename:str=None) -> Tuple[str, str, str, dict]:
+	"""Function to get information about account from config JSON file
+
+	Args:
+		input_filename (str, optional): path and name of the config JSON file. Defaults to None and will use "account_info.json" from the user's home folder.
+
+	Returns:
+		Tuple[str, str, str, dict]: account ID, client ID, client secret and the full deserialized JSON object
+	"""
 	# if no config file was passed we use the default
 	input_filename = input_filename or expanduser('~')+'/account_info.json'
 
@@ -1101,7 +1110,16 @@ def LoadAccountInfo(input_filename=None):
 # calculates the aspect ratio of w and h
 #===========================================
 @functools.lru_cache()
-def CalculateAspectRatio(width: int , height: int) -> int:
+def aspect_ratio(width: int , height: int) -> Tuple[int, int]:
+	"""Function to calculate aspect ratio for two given values
+
+	Args:
+		width (int): width value
+		height (int): height value
+
+	Returns:
+		Tuple[int, int]: ratio of width to height
+	"""
 	def gcd(a, b):
 		return a if b == 0 else gcd(b, a % b)
 
@@ -1217,13 +1235,14 @@ def wrangle_id(asset_id):
 	is_valid = False
 	work_id = None
 
-	# is it a float?
-	if(type(asset_id) is float):
-		if(asset_id.is_integer()):
-			work_id = str(int(asset_id))
-			is_valid = True
-		else:
+	# is it an int?
+	if (type(asset_id) is int and asset_id > 0):
+		try:
+			work_id = str(asset_id)
+		except:
 			is_valid = False
+		else:
+			is_valid = True
 
 	# is it a string?
 	elif (type(asset_id) is str):
@@ -1238,17 +1257,48 @@ def wrangle_id(asset_id):
 			else:
 				is_valid = True
 
-	# is it an int?
-	elif (type(asset_id) is int):
-		if(asset_id>0):
-			try:
-				work_id = str(int(asset_id))
-			except:
-				is_valid = False
-			else:
-				is_valid = True
+	# is it a float?
+	elif (type(asset_id) is float):
+		if(asset_id.is_integer()):
+			work_id = str(int(asset_id))
+			is_valid = True
+		else:
+			is_valid = False
 
 	return is_valid, work_id
+
+#===========================================
+# read list of video IDs from XLS/CSV
+#===========================================
+def videos_from_file(filename:str, column_name:str='video_id', validate:bool=True) -> List:
+	"""Function to read a list of video IDs from an xls/csv file
+
+	Args:
+		filename (str): path and name of file to read from
+		column_name (str, optional): name of the column in the file which contains the IDs. Defaults to 'video_id'.
+		validate (bool, optional): check IDs to make sure they are valid IDs. Defaults to True.
+
+	Returns:
+		List: List object with the video IDs from the file. None if there was an error processing the file.
+	"""
+	video_list = None
+	try:
+		if(filename.lower().endswith('csv')):
+			data = pandas.read_csv(filename) 
+		else:
+			data = pandas.read_excel(filename)
+	except Exception as e:
+		eprint(f'Error while trying to read {filename}: {e}')
+	else:
+		try:
+			if(validate):
+				video_list = [video_id for video_id in data[column_name] if is_valid_id(video_id)]
+			else:
+				video_list = list(data[column_name])
+		except KeyError as e:
+			eprint(f'Error while trying to read {filename} -> missing key: "{column_name}"')
+
+	return video_list
 
 #===========================================
 # default processing function
@@ -1366,10 +1416,10 @@ def process_video(inputfile=None, process_callback=list_videos, video_id=None) -
 			return True
 
 		else:
-			if(response):
-				code = response.status_code
-			else:
+			if(response == None):
 				code = 'exception'
+			else:
+				code = response.status_code
 			eprint(('Error getting information for video ID {videoid} ({error}).').format(videoid=video_id,error=code))
 			return False
 
@@ -1406,7 +1456,11 @@ def process_video(inputfile=None, process_callback=list_videos, video_id=None) -
 	# check if we should process a given list of videos
 	#=========================================================
 	#=========================================================
-	video_list = opts.get('video_ids')
+	if(args.x):
+		video_list = videos_from_file(args.x)
+	else:
+		video_list = opts.get('video_ids')
+
 	if(video_list and video_list[0] != 'all'):
 		num_videos = len(video_list)
 		eprint(f'Found {num_videos} videos in options file. Processing them now.')
@@ -1459,7 +1513,7 @@ def main(process_func: Callable[[], None]) -> None:
 	parser.add_argument('-t', type=str, help='Target account ID')
 	parser.add_argument('-v', type=str, help='Specific video ID to process')
 	parser.add_argument('-o', type=str, help='Output filename')
-	parser.add_argument('-x', type=str, help='XLS input filename')
+	parser.add_argument('-x', type=str, help='XLS/CSV input filename')
 	parser.add_argument('-a', type=int, const=10, nargs='?', help='Async processing of videos')
 	parser.add_argument('-d', action='store_true', default=False, help='Show debug info messages')
 
@@ -1476,9 +1530,5 @@ def main(process_func: Callable[[], None]) -> None:
 #===========================================
 # only run code if it's not imported
 #===========================================
-
-# disable certificate warnings
-requests.urllib3.disable_warnings()
-
 if __name__ == '__main__':
 	main(list_videos)
