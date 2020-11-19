@@ -26,7 +26,7 @@ def findAspectRatios(video):
 				break
 		
 		if(sourceH and sourceW):
-			x,y = mackee.CalculateAspectRatio(sourceW, sourceH)
+			x,y = mackee.aspect_ratio(sourceW, sourceH)
 			print(videoID+': '+str(x)+'x'+str(y))
 		else:
 			print('No video renditions found for video ID '+videoID+'.')
