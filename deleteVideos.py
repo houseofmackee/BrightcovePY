@@ -7,6 +7,7 @@ from mackee import eprint
 from mackee import CMS
 from mackee import OAuth
 from mackee import wrangle_id
+from mackee import videos_from_file
 from mackee import LoadAccountInfo
 try:
 	import pandas
@@ -73,22 +74,12 @@ cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client
 # list to contain all video IDs
 videoList = None
 
-# if we have pandas and an xls and column then use that
-if(pandas and args.xls):
-	try:
-		if(args.xls.lower().endswith('csv')):
-			data = pandas.read_csv(args.xls) 
-		else:
-			data = pandas.read_excel(args.xls)
-	except Exception as e:
-		eprint(f'Error while trying to read {args.xls}: {e}')
-		sys.exit(2)
-	else:
-		videoList = [videoID for videoID in data[column_name]]
+# if we have an xls/csv
+if(args.xls):
+	videoList = videos_from_file(args.xls, column_name=column_name)
 
-# no pandas, so just use the options from the config file
+# otherwise just use the options from the config file
 elif(opts):
-	# get list of videos from config file
 	videoList = opts.get('video_ids')
 
 # either no list or "all" was found -> bail
