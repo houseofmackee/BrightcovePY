@@ -3,33 +3,28 @@ import sys
 import argparse
 import csv
 import concurrent.futures
+from typing import List
 from mackee import eprint
 from mackee import CMS
 from mackee import OAuth
 from mackee import wrangle_id
 from mackee import videos_from_file
 from mackee import LoadAccountInfo
-try:
-	import pandas
-except ImportError:
-	pandas = None
 
 # account/API credentials (can be None to use user defaults)
 account_id = None
 client_id = None
 client_secret = None
 
-column_name = 'video_id'
-
 cms = None
 opts = None
 
-def showProgress(progress: int) -> None:
+def showProgress(progress:int) -> None:
 	sys.stderr.write(f'\r{progress} processed...\r')
 	sys.stderr.flush()
 
 # function to check if a video ID is valid and then delete it
-def deleteVideo(video_id):
+def deleteVideo(video_id:str) -> List:
 	global cms
 	_, work_id = wrangle_id(video_id)
 	if(work_id):
@@ -48,10 +43,8 @@ parser = argparse.ArgumentParser(prog=sys.argv[0])
 parser.add_argument('--config', metavar='<filename>', type=str, help='Name and path of account config information file')
 parser.add_argument('--account', metavar='<Brightcove account ID>', type=str, help='Brightcove account ID to use (if different from ID in config)')
 parser.add_argument('--report', metavar='<filename>', type=str, help='Name for deletion report')
-# if we have pandas add xls/column arguments
-if(pandas):
-	parser.add_argument('--xls', metavar='<XLS/CSV file>', type=str, help='Name of input XLS or CSV file')
-	parser.add_argument('--column', metavar='<column name>', type=str, help='Name of video ID column in XLS file')
+parser.add_argument('--xls', metavar='<XLS/CSV file>', type=str, help='Name of input XLS or CSV file')
+parser.add_argument('--column', metavar='<column name>', type=str, help='Name of video ID column in XLS file')
 
 # parse the args
 args = parser.parse_args()
@@ -64,10 +57,6 @@ if( account_id is None and client_id is None and client_secret is None):
 if(args.account):
 	account_id = args.account
 
-# if a column name was passed then use that
-if(args.column):
-	column_name = args.column
-
 # create a CMS API instance
 cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
@@ -76,7 +65,7 @@ videoList = None
 
 # if we have an xls/csv
 if(args.xls):
-	videoList = videos_from_file(args.xls, column_name=column_name)
+	videoList = videos_from_file(args.xls, column_name=args.column if args.column else 'video_id')
 
 # otherwise just use the options from the config file
 elif(opts):
