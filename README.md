@@ -42,6 +42,8 @@ All scripts using mackee.py as a shell have the following command line options a
 
 **-a**: run processing async using multi-threading (only use if you know what you are doing)
 
+**-x**: name and path to an xls/csv file which contains a list of video IDs in a column named "video_id"
+
 **-o**: name and path for an outputfile (if supported by the utility script)
 
 # Support
