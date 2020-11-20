@@ -141,5 +141,4 @@ if __name__ == '__main__':
 		mackee.eprint(f'\nError creating outputfile: {e}')
 
 	elapsed = time.perf_counter() - s
-	mackee.eprint(f"\n{__file__} executed in {elapsed:0.2f} seconds.")	
-
+	mackee.eprint(f"\n{__file__} executed in {mackee.TimeString.from_seconds(elapsed)}.")	
