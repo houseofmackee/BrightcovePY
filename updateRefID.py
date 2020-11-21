@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-import math
 import pandas
 import time
 from mackee import CMS

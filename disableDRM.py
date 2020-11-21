@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import mackee
+from mackee import main, GetCMS
 
 #===========================================
 # callback to disable DRM
@@ -13,7 +13,7 @@ def disableDRM(video):
 		# create the JSON body
 		jsonBody = ('{ "drm_disabled": true }')
 		# make the PATCH call
-		r = mackee.cms.UpdateVideo(videoID=videoID, jsonBody=jsonBody)
+		r = GetCMS().UpdateVideo(videoID=videoID, jsonBody=jsonBody)
 		# check if all went well
 		if(r.status_code in [200,202]):
 			print(('Disabled DRM for video ID {videoid} with status {status}.').format(videoid=videoID, status=r.status_code))
@@ -26,4 +26,4 @@ def disableDRM(video):
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	mackee.main(disableDRM)
+	main(disableDRM)

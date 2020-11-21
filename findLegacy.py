@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import mackee
+from mackee import main
 
 #===========================================
 # callback to find legacy delivery videos 
@@ -12,4 +12,4 @@ def findLegacy(video):
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	mackee.main(findLegacy)
+	main(findLegacy)

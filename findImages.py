@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import mackee
+from mackee import main
 
 #===========================================
 # callback to report images for the video
@@ -20,4 +20,4 @@ def findImages(video):
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	mackee.main(findImages)
+	main(findImages)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import mackee
+from mackee import main, GetCMS
 
 #===========================================
 # callback to disable Offline Playback
@@ -12,7 +12,7 @@ def disableOffline(video):
 		# create the JSON body
 		jsonBody = ('{ "offline_enabled": false }')
 		# make the PATCH call
-		r = mackee.cms.UpdateVideo(videoID=videoID, jsonBody=jsonBody)
+		r = GetCMS().UpdateVideo(videoID=videoID, jsonBody=jsonBody)
 		# check if all went well
 		if(r.status_code in [200,202]):
 			print(('Disabled Offline Playback for video ID {videoid} with status {status}.').format(videoid=videoID, status=r.status_code))
@@ -25,4 +25,4 @@ def disableOffline(video):
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	mackee.main(disableOffline)
+	main(disableOffline)

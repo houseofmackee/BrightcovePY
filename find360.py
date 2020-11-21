@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import mackee
+from mackee import main
 
 #===========================================
 # callback to find 360 videos 
@@ -12,4 +12,4 @@ def find360(video):
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	mackee.main(find360)
+	main(find360)

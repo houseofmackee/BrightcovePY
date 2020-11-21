@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
-import mackee
+from mackee import main, eprint, GetCMS, GetArgs, TimeString
 import csv
+import sys
 import time
 from threading import Lock
 
@@ -11,8 +12,8 @@ data_lock = Lock()
 row_list = [ ['video_id','delivery_type','master_size','hls_renditions_size','mp4_renditions_size','audio_renditions_size'] ]
 
 def showProgress(progress: int) -> None:
-	mackee.sys.stderr.write(f'\r{progress} processed...\r')
-	mackee.sys.stderr.flush()
+	sys.stderr.write(f'\r{progress} processed...\r')
+	sys.stderr.flush()
 
 #===========================================
 # function to get size of master
@@ -23,7 +24,7 @@ def getMasterStorage(video: dict) -> int:
 
 	if(video.get('has_digital_master')):
 		try:
-			response = mackee.cms.GetDigitalMasterInfo(videoID=video.get('id'))
+			response = GetCMS().GetDigitalMasterInfo(videoID=video.get('id'))
 		except Exception as e:
 			response = None
 			masterSize = -1
@@ -49,14 +50,14 @@ def getRenditionSizes(video: dict) -> dict:
 
 	try:
 		if(delivery_type == 'static_origin'):
-			response = mackee.cms.GetRenditionList(videoID=video_id)
+			response = GetCMS().GetRenditionList(videoID=video_id)
 		elif(delivery_type == 'dynamic_origin'):
-			response = mackee.cms.GetDynamicRenditions(videoID=video_id)
+			response = GetCMS().GetDynamicRenditions(videoID=video_id)
 	except Exception as e:
 		response = None
 		sizes = { key:-1 for key in sizes }
 
-	if(response and response.status_code in mackee.cms.success_responses):
+	if(response and response.status_code in GetCMS().success_responses):
 		renditions = response.json()
 		for rendition in renditions:
 			size = rendition.get('size')
@@ -75,12 +76,12 @@ def getRenditionSizes(video: dict) -> dict:
 		# if it's Dynamic Delivery we need to get MP4 sizes from the sources endpoint
 		if(delivery_type == 'dynamic_origin' and sizes['mp4_size'] == 0):
 			try:
-				response = mackee.cms.GetVideoSources(videoID=video_id)
+				response = GetCMS().GetVideoSources(videoID=video_id)
 			except Exception as e:
 				response = None
 				sizes['mp4_size'] = -1
 
-			if(response and response.status_code in mackee.cms.success_responses):
+			if(response and response.status_code in GetCMS().success_responses):
 				renditions = response.json()
 				dyd_mp4 = set()
 				for rendition in renditions:
@@ -126,19 +127,19 @@ def findStorageSize(video: dict) -> None:
 #===========================================
 if __name__ == '__main__':
 	s = time.perf_counter()
-	mackee.main(findStorageSize)
+	main(findStorageSize)
 	showProgress(videosProcessed)
 
 	#write list to file
 	try:
-		with open('report.csv' if not mackee.args.o else mackee.args.o, 'w', newline='', encoding='utf-8') as file:
+		with open('report.csv' if not GetArgs().o else GetArgs().o, 'w', newline='', encoding='utf-8') as file:
 			try:
 				writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
 				writer.writerows(row_list)
 			except Exception as e:
-				mackee.eprint(f'\nError writing CSV data to file: {e}')
+				eprint(f'\nError writing CSV data to file: {e}')
 	except Exception as e:
-		mackee.eprint(f'\nError creating outputfile: {e}')
+		eprint(f'\nError creating outputfile: {e}')
 
 	elapsed = time.perf_counter() - s
-	mackee.eprint(f"\n{__file__} executed in {mackee.TimeString.from_seconds(elapsed)}.")	
+	eprint(f"\n{__file__} executed in {TimeString.from_seconds(elapsed)}.")	
