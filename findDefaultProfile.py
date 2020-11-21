@@ -23,7 +23,7 @@ account_id, client_id, client_secret, opts = LoadAccountInfo(args.config)
 if(args.account):
 	account_id = args.account
 
-# create a CMS API instance
+# create a Ingest Profiles API instance
 ingestProfiles = IngestProfiles( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # list of account IDs to check
