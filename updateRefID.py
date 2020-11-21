@@ -7,6 +7,7 @@ import time
 from mackee import CMS
 from mackee import OAuth
 from mackee import LoadAccountInfo
+from mackee import normalize_id
 
 cms = None
 
@@ -22,20 +23,8 @@ ref_id_col =  "reference_id"
 # function to check if a video ID is valid and then update it
 def updateVideo(videoID, updateData):
 	global cms
-	# is it a float?
-	if(type(videoID) is float):
-		if(not math.isnan(videoID)):
-			videoID = int(videoID)
-		else:
-			videoID = None
-	# is it a string?
-	elif (type(videoID) is str):
-		try:
-			videoID = int(videoID)
-		except:
-			videoID = None
-	# is it an int?
-	if(type(videoID) is int):
+	videoID = normalize_id(videoID)
+	if(videoID):
 		response = cms.UpdateVideo(videoID=videoID, jsonBody=updateData).status_code
 		print('Updating video ID "'+str(videoID)+'": '+ str(response))
 

@@ -6,8 +6,7 @@ import mackee
 #===========================================
 def disableOffline(video):
 	# does video have DRM?
-	isOfflineEnabled = video.get('offline_enabled')
-	if(isOfflineEnabled is not None and isOfflineEnabled==True):
+	if(video.get('offline_enabled')):
 		# get the video ID
 		videoID = str(video.get('id'))
 		# create the JSON body

@@ -6,8 +6,7 @@ import mackee
 #===========================================
 def enableDRM(video):
 	# does video have DRM?
-	isDRMDisabled = video.get('drm_disabled')
-	if(isDRMDisabled is not None and isDRMDisabled==True):
+	if(video.get('drm_disabled') == True):
 		# get the video ID
 		videoID = str(video.get('id'))
 		# create the JSON body

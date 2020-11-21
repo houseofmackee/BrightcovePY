@@ -7,7 +7,7 @@ from mackee import LoadAccountInfo
 # get account info from config file
 account_id, client_id, client_secret, _ = LoadAccountInfo()
 
-if(account_id is None and client_id is None and client_secret is None):
+if(account_id == None and client_id == None and client_secret == None):
 	print('Using default values for credentials.')
 	# edit details as required
 	account_id = ''

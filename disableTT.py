@@ -11,7 +11,7 @@ def disableTT(video):
 	# try to get all text tracks
 	tts = video.get('text_tracks')
 	# check if we found some
-	if(tts and len(tts)>0):
+	if(tts):
 		# go through all tracks
 		for track in tts:
 			#check if it's a default track

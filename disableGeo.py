@@ -15,8 +15,7 @@ def showProgress(progress):
 def disableGeo(video):
 	global videosProcessed
 	# does video have Geo restrictions?
-	isGeoEnabled = video.get('geo')
-	if(isGeoEnabled):
+	if(video.get('geo')):
 		# get the video ID
 		videoID = str(video.get('id'))
 		# create the JSON body
