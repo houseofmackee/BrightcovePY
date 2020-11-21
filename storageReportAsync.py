@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
-from mackee import main, eprint, GetCMS, GetArgs, TimeString
-import csv
+from mackee import main, eprint, GetCMS, GetArgs, TimeString, list_to_csv
 import sys
 import time
 from threading import Lock
@@ -131,15 +130,7 @@ if __name__ == '__main__':
 	showProgress(videosProcessed)
 
 	#write list to file
-	try:
-		with open('report.csv' if not GetArgs().o else GetArgs().o, 'w', newline='', encoding='utf-8') as file:
-			try:
-				writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
-				writer.writerows(row_list)
-			except Exception as e:
-				eprint(f'\nError writing CSV data to file: {e}')
-	except Exception as e:
-		eprint(f'\nError creating outputfile: {e}')
+	list_to_csv(row_list, GetArgs().o)
 
 	elapsed = time.perf_counter() - s
 	eprint(f"\n{__file__} executed in {TimeString.from_seconds(elapsed)}.")	

@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
-from mackee import main, eprint, GetCMS, GetArgs
+from mackee import main, GetArgs, list_to_csv
 from threading import Lock
-import csv
 import sys
 
 row_list = [ ['id', 'name', 'state', 'reference_id', 'created_at', 'tags'] ]
@@ -39,12 +38,5 @@ if __name__ == '__main__':
 	showProgress(videosProcessed)
 
 	#write list to file
-	try:
-		with open('report.csv' if not GetArgs().o else GetArgs().o, 'w', newline='', encoding='utf-8') as file:
-			try:
-				writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
-				writer.writerows(row_list)
-			except Exception as e:
-				eprint(f'\nError writing CSV data to file: {e}')
-	except Exception as e:
-		eprint(f'\nError creating outputfile: {e}')
+	list_to_csv(row_list, GetArgs().o)
+

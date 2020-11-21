@@ -1,11 +1,10 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-import csv
-from mackee import eprint
 from mackee import CMS
 from mackee import OAuth
 from mackee import LoadAccountInfo
+from mackee import list_to_csv
 
 # account/API credentials (can be None to use user defaults)
 account_id = None
@@ -44,13 +43,6 @@ if(response.status_code == 200):
 		row = [ folder.get(field) for field in row_list[0] ]
 		row_list.append(row)
 
+
 #write list to file
-try:
-	with open('report.csv' if not args.out else args.out, 'w', newline='', encoding='utf-8') as file:
-		try:
-			writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
-			writer.writerows(row_list)
-		except Exception as e:
-			eprint(f'\nError writing CSV data to file: {e}')
-except Exception as e:
-	eprint(f'\nError creating outputfile: {e}')
+list_to_csv(row_list, args.out)

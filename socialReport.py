@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import sys
-import csv
 from mackee import Social
 from mackee import OAuth
 from mackee import LoadAccountInfo
+from mackee import list_to_csv
 
 videos_processed = 0
 hits_to_process = 0
@@ -57,12 +57,4 @@ while(keep_running):
 showProgress(videos_processed,hits_to_process)
 
 #write list to file
-try:
-	with open(report_name, 'w', newline='', encoding='utf-8') as file:
-		try:
-			writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
-			writer.writerows(row_list)
-		except Exception as e:
-			print(f'\nError writing CSV data to file: {e}')
-except Exception as e:
-	print(f'\nError creating outputfile: {e}')
+list_to_csv(row_list, report_name)

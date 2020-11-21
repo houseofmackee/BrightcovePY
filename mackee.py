@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import print_function
 import sys
+import csv
 import json
 import argparse
 import time
@@ -46,7 +47,7 @@ class Base(ABC):
 	success_responses = [200,201,202,203,204]
 
 	def __init__(self):
-		self.__search_query = ''
+		self.search_query = ''
 
 	@property
 	def search_query(self) -> str:
@@ -457,7 +458,7 @@ class DeliverySystem(Base):
 class CMS(Base):
 	base_url = 'https://cms.api.brightcove.com/v1/accounts/{pubid}'
 
-	def __init__(self, oauth:OAuth, query=None):
+	def __init__(self, oauth:OAuth, query:str=None):
 		self.__oauth = oauth
 		self.search_query = query
 
@@ -1167,7 +1168,7 @@ def GetDI(oa:OAuth=None, ip:str=None, pq:str='normal') -> DynamicIngest:
 def GetCMS(oauth:OAuth=None, query:str=None) -> CMS:
 	if(not GetCMS.cms and oauth):
 		GetCMS.cms = CMS(oauth=oauth, query=query)
-		logging.info('Obtained CMS instance')
+		logging.info('Obtained CMS instance\n')
 
 	return GetCMS.cms
 
@@ -1311,6 +1312,33 @@ def videos_from_file(filename:str, column_name:str='video_id', validate:bool=Tru
 			eprint(f'Error while trying to read {filename} -> missing key: "{column_name}"')
 
 	return video_list
+
+#===========================================
+# write list of rows to CSV file
+#===========================================
+def list_to_csv(row_list:list, filename:str) -> bool:
+	"""Function to write a list of rows to a CSV file
+
+	Args:
+		row_list (list): A list of lists (the rows)
+		filename (str, optional): Name for the CSV file. Defaults to 'report.csv'.
+
+	Returns:
+		bool: True if CSV successfully created, False otherwise
+	"""
+	result = False
+	try:
+		with open(filename if filename else 'report.csv', 'w', newline='', encoding='utf-8') as file:
+			try:
+				writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
+				writer.writerows(row_list)
+				result = True
+			except Exception as e:
+				eprint(f'\nError writing CSV data to file: {e}')
+	except Exception as e:
+		eprint(f'\nError creating outputfile: {e}')
+	
+	return result
 
 #===========================================
 # default processing function
@@ -1565,6 +1593,7 @@ def main(process_func:Callable[[], None]) -> None:
 
 	if(GetArgs().d):
 		logging.basicConfig(level=logging.INFO, format='[%(levelname)s:%(lineno)d]: %(message)s')
+		logging.info('Logging enabled')
 
 	# go through the library and do stuff
 	process_input(inputfile=GetArgs().i, process_callback=process_func, video_id=GetArgs().v)
