@@ -81,15 +81,7 @@ def getRenditionSizes(video: dict) -> dict:
 				sizes['mp4_size'] = -1
 
 			if(response and response.status_code in GetCMS().success_responses):
-				renditions = response.json()
-				dyd_mp4 = set()
-				for rendition in renditions:
-					if(rendition.get('container') == 'MP4'):
-						dyd_mp4.add(rendition.get('size'))
-				
-				for size in dyd_mp4:
-					if(size):
-						sizes['mp4_size'] += size
+				sizes['mp4_size'] += sum(set([rendition.get('size') for rendition in response.json() if(rendition.get('container') == 'MP4')]))
 
 	return sizes
 
