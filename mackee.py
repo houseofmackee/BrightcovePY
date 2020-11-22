@@ -1168,7 +1168,7 @@ def GetDI(oa:OAuth=None, ip:str=None, pq:str='normal') -> DynamicIngest:
 def GetCMS(oauth:OAuth=None, query:str=None) -> CMS:
 	if(not GetCMS.cms and oauth):
 		GetCMS.cms = CMS(oauth=oauth, query=query)
-		logging.info('Obtained CMS instance\n')
+		logging.info('Obtained CMS instance')
 
 	return GetCMS.cms
 
@@ -1283,13 +1283,14 @@ def wrangle_id(asset_id) -> Tuple[bool, str]:
 #===========================================
 # read list of video IDs from XLS/CSV
 #===========================================
-def videos_from_file(filename:str, column_name:str='video_id', validate:bool=True) -> list:
+def videos_from_file(filename:str, column_name:str='video_id', validate:bool=True, unique:bool=True) -> list:
 	"""Function to read a list of video IDs from an xls/csv file
 
 	Args:
 		filename (str): path and name of file to read from
 		column_name (str, optional): name of the column in the file which contains the IDs. Defaults to 'video_id'.
 		validate (bool, optional): check IDs to make sure they are valid IDs. Defaults to True.
+		unique (bool, optional): makes sure all video IDs in the list are unique. Defaults to True.
 
 	Returns:
 		List: List object with the video IDs from the file. None if there was an error processing the file.
@@ -1310,6 +1311,10 @@ def videos_from_file(filename:str, column_name:str='video_id', validate:bool=Tru
 				video_list = list(data[column_name])
 		except KeyError as e:
 			eprint(f'Error while trying to read {filename} -> missing key: "{column_name}"')
+
+	# make list unique
+	if(video_list and unique):
+		video_list = list(set(video_list))
 
 	return video_list
 
