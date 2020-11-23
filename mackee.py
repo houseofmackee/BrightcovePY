@@ -46,8 +46,8 @@ class Base(ABC):
 	# generally accepted success responses
 	success_responses = [200,201,202,203,204]
 
-	def __init__(self):
-		self.search_query = ''
+	def __init__(self, query=None):
+		self.search_query = query
 
 	@property
 	def search_query(self) -> str:
@@ -119,8 +119,8 @@ class Social(Base):
 	base_url = 'https://edge.social.api.brightcove.com/v1/accounts/{pubid}'
 
 	def __init__(self, oauth, query=None):
+		super().__init__(query)
 		self.__oauth = oauth
-		self.search_query = query
 
 	def ListStatusForVideos(self, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
@@ -459,8 +459,8 @@ class CMS(Base):
 	base_url = 'https://cms.api.brightcove.com/v1/accounts/{pubid}'
 
 	def __init__(self, oauth:OAuth, query:str=None):
+		super().__init__(query)
 		self.__oauth = oauth
-		self.search_query = query
 
 	#===========================================
 	# get who created a video
@@ -843,6 +843,27 @@ class CMS(Base):
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/assets/renditions').format(pubid=accountID, videoid=videoID)
 		return (requests.get(url, headers=headers))
+
+class EPG(Base):
+	base_url ='https://cm.cloudplayout.brightcove.com/accounts/{account_id}'
+
+	def __init__(self, oAuth, query=None) -> None:
+		super().__init__(query)
+		self.__oauth = oAuth
+
+	def GetAllCPChannels(self, account_id=None):
+		account_id = account_id or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (EPG.base_url+'/cp_channels').format(account_id=account_id)
+		return requests.get(url=url, headers=headers)
+
+	def GetEPG(self, channel_id, query=None, account_id=None):
+		# https://sm.cloudplayout.brightcove.com/accounts/{account_id}/channels/{channel_id}/epg
+		query = query or self.search_query
+		account_id = account_id or self.__oauth.account_id
+		headers = self.__oauth.get_headers()
+		url = (EPG.base_url+'/channels/{channel_id}/epg?{query}').format(account_id=account_id, channel_id=channel_id, query=query)
+		return requests.get(url=url, headers=headers)
 
 class XDR(Base):
 
