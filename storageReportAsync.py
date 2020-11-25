@@ -28,7 +28,7 @@ def getMasterStorage(video: dict) -> int:
 			response = None
 			masterSize = -1
 
-		if(response and response.status_code == 200):
+		if(response and response.ok):
 			masterSize = response.json().get('size')
 
 	return masterSize
@@ -56,7 +56,7 @@ def getRenditionSizes(video: dict) -> dict:
 		response = None
 		sizes = { key:-1 for key in sizes }
 
-	if(response and response.status_code in GetCMS().success_responses):
+	if(response and response.ok):
 		renditions = response.json()
 		for rendition in renditions:
 			size = rendition.get('size')
@@ -77,11 +77,10 @@ def getRenditionSizes(video: dict) -> dict:
 			try:
 				response = GetCMS().GetVideoSources(videoID=video_id)
 			except Exception as e:
-				response = None
 				sizes['mp4_size'] = -1
-
-			if(response and response.status_code in GetCMS().success_responses):
-				sizes['mp4_size'] += sum(set([rendition.get('size') for rendition in response.json() if(rendition.get('container') == 'MP4')]))
+			else:
+				if(response.status_code in GetCMS().success_responses):
+					sizes['mp4_size'] += sum(set([rendition.get('size') for rendition in response.json() if(rendition.get('container') == 'MP4')]))
 
 	return sizes
 
