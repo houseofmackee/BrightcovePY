@@ -49,7 +49,13 @@ class Base(ABC):
 
 	def __init__(self, query=None):
 		self.search_query = query
-		self.__session = requests.Session()
+		self.__session = self.__get_session()
+
+	def __get_session(self)  -> requests.Session:
+		sess = requests.Session()
+		adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100)
+		sess.mount('https://', adapter)
+		return sess
 
 	@property
 	def search_query(self) -> str:
