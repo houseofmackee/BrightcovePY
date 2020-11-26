@@ -903,6 +903,7 @@ class IngestProfiles(Base):
 	base_url = 'https://ingestion.api.brightcove.com/v1/accounts/{pubid}'
 
 	def __init__(self, oAuth):
+		super().__init__()
 		self.__oauth = oAuth
 		# cache for ProfileExists
 		self.__previousProfile = None
@@ -921,7 +922,7 @@ class IngestProfiles(Base):
 		if(accountID != self.__defaultProfileAccount):
 			headers = self.__oauth.get_headers()
 			url = (IngestProfiles.base_url+'/configuration').format(pubid=accountID)
-			self.__defaultProfileResponse = requests.get(url=url, headers=headers)
+			self.__defaultProfileResponse = self.session.get(url=url, headers=headers)
 			self.__defaultProfileAccount = accountID
 		# return cached response
 		return self.__defaultProfileResponse
@@ -934,7 +935,7 @@ class IngestProfiles(Base):
 			url = (IngestProfiles.base_url+'/profiles/{profileid}').format(pubid=accountID, profileid=profileID)
 			self.__getProfileID = profileID
 			self.__getProfileAccount = accountID
-			self.__getProfileResponse = requests.get(url=url, headers=headers)
+			self.__getProfileResponse = self.session.get(url=url, headers=headers)
 		# return cached response
 		return self.__getProfileResponse
 
@@ -959,7 +960,7 @@ class IngestProfiles(Base):
 		self.__previousAccount = None
 		headers = self.__oauth.get_headers()
 		url = (IngestProfiles.base_url+'/configuration').format(pubid=accountID)
-		return requests.put(url=url, headers=headers, data=jsonBody)
+		return self.session.put(url=url, headers=headers, data=jsonBody)
 
 	def SetDefaultProfile(self, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
@@ -967,7 +968,7 @@ class IngestProfiles(Base):
 		self.__previousAccount = None
 		headers = self.__oauth.get_headers()
 		url = (IngestProfiles.base_url+'/configuration').format(pubid=accountID)
-		return requests.post(url=url, headers=headers, data=jsonBody)
+		return self.session.post(url=url, headers=headers, data=jsonBody)
 
 	def DeleteIngestProfile(self, profileID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
@@ -975,7 +976,7 @@ class IngestProfiles(Base):
 		self.__previousAccount = None
 		headers = self.__oauth.get_headers()
 		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(pubid=accountID,profileid=profileID)
-		return requests.delete(url=url, headers=headers)
+		return self.session.delete(url=url, headers=headers)
 
 	def UpdateIngestProfile(self, profileID, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
@@ -983,25 +984,26 @@ class IngestProfiles(Base):
 		self.__previousAccount = None
 		headers = self.__oauth.get_headers()
 		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(pubid=accountID,profileid=profileID)
-		return requests.put(url=url, headers=headers, data=jsonBody)
+		return self.session.put(url=url, headers=headers, data=jsonBody)
 
 	def CreateIngestProfile(self, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (IngestProfiles.base_url+'/profiles').format(pubid=accountID)
-		return requests.post(url=url, headers=headers, data=jsonBody)
+		return self.session.post(url=url, headers=headers, data=jsonBody)
 
 	def GetAllIngestProfiles(self, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (IngestProfiles.base_url+'/profiles').format(pubid=accountID)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 class DynamicIngest(Base):
 
 	base_url = 'https://ingest.api.brightcove.com/v1/accounts/{pubid}'
 
 	def __init__(self, oAuth, ingestProfile=None, priorityQueue='normal'):
+		super().__init__()
 		self.__oauth = oAuth
 		self.__previousProfile = None
 		self.__previousAccount = None
@@ -1041,7 +1043,7 @@ class DynamicIngest(Base):
 		headers = self.__oauth.get_headers()
 		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
 		data =	'{ "profile":"'+profile+'", "master": { "use_archived_master": true }, "priority": "'+priority+'","capture-images": '+str(captureImages).lower()+' }'
-		return requests.post(url=url, headers=headers, data=data)
+		return self.session.post(url=url, headers=headers, data=data)
 
 	def SubmitIngest(self, videoID, sourceURL, captureImages=True, priorityQueue=None, callBacks=None, ingestProfile=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
@@ -1059,7 +1061,7 @@ class DynamicIngest(Base):
 
 		url = (DynamicIngest.base_url+'/videos/{videoid}/ingest-requests').format(pubid=accountID, videoid=videoID)
 		data =	'{ "profile":"'+profile+'", "master": { "url": "'+sourceURL+'" }, "priority": "'+priority+'", "capture-images": '+str(captureImages).lower()+' }'
-		return requests.post(url=url, headers=headers, data=data)
+		return self.session.post(url=url, headers=headers, data=data)
 
 	# get_upload_location_and_upload_file first performs an authenticated request to discover
 	# a Brightcove-provided location to securely upload a source file
@@ -1067,7 +1069,7 @@ class DynamicIngest(Base):
 		accountID = accountID or self.__oauth.account_id
 		# Perform an authorized request to obtain a file upload location
 		url = (CMS.base_url+'/videos/{videoid}/upload-urls/{sourcefilename}').format(pubid=accountID, videoid=videoID, sourcefilename=fileName)
-		r = requests.get(url=url, headers=self.__oauth.get_headers())
+		r = self.session.get(url=url, headers=self.__oauth.get_headers())
 		if(r.status_code in DynamicIngest.success_responses):
 			upload_urls_response = r.json()
 		else:
@@ -1191,9 +1193,9 @@ class TimeString():
 # returns a DI instance
 #===========================================
 @static_vars(di=None)
-def GetDI(oa:OAuth=None, ip:str=None, pq:str='normal') -> DynamicIngest:
-	if(not GetDI.di and oa):
-		GetDI.di = DynamicIngest(oAuth=oa, ingestProfile=ip, priorityQueue=pq)
+def GetDI(oauth:OAuth=None, ip:str=None, pq:str='normal') -> DynamicIngest:
+	if(not GetDI.di and oauth):
+		GetDI.di = DynamicIngest(oAuth=oauth, ingestProfile=ip, priorityQueue=pq)
 		logging.info('Obtained DI instance')
 
 	return GetDI.di
@@ -1548,7 +1550,8 @@ def process_input(inputfile=None, process_callback=list_videos, video_id=None) -
 	account_id = GetArgs().t or account_id
 
 	oauth = OAuth(account_id,b,c)
-	cms = GetCMS(oauth=oauth, query=GetArgs().q)
+	GetCMS(oauth=oauth, query=GetArgs().q)
+	GetDI(oauth=oauth)
 
 	# if async is enabled use more than one thread
 	max_threads = GetArgs().a or 1
