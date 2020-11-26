@@ -8,7 +8,7 @@ videosProcessed = 0
 counter_lock = Lock()
 data_lock = Lock()
 
-row_list = [ ['video_id','delivery_type','master_size','hls_renditions_size','mp4_renditions_size','audio_renditions_size'] ]
+row_list = [ ['video_id','delivery_type','master_size','hls_renditions_size','mp4_renditions_size','audio_renditions_size', 'flv_size'] ]
 
 def showProgress(progress: int) -> None:
 	sys.stderr.write(f'\r{progress} processed...\r')
@@ -28,7 +28,11 @@ def getMasterStorage(video: dict) -> int:
 			response = None
 			masterSize = -1
 
-		if(response and response == 200):
+<<<<<<< HEAD
+		if(response and response.status_code == 200):
+=======
+		if(response and response.status_code == 200):
+>>>>>>> use_request_session
 			masterSize = response.json().get('size')
 
 	return masterSize
@@ -40,7 +44,8 @@ def getRenditionSizes(video: dict) -> dict:
 	sizes = {
 		'hls_size':0,
 		'mp4_size':0,
-		'audio_size':0
+		'audio_size':0,
+		'flv_size':0
 	}
 
 	response = None
@@ -65,6 +70,8 @@ def getRenditionSizes(video: dict) -> dict:
 				sizes['mp4_size'] += size
 			elif(rendition.get('video_container') == 'M2TS'):
 				sizes['hls_size'] += size
+			elif(rendition.get('video_container') == 'FLV'):
+				sizes['flv_size'] += size
 
 			# dyd audio and video
 			elif(rendition.get('media_type') == 'audio'):
@@ -98,7 +105,7 @@ def findStorageSize(video: dict) -> None:
 	else:
 		row.append( getMasterStorage(video) )
 		sizes = getRenditionSizes(video)
-		row.extend( [sizes["hls_size"], sizes["mp4_size"], sizes["audio_size"]] )
+		row.extend( [sizes["hls_size"], sizes["mp4_size"], sizes["audio_size"], sizes["flv_size"]] )
 
 	# add a new row to the CSV data
 	with data_lock:

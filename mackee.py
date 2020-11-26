@@ -19,6 +19,7 @@ from abc import ABC, abstractproperty
 
 # disable certificate warnings
 requests.urllib3.disable_warnings()
+requests.packages.urllib3.disable_warnings()
 
 # some globals
 oauth = None
@@ -48,6 +49,7 @@ class Base(ABC):
 
 	def __init__(self, query=None):
 		self.search_query = query
+		self.__session = requests.Session()
 
 	@property
 	def search_query(self) -> str:
@@ -56,6 +58,11 @@ class Base(ABC):
 	@search_query.setter
 	def search_query(self, query: str):
 		self.__search_query = '' if not query else requests.utils.quote(query)
+
+	@property
+	def session(self) -> requests.Session:
+		return self.__session
+
 
 class DeliveryRules(Base):
 	base_url = 'https://delivery-rules.api.brightcove.com/accounts/{pubid}'
@@ -486,7 +493,7 @@ class CMS(Base):
 		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/count?q={query}').format(pubid=accountID,query=searchQuery)
-		r = requests.get(url, headers=headers)
+		r = self.session.get(url, headers=headers)
 		if(r.status_code == 200):
 			return r.json().get('count')
 		return -1
@@ -500,7 +507,7 @@ class CMS(Base):
 		url = (CMS.base_url+'/videos/').format(pubid=accountID)
 		if(not jsonBody):
 			jsonBody = '{"name": "' + videoTitle + '"}'
-		return requests.post(url=url, headers=headers, data=jsonBody)
+		return self.session.post(url=url, headers=headers, data=jsonBody)
 
 	#===========================================
 	# get a video
@@ -509,7 +516,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}').format(pubid=accountID,videoid=videoID)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 	#===========================================
 	# get videos in an account
@@ -519,7 +526,7 @@ class CMS(Base):
 		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		apiRequest = (CMS.base_url+'/videos?limit={pageSize}&offset={offset}&sort=created_at{query}').format(pubid=accountID, pageSize=pageSize, offset=pageOffset, query='&q=' + searchQuery)
-		return requests.get(apiRequest, headers=headers)
+		return self.session.get(apiRequest, headers=headers)
 
 	#===========================================
 	# get light version of videos in an account
@@ -529,7 +536,7 @@ class CMS(Base):
 		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		apiRequest = (CMS.base_url+'/lightvideos?limit={pageSize}&offset={offset}&sort=created_at{query}').format(pubid=accountID, pageSize=pageSize, offset=pageOffset, query='&q=' + searchQuery)
-		return requests.get(apiRequest, headers=headers)
+		return self.session.get(apiRequest, headers=headers)
 
 	#===========================================
 	# get a video's sources
@@ -538,7 +545,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/sources').format(pubid=accountID,videoid=videoID)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 	#===========================================
 	# get a video's images
@@ -547,7 +554,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/images').format(pubid=accountID,videoid=videoID)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 	#===========================================
 	# get a video's audio tracks
@@ -556,7 +563,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/audio_tracks').format(pubid=accountID,videoid=videoID)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 	#===========================================
 	# get a specific audio track
@@ -565,7 +572,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/audio_tracks/{trackid}').format(pubid=accountID,videoid=videoID,trackid=trackID)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 	#===========================================
 	# delete a specific audio track
@@ -574,7 +581,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/audio_tracks/{trackid}').format(pubid=accountID,videoid=videoID,trackid=trackID)
-		return requests.delete(url=url, headers=headers)
+		return self.session.delete(url=url, headers=headers)
 
 	#===========================================
 	# update a specific audio track
@@ -583,7 +590,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/audio_tracks/{trackid}').format(pubid=accountID,videoid=videoID,trackid=trackID)
-		return requests.patch(url=url, headers=headers, data=jsonBody)
+		return self.session.patch(url=url, headers=headers, data=jsonBody)
 
 	#===========================================
 	# delete a video
@@ -592,7 +599,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}').format(pubid=accountID,videoid=videoID)
-		return requests.delete(url=url, headers=headers)
+		return self.session.delete(url=url, headers=headers)
 
 	#===========================================
 	# get a digital master info
@@ -601,7 +608,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/digital_master').format(pubid=accountID,videoid=videoID)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 	#===========================================
 	# delete a digital master
@@ -610,7 +617,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/digital_master').format(pubid=accountID,videoid=videoID)
-		return requests.delete(url=url, headers=headers)
+		return self.session.delete(url=url, headers=headers)
 
 	#===========================================
 	# update a video
@@ -619,7 +626,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}').format(pubid=accountID,videoid=videoID)
-		return requests.patch(url, headers=headers, data=jsonBody)
+		return self.session.patch(url, headers=headers, data=jsonBody)
 
 	#===========================================
 	# get custom fields
@@ -628,7 +635,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/video_fields').format(pubid=accountID)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 	#===========================================
 	# get ingest job status for a video
@@ -637,7 +644,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/ingest_jobs/{jobid}').format(pubid=accountID,videoid=videoID,jobid=jobID)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 	#===========================================
 	# get all ingest jobs status for a video
@@ -646,7 +653,7 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/ingest_jobs').format(pubid=accountID,videoid=videoID)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 	#===========================================
 	# variants stuff
@@ -655,31 +662,31 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/variants').format(pubid=accountID,videoid=videoID)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 	def CreateVideoVariant(self, videoID, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/variants').format(pubid=accountID,videoid=videoID)
-		return requests.post(url=url, headers=headers, data=jsonBody)
+		return self.session.post(url=url, headers=headers, data=jsonBody)
 
 	def GetVideoVariant(self, videoID, language, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/variants/{language}').format(pubid=accountID,videoid=videoID, language=language)
-		return requests.get(url=url, headers=headers)
+		return self.session.get(url=url, headers=headers)
 
 	def UpdateVideoVariant(self, videoID, language, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/variants/{language}').format(pubid=accountID,videoid=videoID, language=language)
-		return requests.patch(url=url, headers=headers, data=jsonBody)
+		return self.session.patch(url=url, headers=headers, data=jsonBody)
 
 	def DeleteVideoVariant(self, videoID, language, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/variants/{language}').format(pubid=accountID,videoid=videoID, language=language)
-		return requests.delete(url=url, headers=headers)
+		return self.session.delete(url=url, headers=headers)
 
 	#===========================================
 	# subscriptions bla bla
@@ -688,26 +695,26 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions').format(pubid=accountID)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	def GetSubscription(self, subID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions/{subid}').format(pubid=accountID, subid=subID)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	def CreateSubscription(self, callbackURL, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions').format(pubid=accountID)
 		jsonBody = ('{ "endpoint":"' + callbackURL + '", "events":["video-change"] }')
-		return (requests.post(url, headers=headers, data=jsonBody))
+		return (self.session.post(url, headers=headers, data=jsonBody))
 
 	def DeleteSubscription(self, subID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions/{subid}').format(pubid=accountID,subid=subID)
-		return (requests.delete(url, headers=headers))
+		return (self.session.delete(url, headers=headers))
 	
 	#===========================================
 	# folders stuff
@@ -716,51 +723,51 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders').format(pubid=accountID)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	def CreateFolder(self, folderName, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders').format(pubid=accountID)
 		jsonBody = ('{ "name":"' + folderName + '" }')
-		return (requests.post(url, headers=headers, data=jsonBody))
+		return (self.session.post(url, headers=headers, data=jsonBody))
 
 	def DeleteFolder(self, folderID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}').format(pubid=accountID, folderid=folderID)
-		return (requests.delete(url, headers=headers))
+		return (self.session.delete(url, headers=headers))
 
 	def GetFolderInformation(self, folderID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}').format(pubid=accountID, folderid=folderID)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	def UpdateFolderName(self, folderID, folderName, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}').format(pubid=accountID, folderid=folderID)
 		jsonBody = ('{ "name":"' + folderName + '" }')
-		return (requests.patch(url, headers=headers, data=jsonBody))
+		return (self.session.patch(url, headers=headers, data=jsonBody))
 
 	def AddVideoToFolder(self, folderID, videoID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}/videos/{videoid}').format(pubid=accountID, videoid=videoID)
-		return (requests.put(url, headers=headers))
+		return (self.session.put(url, headers=headers))
 
 	def RemoveVideoFromFolder(self, folderID, videoID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}/videos/{videoid}').format(pubid=accountID, videoid=videoID)
-		return (requests.delete(url, headers=headers))
+		return (self.session.delete(url, headers=headers))
 
 	def GetVideosInFolder(self, folderID, pageSize=100, pageOffset=0, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}/videos?limit={limit}&offset={offset}').format(pubid=accountID,folderid=folderID,limit=pageSize, offset=pageOffset)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	#===========================================
 	# playlists stuff
@@ -769,50 +776,50 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/references').format(pubid=accountID, videoid=videoID)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	def RemoveVideoFromAllPlaylists(self, videoID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/references').format(pubid=accountID, videoid=videoID)
-		return (requests.delete(url, headers=headers))
+		return (self.session.delete(url, headers=headers))
 
 	def GetVideosInPlaylist(self, playlistID, includeDetails=True, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists/{playlistid}/videos?include_details={details}').format(pubid=accountID, playlistid=playlistID, details=('false','true')[includeDetails])
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	def GetVideoCountInPlaylist(self, playlistID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/counts/playlists/{playlistid}/videos').format(pubid=accountID, playlistid=playlistID)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	def DeletePlaylist(self, playlistID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=accountID, playlistid=playlistID)
-		return (requests.delete(url, headers=headers))
+		return (self.session.delete(url, headers=headers))
 
 	def UpdatePlaylist(self, playlistID, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=accountID, playlistid=playlistID)
-		return (requests.patch(url, headers=headers, data=jsonBody))
+		return (self.session.patch(url, headers=headers, data=jsonBody))
 
 	def GetPlaylistByID(self, playlistID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=accountID, playlistid=playlistID)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	def GetPlaylistCount(self, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/counts/playlists?q={query}').format(pubid=accountID, query=searchQuery)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	def GetPlaylists(self, sort='-updated_at', searchQuery=None, pageSize=100, pageOffset=0, accountID=None):
 		accountID = accountID or self.__oauth.account_id
@@ -821,13 +828,13 @@ class CMS(Base):
 		if sort not in ['name', 'reference_id', 'created_at', 'published_at', 'updated_at', 'schedule.starts_at', 'schedule.ends_at', 'state', 'plays_total', 'plays_trailing_week', '-name', '-reference_id', '-created_at', '-published_at', '-updated_at', '-schedule.starts_at', '-schedule.ends_at', '-state', '-plays_total', '-plays_trailing_week']:
 			sort = '-updated_at'
 		url = (CMS.base_url+'/playlists?limit={limit}&offset={offset}&sort={sort}&q={query}').format(pubid=accountID, limit=pageSize, offset=pageOffset, sort=sort, query=searchQuery)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	def CreatePlaylist(self, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists').format(pubid=accountID)
-		return (requests.post(url, headers=headers, data=jsonBody))
+		return (self.session.post(url, headers=headers, data=jsonBody))
 
 	#===========================================
 	# Assets stuff
@@ -836,13 +843,13 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/assets/dynamic_renditions').format(pubid=accountID, videoid=videoID)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 	def GetRenditionList(self, videoID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/assets/renditions').format(pubid=accountID, videoid=videoID)
-		return (requests.get(url, headers=headers))
+		return (self.session.get(url, headers=headers))
 
 class EPG(Base):
 	base_url ='https://cm.cloudplayout.brightcove.com/accounts/{account_id}'
@@ -1200,6 +1207,14 @@ def GetArgs(parser=None):
 		logging.info('Obtained arguments')
 
 	return GetArgs.args
+
+@static_vars(session=None)
+def GetSession():
+	if(not GetArgs.session):
+		GetArgs.session = requests.Session()
+		logging.info('Obtained Requests Session')
+
+	return GetArgs.session
 
 #===========================================
 # test if a value is a valid JSON string
