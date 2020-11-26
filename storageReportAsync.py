@@ -28,7 +28,7 @@ def getMasterStorage(video: dict) -> int:
 			response = None
 			masterSize = -1
 
-		if(response and response.ok):
+		if(response and response == 200):
 			masterSize = response.json().get('size')
 
 	return masterSize
