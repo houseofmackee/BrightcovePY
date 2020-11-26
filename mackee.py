@@ -1620,6 +1620,8 @@ def main(process_func:Callable[[], None]) -> None:
 	if(GetArgs().d):
 		logging.basicConfig(level=logging.INFO, format='[%(levelname)s:%(lineno)d]: %(message)s')
 		logging.info('Logging enabled')
+	else:
+		logging.basicConfig(level=logging.CRITICAL, format='[%(levelname)s:%(lineno)d]: %(message)s')
 
 	# go through the library and do stuff
 	process_input(inputfile=GetArgs().i, process_callback=process_func, video_id=GetArgs().v)
