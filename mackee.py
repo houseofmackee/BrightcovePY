@@ -8,18 +8,17 @@ import time
 import queue
 import logging
 import functools
-import pandas
 from typing import Callable, Tuple
-import requests # pip3 install requests
-import boto3 # pip3 install boto3
 from threading import Thread
-from requests_toolbelt import MultipartEncoder # pip3 install requests_toolbelt
 from os.path import expanduser, basename
 from abc import ABC, abstractproperty
+from requests_toolbelt import MultipartEncoder # pip3 install requests_toolbelt
+import requests # pip3 install requests
+import boto3 # pip3 install boto3
+import pandas
 
 # disable certificate warnings
 requests.urllib3.disable_warnings()
-requests.packages.urllib3.disable_warnings()
 
 # some globals
 oauth = None
@@ -51,7 +50,8 @@ class Base(ABC):
 		self.search_query = query
 		self.__session = self.__get_session()
 
-	def __get_session(self)  -> requests.Session:
+	@staticmethod
+	def __get_session() -> requests.Session:
 		sess = requests.Session()
 		adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100)
 		sess.mount('https://', adapter)
@@ -60,7 +60,7 @@ class Base(ABC):
 	@property
 	def search_query(self) -> str:
 		return self.__search_query
-	
+
 	@search_query.setter
 	def search_query(self, query: str):
 		self.__search_query = '' if not query else requests.utils.quote(query)
@@ -77,7 +77,7 @@ class DeliveryRules(Base):
 		self.__oauth = oauth
 
 	def DeliveryRulesEnabled(self, accountID=None):
-		return (self.GetDeliveryRules(accountID=accountID).status_code == 200)
+		return self.GetDeliveryRules(accountID=accountID).status_code == 200
 
 	def GetDeliveryRules(self, accountID=None):
 		accountID = accountID or self.__oauth.account_id
@@ -140,28 +140,28 @@ class Social(Base):
 		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (Social.base_url+'/videos/status?{query_string}').format(pubid=accountID, query_string=searchQuery)
-		return requests.get(url, headers=headers)
+		return self.session.get(url, headers=headers)
 
 	def ListStatusForVideo(self, videoID, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (Social.base_url+'/videos/{video_id}/status?{query_string}').format(pubid=accountID, video_id=videoID, query_string=searchQuery)
-		return requests.get(url, headers=headers)
+		return self.session.get(url, headers=headers)
 
 	def ListHistoryForVideos(self, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (Social.base_url+'/videos/history?{query_string}').format(pubid=accountID, query_string=searchQuery)
-		return requests.get(url, headers=headers)
+		return self.session.get(url, headers=headers)
 
 	def ListHistoryForVideo(self, videoID, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (Social.base_url+'/videos/{video_id}/history?{query_string}').format(pubid=accountID, video_id=videoID, query_string=searchQuery)
-		return requests.get(url, headers=headers)
+		return self.session.get(url, headers=headers)
 
 class SocialSyndication(Base):
 
@@ -217,55 +217,58 @@ class PlayerManagement(Base):
 	base_url = 'https://players.api.brightcove.com/v2/accounts/{pubid}'
 
 	def __init__(self, oauth):
+		super().__init__()
 		self.__oauth = oauth
 
 	def GetListOfPlayers(self, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (PlayerManagement.base_url+'/players').format(pubid=accountID)
-		return requests.get(url, headers=headers)
+		return self.session.get(url, headers=headers)
 
-	def GetSinglePlayer(self, accountID=None, playerID='default'):
+	def GetSinglePlayer(self, accountID=None, playerID=None):
 		accountID = accountID or self.__oauth.account_id
+		playerID = playerID or 'default'
 		headers = self.__oauth.get_headers()
 		url = (PlayerManagement.base_url+'/players/{playerid}').format(pubid=accountID, playerid=playerID)
-		return requests.get(url, headers=headers)
+		return self.session.get(url, headers=headers)
 
 	def CreatePlayer(self, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (PlayerManagement.base_url+'/players').format(pubid=accountID)
-		return requests.post(url, headers=headers, data=jsonBody)
+		return self.session.post(url, headers=headers, data=jsonBody)
 
 	def DeletePlayer(self, playerID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (PlayerManagement.base_url+'/players/{playerid}').format(pubid=accountID, playerid=playerID)
-		return requests.delete(url, headers=headers)
+		return self.session.delete(url, headers=headers)
 
-	def PublishPlayer(self, playerID, accountID=None):
+	def PublishPlayer(self, playerID=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
+		playerID = playerID or 'default'
 		headers = self.__oauth.get_headers()
 		url = (PlayerManagement.base_url+'/players/{playerid}/publish').format(pubid=accountID, playerid=playerID)
-		return requests.post(url, headers=headers)
+		return self.session.post(url, headers=headers)
 
 	def UpdatePlayer(self, playerID, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (PlayerManagement.base_url+'/players/{playerid}').format(pubid=accountID, playerid=playerID)
-		return requests.patch(url, headers=headers, data=jsonBody)
+		return self.session.patch(url, headers=headers, data=jsonBody)
 
 	def GetPlayerConfiguration(self, playerID, branch, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (PlayerManagement.base_url+'/players/{playerid}/configuration/{branch}').format(pubid=accountID, playerid=playerID, branch=branch)
-		return requests.get(url, headers=headers)
+		return self.session.get(url, headers=headers)
 
 	def UpdatePlayerConfiguration(self, playerID, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (PlayerManagement.base_url+'/players/{playerid}/configuration').format(pubid=accountID, playerid=playerID)
-		return requests.patch(url, headers=headers, data=jsonBody)
+		return self.session.patch(url, headers=headers, data=jsonBody)
 
 	def GetAllPlugins(self, templateVersion=None):
 		headers = self.__oauth.get_headers()
@@ -274,7 +277,7 @@ class PlayerManagement(Base):
 		else:
 			query = ''
 		url = 'https://players.api.brightcove.com/v2/plugins'+query
-		return requests.get(url, headers=headers)
+		return self.session.get(url, headers=headers)
 
 	def GetSinglePlugin(self, pluginID):
 		headers = self.__oauth.get_headers()
@@ -284,19 +287,19 @@ class PlayerManagement(Base):
 		else:
 			pluginID = ''
 		url = 'https://players.api.brightcove.com/v2/plugins/'+pluginID
-		return requests.get(url, headers=headers)
+		return self.session.get(url, headers=headers)
 
 	def GetAllEmbeds(self, playerID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (PlayerManagement.base_url+'/players/{playerid}/embeds').format(pubid=accountID, playerid=playerID)
-		return requests.get(url, headers=headers)
+		return self.session.get(url, headers=headers)
 
 	def GetEmbed(self, playerID, embedID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (PlayerManagement.base_url+'/players/{playerid}/embeds/{embedid}').format(pubid=accountID, playerid=playerID, embedid=embedID)
-		return requests.get(url, headers=headers)
+		return self.session.get(url, headers=headers)
 
 class OAuth(Base):
 	base_url = 'https://oauth.brightcove.com/v4/access_token'
@@ -319,16 +322,14 @@ class OAuth(Base):
 		return access_token
 
 	def get_access_token(self):
-		if(self.__access_token == None):
+		if(self.__access_token is None):
 			self.__access_token = self.__get_access_token()
 		elif( (time.time()-self.__request_time) > self.__token_life ):
 			self.__access_token = self.__get_access_token()
 		return self.__access_token
 
-	def get_headers(self):
-		access_token = self.get_access_token()
-		headers = { 'Authorization': 'Bearer ' + access_token, 'Content-Type': 'application/json' }
-		return headers
+	def get_headers(self) -> dict:
+		return { 'Authorization': f'Bearer {self.get_access_token()}', 'Content-Type': 'application/json' }
 
 class JWT(Base):
 
@@ -489,7 +490,7 @@ class CMS(Base):
 					creator = 'API'
 				elif (ctype=='user'):
 					creator = createdBy.get('email')
-		return(creator)
+		return creator
 
 	#===========================================
 	# get number of videos in an account
@@ -701,27 +702,27 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions').format(pubid=accountID)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	def GetSubscription(self, subID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions/{subid}').format(pubid=accountID, subid=subID)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	def CreateSubscription(self, callbackURL, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions').format(pubid=accountID)
 		jsonBody = ('{ "endpoint":"' + callbackURL + '", "events":["video-change"] }')
-		return (self.session.post(url, headers=headers, data=jsonBody))
+		return self.session.post(url, headers=headers, data=jsonBody)
 
 	def DeleteSubscription(self, subID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/subscriptions/{subid}').format(pubid=accountID,subid=subID)
-		return (self.session.delete(url, headers=headers))
-	
+		return self.session.delete(url, headers=headers)
+
 	#===========================================
 	# folders stuff
 	#===========================================
@@ -729,51 +730,51 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders').format(pubid=accountID)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	def CreateFolder(self, folderName, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders').format(pubid=accountID)
 		jsonBody = ('{ "name":"' + folderName + '" }')
-		return (self.session.post(url, headers=headers, data=jsonBody))
+		return self.session.post(url, headers=headers, data=jsonBody)
 
 	def DeleteFolder(self, folderID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}').format(pubid=accountID, folderid=folderID)
-		return (self.session.delete(url, headers=headers))
+		return self.session.delete(url, headers=headers)
 
 	def GetFolderInformation(self, folderID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}').format(pubid=accountID, folderid=folderID)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	def UpdateFolderName(self, folderID, folderName, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}').format(pubid=accountID, folderid=folderID)
 		jsonBody = ('{ "name":"' + folderName + '" }')
-		return (self.session.patch(url, headers=headers, data=jsonBody))
+		return self.session.patch(url, headers=headers, data=jsonBody)
 
 	def AddVideoToFolder(self, folderID, videoID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}/videos/{videoid}').format(pubid=accountID, videoid=videoID)
-		return (self.session.put(url, headers=headers))
+		return self.session.put(url, headers=headers)
 
 	def RemoveVideoFromFolder(self, folderID, videoID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}/videos/{videoid}').format(pubid=accountID, videoid=videoID)
-		return (self.session.delete(url, headers=headers))
+		return self.session.delete(url, headers=headers)
 
 	def GetVideosInFolder(self, folderID, pageSize=100, pageOffset=0, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/folders/{folderid}/videos?limit={limit}&offset={offset}').format(pubid=accountID,folderid=folderID,limit=pageSize, offset=pageOffset)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	#===========================================
 	# playlists stuff
@@ -782,50 +783,50 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/references').format(pubid=accountID, videoid=videoID)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	def RemoveVideoFromAllPlaylists(self, videoID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/references').format(pubid=accountID, videoid=videoID)
-		return (self.session.delete(url, headers=headers))
+		return self.session.delete(url, headers=headers)
 
 	def GetVideosInPlaylist(self, playlistID, includeDetails=True, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists/{playlistid}/videos?include_details={details}').format(pubid=accountID, playlistid=playlistID, details=('false','true')[includeDetails])
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	def GetVideoCountInPlaylist(self, playlistID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/counts/playlists/{playlistid}/videos').format(pubid=accountID, playlistid=playlistID)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	def DeletePlaylist(self, playlistID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=accountID, playlistid=playlistID)
-		return (self.session.delete(url, headers=headers))
+		return self.session.delete(url, headers=headers)
 
 	def UpdatePlaylist(self, playlistID, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=accountID, playlistid=playlistID)
-		return (self.session.patch(url, headers=headers, data=jsonBody))
+		return self.session.patch(url, headers=headers, data=jsonBody)
 
 	def GetPlaylistByID(self, playlistID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=accountID, playlistid=playlistID)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	def GetPlaylistCount(self, searchQuery=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		searchQuery = searchQuery or self.search_query
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/counts/playlists?q={query}').format(pubid=accountID, query=searchQuery)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	def GetPlaylists(self, sort='-updated_at', searchQuery=None, pageSize=100, pageOffset=0, accountID=None):
 		accountID = accountID or self.__oauth.account_id
@@ -834,13 +835,13 @@ class CMS(Base):
 		if sort not in ['name', 'reference_id', 'created_at', 'published_at', 'updated_at', 'schedule.starts_at', 'schedule.ends_at', 'state', 'plays_total', 'plays_trailing_week', '-name', '-reference_id', '-created_at', '-published_at', '-updated_at', '-schedule.starts_at', '-schedule.ends_at', '-state', '-plays_total', '-plays_trailing_week']:
 			sort = '-updated_at'
 		url = (CMS.base_url+'/playlists?limit={limit}&offset={offset}&sort={sort}&q={query}').format(pubid=accountID, limit=pageSize, offset=pageOffset, sort=sort, query=searchQuery)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	def CreatePlaylist(self, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/playlists').format(pubid=accountID)
-		return (self.session.post(url, headers=headers, data=jsonBody))
+		return self.session.post(url, headers=headers, data=jsonBody)
 
 	#===========================================
 	# Assets stuff
@@ -849,13 +850,13 @@ class CMS(Base):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/assets/dynamic_renditions').format(pubid=accountID, videoid=videoID)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 	def GetRenditionList(self, videoID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		url = (CMS.base_url+'/videos/{videoid}/assets/renditions').format(pubid=accountID, videoid=videoID)
-		return (self.session.get(url, headers=headers))
+		return self.session.get(url, headers=headers)
 
 class EPG(Base):
 	base_url ='https://cm.cloudplayout.brightcove.com/accounts/{account_id}'
@@ -926,7 +927,7 @@ class IngestProfiles(Base):
 			self.__defaultProfileAccount = accountID
 		# return cached response
 		return self.__defaultProfileResponse
-	
+
 	def GetIngestProfile(self, profileID, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 		# if it's not the same as before then find it and cache it
@@ -951,8 +952,8 @@ class IngestProfiles(Base):
 			self.__previousProfile = profileID
 			self.__previousAccount = accountID
 			return True
-		else:
-			return False
+
+		return False
 
 	def UpdateDefaultProfile(self, jsonBody, accountID=None):
 		accountID = accountID or self.__oauth.account_id
@@ -1019,14 +1020,14 @@ class DynamicIngest(Base):
 		else:
 			self.__ingestProfile = None
 		return self.__ingestProfile
-	
+
 	def SetPriorityQueue(self, priorityQueue):
 		if(priorityQueue in ['low', 'normal', 'high']):
 			self.__priorityQueue = priorityQueue
 		else:
 			self.__priorityQueue = 'normal'
 		return self.__priorityQueue
-	
+
 	def RetranscodeVideo(self, videoID, profileID=None, captureImages=True, priorityQueue=None, accountID=None):
 		accountID = accountID or self.__oauth.account_id
 
@@ -1083,7 +1084,7 @@ class DynamicIngest(Base):
 				aws_access_key_id=upload_urls_response.get('access_key_id'),
 				aws_secret_access_key=upload_urls_response.get('secret_access_key'),
 				aws_session_token=upload_urls_response.get('session_token'))
-			
+
 			def emptyCB(muu):
 				pass
 
@@ -1114,7 +1115,6 @@ def LoadAccountInfo(input_filename:str=None) -> Tuple[str, str, str, dict]:
 	# open the config file
 	try:
 		with open(input_filename, 'r') as f:
-			# read and parse config file
 			obj = json.loads( f.read() )
 	except:
 		eprint(f'Error: unable to open {input_filename}')
@@ -1122,19 +1122,16 @@ def LoadAccountInfo(input_filename:str=None) -> Tuple[str, str, str, dict]:
 
 	# grab data, make it strings and strip it
 	account = obj.get('account_id')
-	if(account):
-		account = str(account).strip()
+	account = str(account).strip() if account else None
 
 	client = obj.get('client_id')
-	if(client):
-		client = str(client).strip()
+	client = str(client).strip() if client else None
 
 	secret = obj.get('client_secret')
-	if(secret):
-		secret = str(secret).strip()
+	secret = str(secret).strip() if secret else None
 
 	# return the object just in case it's needed later
-	return(account, client, secret, obj)
+	return account, client, secret, obj
 
 #===========================================
 # calculates the aspect ratio of w and h
@@ -1156,16 +1153,15 @@ def aspect_ratio(width: int , height: int) -> Tuple[int, int]:
 	if(width == height):
 		return 1,1
 
-	temp = 0
+	swapped = False
 	if(width < height):
-		temp = width
-		width = height
-		height = temp
+		swapped = True
+		width, height = height, width
 
 	divisor = gcd(width, height)
 
-	x = int(width / divisor) if not temp else int(height / divisor)
-	y = int(height / divisor) if not temp else int(width / divisor)
+	x = int(width / divisor) if not swapped else int(height / divisor)
+	y = int(height / divisor) if not swapped else int(width / divisor)
 
 	return x,y
 
@@ -1183,11 +1179,11 @@ class TimeString():
 
 	@classmethod
 	def from_seconds(cls, seconds:int, fmt:str=None) -> str:
-		return(cls.from_milliseconds(int(seconds)*1000, fmt))
+		return cls.from_milliseconds(int(seconds)*1000, fmt)
 
 	@classmethod
 	def from_minutes(cls, minutes:int, fmt:str=None) -> str:
-		return(cls.from_seconds(int(minutes)*60, fmt))
+		return cls.from_seconds(int(minutes)*60, fmt)
 
 #===========================================
 # returns a DI instance
@@ -1239,7 +1235,7 @@ def is_json(myjson: str) -> bool:
 	"""
 	try:
 		_ = json.loads(myjson)
-	except Exception as e:
+	except:
 		return False
 	return True
 
@@ -1293,7 +1289,7 @@ def wrangle_id(asset_id) -> Tuple[bool, str]:
 	work_id = None
 
 	# is it an int?
-	if (type(asset_id) is int and asset_id > 0):
+	if (isinstance(asset_id, int) and asset_id > 0):
 		try:
 			work_id = str(asset_id)
 		except:
@@ -1302,7 +1298,7 @@ def wrangle_id(asset_id) -> Tuple[bool, str]:
 			is_valid = True
 
 	# is it a string?
-	elif (type(asset_id) is str):
+	elif (isinstance(asset_id, str)):
 		if(asset_id.lower().startswith('ref:') and len(asset_id)<=154):
 			work_id = asset_id
 			is_valid = True
@@ -1315,7 +1311,7 @@ def wrangle_id(asset_id) -> Tuple[bool, str]:
 				is_valid = True
 
 	# is it a float?
-	elif (type(asset_id) is float):
+	elif (isinstance(asset_id, float)):
 		if(asset_id.is_integer()):
 			work_id = str(int(asset_id))
 			is_valid = True
@@ -1342,7 +1338,7 @@ def videos_from_file(filename:str, column_name:str='video_id', validate:bool=Tru
 	video_list = None
 	try:
 		if(filename.lower().endswith('csv')):
-			data = pandas.read_csv(filename) 
+			data = pandas.read_csv(filename)
 		else:
 			data = pandas.read_excel(filename)
 	except Exception as e:
@@ -1386,7 +1382,7 @@ def list_to_csv(row_list:list, filename:str) -> bool:
 				eprint(f'\nError writing CSV data to file: {e}')
 	except Exception as e:
 		eprint(f'\nError creating outputfile: {e}')
-	
+
 	return result
 
 #===========================================
@@ -1428,7 +1424,7 @@ def process_account(work_queue:queue.Queue, account_id:str, cms_obj:CMS) -> None
 		try:
 			response = cms_obj.GetVideos(accountID=account_id, pageSize=page_size, pageOffset=current_offset)
 			status = response.status_code
-		except Exception as e:
+		except:
 			status = -1
 
 		# good result
@@ -1482,7 +1478,7 @@ def process_single_video_id(account_id:str, video_id:str, cms_obj:CMS, process_c
 	response = None
 	try:
 		response = cms_obj.GetVideo(accountID=account_id, videoID=video_id)
-	except Exception as e:
+	except:
 		response = None
 
 	if(response and response.status_code in CMS.success_responses):
@@ -1493,13 +1489,13 @@ def process_single_video_id(account_id:str, video_id:str, cms_obj:CMS, process_c
 			return False
 
 	else:
-		if(response == None):
+		if(response is None):
 			code = 'exception'
 		else:
 			code = response.status_code
 		eprint(f'Error getting information for video ID {video_id} ({code}).')
 		return False
-	
+
 	return True
 
 # worker class for multithreading
@@ -1524,12 +1520,12 @@ class Worker(Thread):
 				logging.info('EXIT found -> exiting worker thread')
 				keep_working = False
 			# do whatever work you have to do on work
-			elif(type(work) == dict):
+			elif(isinstance(work, dict)):
 				self.process_callback(work)
 			else:
-				process_single_video_id(account_id=self.account_id, 
-										video_id=work, 
-										cms_obj=self.cms_obj, 
+				process_single_video_id(account_id=self.account_id,
+										video_id=work,
+										cms_obj=self.cms_obj,
 										process_callback=self.process_callback)
 
 			self.q.task_done()
@@ -1588,9 +1584,9 @@ def process_input(inputfile=None, process_callback=list_videos, video_id=None) -
 		num_threads = min(max_threads, num_videos)
 		for _ in range(num_threads):
 			work_queue.put_nowait("EXIT")
-			Worker(	q=work_queue, 
-					cms_obj=GetCMS(), 
-					account_id=account_id, 
+			Worker(	q=work_queue,
+					cms_obj=GetCMS(),
+					account_id=account_id,
 					process_callback=process_callback).start()
 		# now we wait until the queue has been processed
 		if(not work_queue.empty()):
