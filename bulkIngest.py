@@ -1,9 +1,4 @@
 #!/usr/bin/env python3
-
-from mackee import CMS
-from mackee import OAuth
-from mackee import LoadAccountInfo
-from mackee import DynamicIngest
 import sys
 import json
 import argparse
@@ -15,29 +10,39 @@ import threading
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
 import dropbox # pip3 install dropbox
+from mackee import CMS
+from mackee import OAuth
+from mackee import LoadAccountInfo
+from mackee import DynamicIngest
 
 # pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
 # allowed success response codes
-successResponses = [200,201,202,203,204]
+success_responses = [200,201,202,203,204]
 
 # globals for API stuff
-oauth = None
 cms = None
 di = None
 
 class IngestHistory:
-	def __init__(self, dbName):
-		self.dbName = dbName
-		self.__dbConn = None
+	def __init__(self, db_name):
+		self.db_name = db_name
+		self.__db_conn = None
 		try:
-			self.__dbConn = self.CreateConnection(dbName)
+			self.__db_conn = self.CreateConnection(db_name)
 			self.CreateTable()
 		except sqlite3.Error as e:
 			raise(e)
 
+	# create a hash
+	@staticmethod
+	def CreateHash(salt, value):
+		raw_bytes = b"%r"%(str(salt)+str(value))
+		return hashlib.sha256(raw_bytes).hexdigest()
+
 	# create a database connection to a SQLite database
-	def CreateConnection(self, db_file):
+	@staticmethod
+	def CreateConnection(db_file):
 		try:
 			conn = sqlite3.connect(db_file)
 			return conn
@@ -46,17 +51,17 @@ class IngestHistory:
 
 	# close database connection
 	def CloseConnection(self):
-		if(self.__dbConn is not None):
-			self.__dbConn.close()
+		if self.__db_conn:
+			self.__db_conn.close()
 
 	# commit database updates
 	def Commit(self):
-		if(self.__dbConn is not None):
-			self.__dbConn.commit()
+		if self.__db_conn:
+			self.__db_conn.commit()
 
 	# commit changes and clsoe database
 	def CommitAndCloseConnection(self):
-		if(self.__dbConn is not None):
+		if self.__db_conn:
 			self.Commit()
 			self.CloseConnection()
 
@@ -72,7 +77,7 @@ class IngestHistory:
 											remote_path text
 										); """
 		try:
-			c = self.__dbConn.cursor()
+			c = self.__db_conn.cursor()
 			c.execute(sql_create_table)
 			return True
 		except:
@@ -80,26 +85,20 @@ class IngestHistory:
 
 	# delete all data in history table
 	def ResetTable(self):
-		sql = '''DELETE FROM ingest_history'''
-		cur = self.__dbConn.cursor()
+		cur = self.__db_conn.cursor()
 		try:
-			cur.execute(sql)
+			cur.execute('DELETE FROM ingest_history')
 			return True
 		except:
 			return False
 
-	# create a hash
-	def CreateHash(self, salt, value):
-		raw_bytes = b"%r"%(str(salt)+str(value))
-		return hashlib.sha256(raw_bytes).hexdigest()
-
 	# add an ingest history entry to database
-	def AddIngestHistory(self, accountID, videoID, requestID, remoteURL):
-		hashValue = self.CreateHash(accountID, remoteURL)
-		history = (hashValue, str(datetime.datetime.now()), accountID, videoID, requestID, remoteURL)
+	def AddIngestHistory(self, account_id, video_id, request_id, remote_url):
+		hash_value = self.CreateHash(account_id, remote_url)
+		history = (hash_value, str(datetime.datetime.now()), account_id, video_id, request_id, remote_url)
 
-		sql = '''INSERT INTO ingest_history(ingest_hash,ingest_date,account_id,video_id,request_id,remote_path) VALUES(?,?,?,?,?,?)'''
-		cur = self.__dbConn.cursor()
+		sql = 'INSERT INTO ingest_history(ingest_hash,ingest_date,account_id,video_id,request_id,remote_path) VALUES(?,?,?,?,?,?)'
+		cur = self.__db_conn.cursor()
 		try:
 			cur.execute(sql, history)
 			self.Commit()
@@ -108,14 +107,23 @@ class IngestHistory:
 			return 0
 
 	# find a hash in the database
-	def FindHashInIngestHistory(self, hashValue):
-		cur = self.__dbConn.cursor()
-		cur.execute("SELECT * FROM ingest_history WHERE ingest_hash=?", (hashValue,))
+	def FindHashInIngestHistory(self, hash_value):
+		cur = self.__db_conn.cursor()
+		cur.execute('SELECT * FROM ingest_history WHERE ingest_hash=?', (hash_value,))
 		rows = cur.fetchall()
-		if(len(rows)>0):
-			return rows[0]
-		else:
-			return None
+		return rows[0] if rows else None
+
+	# find a hash in the database
+	def ListIngestHistory(self):
+		cur = self.__db_conn.cursor()
+		cur.execute('SELECT * FROM ingest_history')
+		rows = cur.fetchall()
+
+		row_list =[['id','ingest_hash','ingest_date','account_id','video_id','request_id','remote_path']]
+		for row in rows:
+			row_list.append(list(row))
+
+		return row_list
 
 class ProgressPercentage(object):
 
@@ -132,44 +140,41 @@ class ProgressPercentage(object):
 			percentage = (self._seen_so_far / self._size) * 100
 			sys.stdout.write("\rProgress: %s / %s  (%.2f%%)\r" % (self._seen_so_far, self._size, percentage))
 			sys.stdout.flush()
-# 
-def ingest_video(accountID, videoID, sourceURL, priorityQueue):
-	r = di.SubmitIngest(accountID=accountID, videoID=videoID, sourceURL=sourceURL, priorityQueue=priorityQueue)
-	if(r.status_code in successResponses):
-		requestID = r.json()['id']
-		print('Ingest Call ('+priorityQueue+') result for video ID ' + videoID + ': ' + str(r.json()))
-		return requestID
-	elif(r.status_code==429):
+#
+def ingest_video(account_id, video_id, source_url, priority_queue):
+	response = di.SubmitIngest(account_id=account_id, video_id=video_id, source_url=source_url, priority_queue=priority_queue)
+	if response.status_code in success_responses:
+		request_id = response.json().get('id')
+		print(f'Ingest Call ({priority_queue}) result for video ID {video_id}: {response.json()}')
+		return request_id
+	elif response.status_code==429:
 		pass # implement retries for when the queue is maxed out
-		return None
 	else:
-		print('Ingest Call ('+priorityQueue+') failed for video ID '+videoID+': ' + str(r.status_code))
-		print(r.text)
-		return None
+		print(f'Ingest Call ({priority_queue}) failed for video ID {video_id}: {response.status_code}')
+		print(response.text)
+	return None
 
-def create_and_ingest(accountID, filename, sourceURL, priority):
-	video = cms.CreateVideo(accountID=accountID, videoTitle=filename)
-	if(video.status_code in successResponses):
-		videoID = video.json()['id']
-		reqID = ingest_video(accountID=accountID, videoID=videoID, sourceURL=sourceURL, priorityQueue=priority)
-		if(reqID is not None):
-			return videoID, reqID
-		else:
-			return None, None
+def create_and_ingest(account_id, filename, source_url, priority):
+	video = cms.CreateVideo(account_id=account_id, video_title=filename)
+	if video.status_code in success_responses:
+		video_id = video.json().get('id')
+		request_id = ingest_video(account_id=account_id, video_id=video_id, source_url=source_url, priority_queue=priority)
+		if request_id:
+			return video_id, request_id
 	else:
-		print('Create Video failed: ' + str(video.status_code))
-		return None, None
+		print(f'Create Video failed: {video.status_code}')
+	return None, None
 
-def isVideo(filename):
+def is_video(filename):
 	# file extensions to check
-	extensionsToCheck = ('.m4p', '.m4v', '.avi', '.wmv', '.mov', '.mkv', '.webm', '.mpg', '.mp2', '.mpeg', '.mpe', '.mpv', '.mp4', '.qt', '.flv')
+	extensions_to_check = ('.m4p', '.m4v', '.avi', '.wmv', '.mov', '.mkv', '.webm', '.mpg', '.mp2', '.mpeg', '.mpe', '.mpv', '.mp4', '.qt', '.flv')
 	# check if the filename ends with any extensions from the list
-	return (filename.lower().endswith(extensionsToCheck))
+	return filename.lower().endswith(extensions_to_check)
 
 #===========================================
 # main program starts here
 #===========================================
-def main(dbHistory):
+def main(db_history:IngestHistory):
 	# disable certificate warnings
 	requests.urllib3.disable_warnings()
 
@@ -187,44 +192,40 @@ def main(dbHistory):
 	parser.add_argument('--config', metavar='<path to config file>', type=str, help='Name and path of account config information file')
 	parser.add_argument('--dbreset', action='store_true', help='Resets and clears the ingest history database')
 	parser.add_argument('--dbignore', action='store_true', help='Ignores the ingest history database (no delta ingest and no record keeping)')
+	parser.add_argument('--history', action='store_true', help='Displays the ingest history')
 
 	# parse the args
-	args = parser.parse_args() 
+	args = parser.parse_args()
 
-	if(args.dbreset):
+	if args.dbreset:
 		print('Resetting ingest history database.')
-		dbHistory.ResetTable()
+		db_history.ResetTable()
+
+	if args.history:
+		for row in db_history.ListIngestHistory():
+			print(*row, sep=', ')
+		return
 
 	# get S3 info if available
-	if(args.s3bucket):
-		s3bucketName = args.s3bucket
-		s3profileName = args.s3profile
-	else:
-		s3bucketName = None
-		s3profileName = None
+	s3_bucket_name = args.s3bucket
+	s3_profile_name = args.s3profile
 
 	# get Dropbox info if available
-	if(args.dbxfolder and args.dbxtoken):
-		dbxFolder = '/'+args.dbxfolder
-		dbxToken = args.dbxtoken
-	else:
-		dbxFolder = None
-		dbxToken = None
+	dbx_folder = args.dbxfolder
+	dbx_token = args.dbxtoken
 
 	# get local folder if available
-	if(args.folder):
-		localFolder = args.folder
-	else:
-		localFolder = None
+	local_folder = args.folder
 
 	# error out if we have neither S3 nor Dropbox info
-	if(not s3bucketName and not dbxFolder and not localFolder and not args.dbreset and not args.file):
-		print('Error: no S3 bucket, Dropbox, local folder, file or tokens specified.\n')
+#	if not s3_bucket_name and not dbx_folder and not local_folder and not args.dbreset and not args.file:
+	if not (s3_bucket_name or dbx_folder or local_folder or args.file):
+		print('Error: no S3 bucket, Dropbox folder, local folder, file or tokens specified.\n')
 		return
 
 	# get ingest priority
 	if(args.priority in ['low', 'normal', 'high']):
-		ingestPriority = args.priority
+		ingest_priority = args.priority
 	else:
 		print('Error: invalid ingest queue priority specified.\n')
 		return
@@ -232,123 +233,117 @@ def main(dbHistory):
 	# create the OAuth token from the account config info file
 	account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
 
-	# override target account ID if specified
-	if(args.account):
-		account_id = args.account
+	account_id = args.account or account_id
+	ingest_profile = args.profile
 
-	if(args.profile):
-		ingest_profile = args.profile
-	else:
-		ingest_profile = None
-
-	global oauth
 	global cms
 	global di
 
 	oauth = OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret)
 	cms = CMS(oauth)
-	di = DynamicIngest(oAuth=oauth, ingestProfile=ingest_profile, priorityQueue=ingestPriority)
+	di = DynamicIngest(oAuth=oauth, ingest_profile=ingest_profile, priority_queue=ingest_priority)
 
 	# this needs moving outside, but for now I'm whatever about it
-	def ingest_single_file(filePath):
-		fileName = os.path.basename(filePath)
-		video = cms.CreateVideo(accountID=account_id, videoTitle=fileName)
-		if(video.status_code in successResponses):
-			videoID=video.json()['id']
-			hashValue = dbHistory.CreateHash(account_id, filePath)
-			ingestRecord = dbHistory.FindHashInIngestHistory(hashValue)
-			if(ingestRecord is None or args.dbignore is True):
-				print('Uploading file "'+filePath+'" to temporary S3 bucket.')
-				upload_url = di.UploadFile(accountID=account_id, videoID=videoID, fileName=filePath,callBack=ProgressPercentage(filePath))
-				if(upload_url):
-					reqID = ingest_video(accountID=account_id, videoID=videoID, sourceURL=upload_url['api_request_url'], priorityQueue=ingestPriority)
-					if(reqID is not None and args.dbignore is False):
-						dbHistory.AddIngestHistory(accountID=account_id, videoID=videoID, requestID=reqID, remoteURL=filePath)
+	def ingest_single_file(file_path:str):
+		file_name = os.path.basename(file_path)
+		video = cms.CreateVideo(account_id=account_id, video_title=file_name)
+		if video.status_code in success_responses:
+			video_id=video.json().get('id')
+			hash_value = db_history.CreateHash(account_id, file_path)
+			ingest_record = db_history.FindHashInIngestHistory(hash_value)
+			if ingest_record is None or args.dbignore:
+				print(f'Uploading file "{file_path}" to temporary S3 bucket.')
+				upload_url = di.UploadFile(account_id=account_id, video_id=video_id, file_name=file_path,callback=ProgressPercentage(file_path))
+				if upload_url:
+					request_id = ingest_video(account_id=account_id, video_id=video_id, source_url=upload_url['api_request_url'], priority_queue=ingest_priority)
+					if request_id and not args.dbignore:
+						db_history.AddIngestHistory(account_id=account_id, video_id=video_id, request_id=request_id, remote_url=file_path)
 				else:
-					print('Error: failed to upload "'+filePath+'" to temporary S3 bucket.')
+					print(f'Error: failed to upload "{file_path}" to temporary S3 bucket.')
 			else:
-				print('Already ingested on '+ingestRecord[2])
+				print(f'Already ingested on {ingest_record[2]}')
 
 	#===========================================
 	# do a single file ingest
 	#===========================================
-	if(args.file):
+	if args.file:
 		ingest_single_file(args.file)
 
 	#===========================================
 	# do the S3 bulk ingest
 	#===========================================
-	if(s3bucketName):
+	if s3_bucket_name:
 		# Let's use Amazon S3
 		try:
-			boto3.Session(profile_name=s3profileName)
+			boto3.Session(profile_name=s3_profile_name)
 		except:
-			print('Error: no AWS credentials found for profile "'+s3profileName+'"')
+			print(f'Error: no AWS credentials found for profile "{s3_profile_name}"')
 		else:
 			s3 = boto3.resource('s3')
-			bucket = s3.Bucket(s3bucketName)
+			bucket = s3.Bucket(s3_bucket_name)
 
 			try:
-				for filename in [obj.key for obj in bucket.objects.all() if isVideo(obj.key)]:
-					s3URL = 'https://'+s3bucketName+'.s3.amazonaws.com/'+(filename).replace(' ', '%20')
-					print(s3URL)
-					hashValue = dbHistory.CreateHash(account_id, s3URL)
-					ingestRecord = dbHistory.FindHashInIngestHistory(hashValue)
-					if(ingestRecord is None or args.dbignore is True):
-						videoID, reqID = create_and_ingest(account_id, filename, s3URL, ingestPriority)
-						if(reqID is not None and args.dbignore is False):
-							dbHistory.AddIngestHistory(accountID=account_id, videoID=videoID, requestID=reqID, remoteURL=s3URL)
+				for filename in [obj.key for obj in bucket.objects.all() if is_video(obj.key)]:
+					s3_url = f'https://{s3_bucket_name}.s3.amazonaws.com/'+((filename).replace(' ', '%20'))
+					hash_value = db_history.CreateHash(account_id, s3_url)
+					ingest_record = db_history.FindHashInIngestHistory(hash_value)
+					if ingest_record is None or args.dbignore:
+						print(f'Ingesting: "{s3_url}"')
+						video_id, request_id = create_and_ingest(account_id, filename, s3_url, ingest_priority)
+						if request_id and not args.dbignore:
+							db_history.AddIngestHistory(account_id=account_id, video_id=video_id, request_id=request_id, remote_url=s3_url)
 					else:
-						print('Already ingested on '+ingestRecord[2])
+						print(f'Already ingested on {ingest_record[2]}: "{s3_url}"')
 			except:
-				print('Error: bucket "'+s3bucketName+'" not found for profile "'+s3profileName+'".\n')
+				print(f'Error: bucket "{s3_bucket_name}" not found for profile "{s3_profile_name}".\n')
 
 	#===========================================
 	# do the Dropbox bulk ingest
 	#===========================================
-	if(dbxFolder):
+	if dbx_folder:
 		try:
-			dbx = dropbox.Dropbox(dbxToken)
+			dbx = dropbox.Dropbox(dbx_token)
 		except:
 			print('Error: invalid Dropbox API token.')
 		else:
+			dbx_folder = f'/{dbx_folder}'
 			try:
-				for filename in [entry.name for entry in dbx.files_list_folder(path=dbxFolder, include_non_downloadable_files=False).entries if isVideo(entry.name)]:
-					dbxPath = dbxFolder+'/'+filename
-					print(dbxPath)
-					sourceURL = str(dbx.sharing_create_shared_link(path=dbxPath).url).replace('?dl=0','?dl=1')
-					hashValue = dbHistory.CreateHash(account_id, sourceURL)
-					ingestRecord = dbHistory.FindHashInIngestHistory(hashValue)
-					if(ingestRecord is None or args.dbignore is True):
-						videoID, reqID = create_and_ingest(account_id, filename, sourceURL, ingestPriority)
-						if(reqID is not None and args.dbignore is False):
-							dbHistory.AddIngestHistory(accountID=account_id, videoID=videoID, requestID=reqID, remoteURL=sourceURL)
+				for filename in [entry.name for entry in dbx.files_list_folder(path=dbx_folder, include_non_downloadable_files=False).entries if is_video(entry.name)]:
+					dbx_path = f'{dbx_folder}/{filename}'
+					source_url = str(dbx.sharing_create_shared_link(path=dbx_path).url).replace('?dl=0','?dl=1')
+					hash_value = db_history.CreateHash(account_id, source_url)
+					ingest_record = db_history.FindHashInIngestHistory(hash_value)
+					if ingest_record is None or args.dbignore:
+						print(f'Ingesting: "{dbx_path}"')
+						video_id, request_id = create_and_ingest(account_id, filename, source_url, ingest_priority)
+						if request_id and not args.dbignore:
+							db_history.AddIngestHistory(account_id=account_id, video_id=video_id, request_id=request_id, remote_url=source_url)
 					else:
-						print('Already ingested on '+ingestRecord[2])
+						print(f'Already ingested on {ingest_record[2]}: "{dbx_path}"')
 
 			except:
-				print('Error: folder "'+dbxFolder+'" not found in Dropbox.\n')
+				print(f'Error: folder "{dbx_folder}" not found in Dropbox.\n')
 
 	#===========================================
 	# do the local bulk ingest
 	#===========================================
-	if(localFolder):
+	if local_folder:
 		try:
-			fileList = os.listdir(localFolder)
+			file_list = os.listdir(local_folder)
 		except:
-			print('Error: unable to access folder "'+localFolder+'"')
+			print(f'Error: unable to access folder "{local_folder}"')
 		else:
-			for filePath in [filePath for filePath in fileList if isVideo(filePath)]:
-				ingest_single_file(localFolder+'\\'+filePath)
+			for file_path in [file for file in file_list if is_video(file)]:
+				ingest_single_file(f'{local_folder}\{file_path}')
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
 	try:
-		dbHistory = IngestHistory(os.path.expanduser('~')+'/bulkingest.sqlite')
+		db_history = IngestHistory(os.path.expanduser('~')+'/bulkingest.sqlite')
 	except:
 		print('Error: can not connect to ingest history database.')
 	else:
-		main(dbHistory)
-		dbHistory.CommitAndCloseConnection()
+		main(db_history)
+		db_history.CommitAndCloseConnection()
