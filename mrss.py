@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+from pprint import pprint
 from mackee import SocialSyndication
 from mackee import OAuth
 from mackee import LoadAccountInfo
@@ -21,35 +22,34 @@ args = parser.parse_args()
 account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
 
 # if account ID was provided override the one from config
-if(args.account):
-	account_id = args.account
+account_id = args.account or account_id
 
 # create a CMS API instance
 mrss = SocialSyndication( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # add syndication to account
-if(args.add):
-	print( mrss.CreateSyndication(accountID=account_id,jsonBody=args.add).text )
+if args.add:
+	print( mrss.CreateSyndication(account_id=account_id,json_body=args.add).text )
 
 # delete one or all syndication
-if(args.delete):
+if args.delete:
 	# the actual delete function
-	def deleteSID(sID):
-		print( 'Deleting syndication ID '+sID+': '+str(mrss.DeleteSyndication(accountID=account_id, syndicationID=sID).status_code) )
+	def delete_sid(s_id):
+		print( f'Deleting syndication ID {s_id}: {mrss.DeleteSyndication(account_id=account_id, syndication_id=s_id).status_code}')
 
 	# delete all?
-	if(args.delete=='all'):
-		synList = mrss.GetAllSyndications(accountID=account_id).json()
-		for syn in synList:
-			deleteSID(syn['id'])
+	if args.delete=='all':
+		syn_list = mrss.GetAllSyndications(account_id=account_id).json()
+		for syn in syn_list:
+			delete_sid(syn['id'])
 	# just delete one
 	else:
-		deleteSID(args.delete)
+		delete_sid(args.delete)
 
 # list all syndications in an account
-if(args.list):
-	print( mrss.GetAllSyndications(accountID=account_id).text )
+if args.list:
+	pprint( mrss.GetAllSyndications(account_id=account_id).json() )
 
 # get a specific syndication
-if(args.get):
-	print( mrss.GetSyndication(accountID=account_id, syndicationID=args.get).text )
+if args.get:
+	pprint( mrss.GetSyndication(account_id=account_id, syndication_id=args.get).json() )

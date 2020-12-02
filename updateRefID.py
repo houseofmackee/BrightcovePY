@@ -20,20 +20,20 @@ video_id_col = "video_id"
 ref_id_col =  "reference_id"
 
 # function to check if a video ID is valid and then update it
-def updateVideo(videoID, updateData):
+def update_video(video_id, update_data):
 	global cms
-	videoID = normalize_id(videoID)
-	if(videoID):
-		response = cms.UpdateVideo(videoID=videoID, jsonBody=updateData).status_code
-		print('Updating video ID "'+str(videoID)+'": '+ str(response))
+	video_id = normalize_id(video_id)
+	if video_id:
+		response = cms.UpdateVideo(video_id=video_id, json_body=update_data).status_code
+		print(f'Updating video ID "{video_id}": {response}')
 
-		if(response==429):
+		if response==429:
 			for remaining in range(3, 0, -1):
-				sys.stderr.write('\rRetrying in {:2d} seconds.'.format(remaining))
+				sys.stderr.write(f'\rRetrying in {remaining:2d} seconds.')
 				sys.stderr.flush()
 				time.sleep(1)
 			# let's call ourself again, shall we?
-			updateVideo(videoID=videoID, updateData=updateData)
+			update_video(video_id=video_id, update_data=update_data)
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -46,22 +46,21 @@ parser.add_argument('--validate', action='store_true', default=False, help='Vali
 args = parser.parse_args()
 
 # get account info from config file if not hardcoded
-if( account_id is None and client_id is None and client_secret is None):
+if None in [account_id, client_id, client_secret]:
 	account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
 
 # if account ID was provided override the one from config
-if(args.account):
-	account_id = args.account
+account_id = args.account or account_id
 
 # create a CMS API instance
 cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # if we have an xls let's get going
-if(args.xls):
+if args.xls:
 	data = pandas.read_excel(args.xls)
 
 	# check if all ref IDs are unique
-	numRows = len(data)
+	num_rows = len(data)
 
 	# get the columns
 	ref_data = data[ref_id_col]
@@ -69,33 +68,33 @@ if(args.xls):
 
 	# check if all ref IDs are unique
 	# can't use if( data[ref_id_col].nunique() != numRows ):
-	isUnique = True
-	for countA in range(numRows-1):
-		valueA = ref_data[countA]
-		for countB in range(countA+1, numRows):
-			valueB = ref_data[countB]
-			if(valueA==valueB):
-				print(f'Error: ref IDs are not unique -> {countA+2}, {countB+2}, {valueA}')
-				isUnique = False
+	is_unique = True
+	for count_a in range(num_rows-1):
+		value_a = ref_data[count_a]
+		for count_b in range(count_a+1, num_rows):
+			value_b = ref_data[count_b]
+			if value_a==value_b:
+				print(f'Error: ref IDs are not unique -> {count_a+2}, {count_b+2}, {value_a}')
+				is_unique = False
 
-	if(video_data.nunique() != numRows):
+	if video_data.nunique() != num_rows:
 		print('Error: video IDs are not unique')
-		isUnique = False
+		is_unique = False
 
-	if(not isUnique):
+	if not is_unique:
 		sys.exit(2)
 
-	if(args.validate):
+	if args.validate:
 		print('Reference IDs and video IDs are unique.')
 		sys.exit(2)
 
 	for row in range(0, len(data) ):
-		videoID = int(video_data[row])
-		refID = str(ref_data[row])
+		video_id = int(video_data[row])
+		ref_id = str(ref_data[row])
 
-		jsonBody = ('{ "reference_id":"' + refID + '" }')
+		json_body = ('{ "reference_id":"' + ref_id + '" }')
 
-		updateVideo(videoID=videoID, updateData=jsonBody)
+		update_video(video_id=video_id, update_data=json_body)
 
 # no pandas, so just use the options from the config file
 else:

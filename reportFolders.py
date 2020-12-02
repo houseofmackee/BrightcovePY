@@ -23,12 +23,11 @@ parser.add_argument('--out', metavar='<output filename>', type=str, help='Name a
 args = parser.parse_args()
 
 # get account info from config file if not hardcoded
-if( account_id is None and client_id is None and client_secret is None):
+if None in [account_id, client_id, client_secret]:
 	account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
 
 # if account ID was provided override the one from config
-if(args.account):
-	account_id = args.account
+account_id = args.account or account_id
 
 # create a CMS API instance
 cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
@@ -37,7 +36,7 @@ row_list = [ ['id', 'account_id', 'name', 'created_at', 'updated_at', 'video_cou
 
 response = cms.GetFolders()
 
-if(response.status_code == 200):
+if response.status_code == 200:
 	folders = response.json()
 	for folder in folders:
 		row = [ folder.get(field) for field in row_list[0] ]

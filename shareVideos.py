@@ -66,7 +66,7 @@ def share_videos(inputfile):
 	target_account_ids=obj.get("target_account_ids")
 	json_body = json.dumps(target_account_ids)
 
-	# get the access token and set request headers 
+	# get the access token and set request headers
 	access_token = get_access_token()
 	headers = { 'Authorization': 'Bearer ' + access_token, "Content-Type": "application/json" }
 
@@ -91,7 +91,7 @@ def share_videos(inputfile):
 #===========================================
 def show_usage():
 	print('Usage: sharevideos.py -i <inputfile>')
-		
+
 #===========================================
 # parse args and call the sharing function
 #===========================================
@@ -118,4 +118,4 @@ def main(argv):
 # only run code if it's not imported
 #===========================================
 if __name__ == "__main__":
-   main(sys.argv[1:])
+	main(sys.argv[1:])

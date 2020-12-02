@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+from pprint import pprint
 from mackee import CMS
 from mackee import OAuth
 from mackee import LoadAccountInfo
@@ -20,25 +21,24 @@ args = parser.parse_args()
 account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
 
 # if account ID was provided override the one from config
-if(args.account):
-	account_id = args.account
+account_id = args.account or account_id
 
 # create a CMS API instance
 cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # delete one or all subscriptions
-if(args.delete):
-	if(args.delete=='all'):
-		subList = cms.GetSubscriptionsList().json()
-		for sub in subList:
-			print(cms.DeleteSubscription(subID=sub['id']).text)
+if args.delete:
+	if args.delete=='all':
+		sub_list = cms.GetSubscriptionsList().json()
+		for sub in sub_list:
+			print(cms.DeleteSubscription(sub_id=sub['id']).text)
 	else:
-		print(cms.DeleteSubscription(subID=args.delete).text)
+		print(cms.DeleteSubscription(sub_id=args.delete).text)
 
 # add a subscription
-if(args.add):
-	print(cms.CreateSubscription(callbackURL=args.add).text)
+if args.add:
+	print(cms.CreateSubscription(callback_url=args.add).text)
 
 # show all subscriptions
-if(args.list):
-	print(cms.GetSubscriptionsList().text)
+if args.list:
+	pprint(cms.GetSubscriptionsList().json())

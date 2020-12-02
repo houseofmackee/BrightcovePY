@@ -4,10 +4,10 @@ import mackee
 #===========================================
 # callback to find videos with text tracks
 #===========================================
-def findTT(video):
+def find_tt(video):
 	tts = video.get('text_tracks')
-	if(tts and len(tts)>0):
-		print(str(video.get('id')+', "'+video.get('name')+'"'))
+	if tts:
+		print(f'{video.get("id")}, "{video.get("name")}"')
 		for track in tts:
 			print(track.get('srclang'))
 
@@ -15,4 +15,4 @@ def findTT(video):
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	mackee.main(findTT)
+	mackee.main(find_tt)

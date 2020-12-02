@@ -4,27 +4,27 @@ from mackee import main, GetCMS
 #===========================================
 # function to get size of master
 #===========================================
-def getMasterStorage(video):
-	masterSize = 0
+def get_master_storage(video):
+	master_size = 0
 
-	if(video.get('has_digital_master')):
+	if video.get('has_digital_master'):
 		shared = video.get('sharing')
-		if(shared and shared.get('by_external_acct')):
+		if shared and shared.get('by_external_acct'):
 			return 0
-		response = GetCMS().GetDigitalMasterInfo(videoID=video.get('id'))
-		if(response.status_code == 200):
-			masterSize = response.json().get('size')
+		response = GetCMS().GetDigitalMasterInfo(video_id=video.get('id'))
+		if response.status_code == 200:
+			master_size = response.json().get('size')
 
-	return masterSize
+	return master_size
 
 #===========================================
 # callback to get digital master size
 #===========================================
-def findStorageSize(video):
-	print(str(video.get('id'))+', '+str(getMasterStorage(video)))
+def find_storage_size(video):
+	print(f'{video.get("id")}, {get_master_storage(video)}')
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	main(findStorageSize)
+	main(find_storage_size)

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+from pprint import pprint
 from mackee import OAuth
 from mackee import JWT
 from mackee import LoadAccountInfo
@@ -24,37 +25,36 @@ args = parser.parse_args()
 account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
 
 # if account ID was provided override the one from config
-if(args.account):
-	account_id = args.account
+account_id = args.account or account_id
 
 # create a JWT API instance
 jwt = JWT( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # delete one or all keys
-if(args.delete):
-	if(args.delete=='all'):
+if args.delete:
+	if args.delete=='all':
 		keyList = jwt.ListKeys().json()
 		for sub in keyList:
-			print(jwt.DeleteKey(keyID=sub['id']).text)
+			print(jwt.DeleteKey(key_id=sub['id']).text)
 	else:
-		print(jwt.DeleteKey(keyID=args.delete).text)
+		print(jwt.DeleteKey(key_id=args.delete).text)
 
 # add a key
-if(args.add):
+if args.add:
 	private_key = ''
 	try:
 		with open(args.add, 'r') as file:
 			lines = file.readlines()
 
 			for line in lines:
-				if(not '-----' in line):
+				if not '-----' in line:
 					private_key += line.strip()
 	except:
-		print('Error trying to access private keyfile "'+str(args.keyfile)+'".')
+		print(f'Error trying to access private keyfile "{args.keyfile}".')
 		sys.exit(2)
 
-	print(jwt.RegisterKey(keyData=private_key).text)
+	print(jwt.RegisterKey(key_data=private_key).text)
 
 # show all keys
-if(args.list):
-	print(jwt.ListKeys().text)
+if args.list:
+	pprint(jwt.ListKeys().json())

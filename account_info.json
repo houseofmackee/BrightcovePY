@@ -1,7 +1,7 @@
 {
-	"account_id":"account ID here",
-    "client_id":"client ID here",
-	"client_secret":"client secret here",
+	"account_id":"account_ID_here",
+    "client_id":"client_ID_here",
+	"client_secret":"client_secret_here",
 	"target_account_ids":[
 	],
 	"video_ids":[

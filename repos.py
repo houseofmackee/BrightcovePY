@@ -22,72 +22,71 @@ args = parser.parse_args()
 account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
 
 # if account ID was provided override the one from config
-if(args.account):
-	account_id = args.account
+account_id = args.account or account_id
 
 # create a CMS API instance
 ds = DeliverySystem( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # delete one or all subscriptions
-if(args.delete):
+if args.delete:
 	# delete a file in a repo?
-	if(args.repo and args.file):
-		if(args.file=='all'):
+	if args.repo and args.file:
+		if args.file=='all':
 			print('Delete all files not supported yet.')
 		else:
-			r = ds.DeleteFileInRepository(repoName=args.repo, fileName=args.file, accountID=account_id)
-			c = r.status_code
-			print('Deleting file "'+args.file+'" in repository "'+args.repo+'": '+str(c))
-			if(c not in DeliverySystem.success_responses):
-				print('Error deleting file to repository: '+r.text)
+			response = ds.DeleteFileInRepository(repo_name=args.repo, file_name=args.file, account_id=account_id)
+			code = response.status_code
+			print(f'Deleting file "{args.file}" in repository "{args.repo}": {code}')
+			if code not in DeliverySystem.success_responses:
+				print(f'Error deleting file to repository: {response.text}')
 	# delete a repo?
-	elif(args.repo):
-		r = ds.DeleteRepository(repoName=args.repo, accountID=account_id)
-		c = r.status_code
-		print('Deleting repository "'+args.repo+'" in account ID '+account_id+': '+str(c))
-		if(c not in DeliverySystem.success_responses):
-			print('Error deleting repository: '+r.text)
+	elif args.repo:
+		response = ds.DeleteRepository(repo_name=args.repo, account_id=account_id)
+		code = response.status_code
+		print(f'Deleting repository "{args.repo}" in account ID {account_id}: {code}')
+		if code not in DeliverySystem.success_responses:
+			print(f'Error deleting repository: {response.text}')
 
 # add a repo to account or a file to a repo
-if(args.add):
+if args.add:
 	# add a file to a repo?
-	if(args.repo and args.file):
-		r = ds.AddFileToRepository(repoName=args.repo, fileName=args.file, accountID=account_id)
-		c = r.status_code
-		print('Adding file "'+args.file+'" to repository "'+args.repo+'": '+str(c))
-		if(c in DeliverySystem.success_responses):
-			print(r.text)
+	if args.repo and args.file:
+		response = ds.AddFileToRepository(repo_name=args.repo, file_name=args.file, account_id=account_id)
+		code = response.status_code
+		print(f'Adding file "{args.file}" to repository "{args.repo}": {code}')
+		if code in DeliverySystem.success_responses:
+			print(response.text)
 		else:
-			print('Error adding file to repository: '+r.text)
+			print(f'Error adding file to repository: {response.text}')
 	# add a repo
-	elif(args.repo):
-		r = ds.CreateRepository(repoName=args.repo, accountID=account_id)
-		c = r.status_code
-		print('Adding repository "'+args.repo+'" to account ID '+account_id+': '+str(c))
-		if(c in DeliverySystem.success_responses):
-			print(r.text)
+	elif args.repo:
+		response = ds.CreateRepository(repo_name=args.repo, account_id=account_id)
+		code = response.status_code
+		print(f'Adding repository "{args.repo}" to account ID {account_id}: {code}')
+		if code in DeliverySystem.success_responses:
+			print(response.text)
 		else:
-			print('Error adding repository to account: '+r.text)
+			print(f'Error adding repository to account: {response.text}')
 
 # list files in repo or list all repos in account
-if(args.list):
+if args.list:
 	# list files in a repo?
-	if(args.repo):
-		r = ds.ListFilesInRepository(repoName=args.repo, accountID=account_id)
-		if(r.status_code in DeliverySystem.success_responses):
-			r = r.json()
-			print(str(r['item_count'])+' item(s) found in repository.\n')
-			for repoFile in r['items']:
-				print(('Name: {filename}\nURL.: {fileurl}\n').format(filename=repoFile['name'], fileurl=repoFile['public_url']))
+	if args.repo:
+		response = ds.ListFilesInRepository(repo_name=args.repo, account_id=account_id)
+		if response.status_code in DeliverySystem.success_responses:
+			response = response.json()
+			print(f'{response["item_count"]} item(s) found in repository.\n')
+			for repo_file in response['items']:
+				print(f'Name: {repo_file["name"]}\nURL.: {repo_file["public_url"]}\n')
 		else:
-			print('Error listing files in repository: '+r.text)
+			print(f'Error listing files in repository: {response.text}')
 	# list repos in an account
 	else:
-		r = ds.ListRepositories(accountID=account_id)
-		if(r.status_code in DeliverySystem.success_responses):
-			r = r.json()
-			print(str(r['item_count'])+' item(s) found in account.\n')
-			for repo in r['items']:
-				print(('Name: {reponame}').format(reponame=repo['name']))
+		response = ds.ListRepositories(account_id=account_id)
+		if response.status_code in DeliverySystem.success_responses:
+			response = response.json()
+			print(f'{response["item_count"]} item(s) found in account.\n')
+			for repo in response['items']:
+				print(f'Name: {repo["name"]}')
 		else:
-			print('Error listing repositories in account: '+r.text)
+			print(f'Error listing repositories in account: {response.text}')

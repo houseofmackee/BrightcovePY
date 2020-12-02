@@ -4,13 +4,12 @@ import mackee
 #===========================================
 # callback to find videos with text tracks
 #===========================================
-def findNonTT(video):
-	tts = video.get('text_tracks')
-	if(not tts):
+def find_non_tt(video):
+	if not video.get('text_tracks'):
 		print( video.get('id') )
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	mackee.main(findNonTT)
+	mackee.main(find_non_tt)

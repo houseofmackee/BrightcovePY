@@ -4,9 +4,9 @@ from mackee import main
 #===========================================
 # callback to report images for the video
 #===========================================
-def findImages(video):
+def find_images(video):
 	images = video.get('images')
-	if(images):
+	if images:
 		poster = images.get('poster')
 		thumb  = images.get('thumbnail')
 
@@ -20,4 +20,4 @@ def findImages(video):
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	main(findImages)
+	main(find_images)

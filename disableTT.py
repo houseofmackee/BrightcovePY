@@ -5,40 +5,40 @@ import json
 #===========================================
 # callback to disable all default tracks
 #===========================================
-def disableTT(video):
+def disable_tt(video):
 	# flag to signal we found and changed a default track
-	gotHit = False
+	got_hit = False
 	# try to get all text tracks
 	tts = video.get('text_tracks')
 	# check if we found some
-	if(tts):
+	if tts:
 		# go through all tracks
 		for track in tts:
 			#check if it's a default track
-			if(track.get('default')==True):
+			if track.get('default')==True:
 				# change the setting
 				track['default'] = False
 				# set the flag so we know we found one
-				gotHit = True
+				got_hit = True
 
 		# check if we found and changed one
-		if(gotHit):
+		if got_hit:
 			# get the video ID
-			videoID = str(video.get('id'))
+			video_id = video.get('id')
 			# create the JSON body
-			jsonBody = ('{ "text_tracks":'+json.dumps(tts)+'}')
+			json_body = ('{ "text_tracks": '+json.dumps(tts)+' }')
 			# make the PATCH call
-			r = GetCMS().UpdateVideo(videoID=videoID, jsonBody=jsonBody)
+			r = GetCMS().UpdateVideo(video_id=video_id, json_body=json_body)
 			# check if all went well
-			if(r.status_code in [200,202]):
-				print(('Disabled default track(s) for video ID {videoid} with status {status}.').format(videoid=videoID, status=r.status_code))
+			if r.status_code in [200,202]:
+				print(f'Disabled default track(s) for video ID {video_id} with status {r.status_code}.')
 			# otherwise report the error
 			else:
-				print(('Error code {error} disabling default track(s) for video ID {videoid}:').format(error=r.status_code, videoid=videoID))
+				print(f'Error code {r.status_code} disabling default track(s) for video ID {video_id}:')
 				print(r.text)
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	main(disableTT)
+	main(disable_tt)

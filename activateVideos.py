@@ -4,14 +4,14 @@ from mackee import main, GetCMS
 #===========================================
 # callback to activate a video
 #===========================================
-def activateVideo(video):
-	if(video.get('state')=='INACTIVE'):
-		videoID = str(video.get('id'))
+def activate_video(video):
+	if video.get('state')=='INACTIVE':
+		video_id = video.get('id')
 		json = '{ "state": "ACTIVE" }'
-		print('Activating video ID '+videoID+': '+ str(GetCMS().UpdateVideo(videoID=videoID, jsonBody=json).status_code))
+		print(f'Activating video ID {video_id}: {GetCMS().UpdateVideo(video_id=video_id, json_body=json).status_code}')
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	main(activateVideo)
+	main(activate_video)

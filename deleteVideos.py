@@ -19,23 +19,23 @@ client_secret = None
 cms = None
 opts = None
 
-def showProgress(progress:int) -> None:
+def show_progress(progress:int) -> None:
 	sys.stderr.write(f'\r{progress} processed...\r')
 	sys.stderr.flush()
 
 # function to check if a video ID is valid and then delete it
-def deleteVideo(video_id:str) -> List:
+def delete_video(video_id:str) -> List:
 	global cms
 	_, work_id = wrangle_id(video_id)
-	if(work_id):
-		response = cms.DeleteVideo(videoID=work_id).status_code
+	if work_id:
+		response = cms.DeleteVideo(video_id=work_id).status_code
 		# if it failed try to remove it from playlists and try again
-		if(response==409):
-			cms.RemoveVideoFromAllPlaylists(videoID=work_id)
-			response = cms.DeleteVideo(videoID=work_id).status_code
-	
+		if response==409:
+			cms.RemoveVideoFromAllPlaylists(video_id=work_id)
+			response = cms.DeleteVideo(video_id=work_id).status_code
+
 		return [video_id, response]
-	
+
 	return [video_id, 'invalid video ID']
 
 # init the argument parsing
@@ -50,12 +50,11 @@ parser.add_argument('--column', metavar='<column name>', type=str, help='Name of
 args = parser.parse_args()
 
 # get account info from config file if not hardcoded
-if( account_id is None and client_id is None and client_secret is None):
+if account_id is None and client_id is None and client_secret is None:
 	account_id, client_id, client_secret, opts = LoadAccountInfo(args.config)
 
 # if account ID was provided override the one from config
-if(args.account):
-	account_id = args.account
+account_id = args.account or account_id
 
 # create a CMS API instance
 cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
@@ -64,38 +63,38 @@ cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client
 videoList = None
 
 # if we have an xls/csv
-if(args.xls):
+if args.xls:
 	videoList = videos_from_file(args.xls, column_name=args.column if args.column else 'video_id')
 
 # otherwise just use the options from the config file
-elif(opts):
+elif opts:
 	videoList = opts.get('video_ids')
 
 # either no list or "all" was found -> bail
-if(not videoList or videoList[0] == 'all'):
+if not videoList or videoList[0] == 'all':
 	eprint('Error: invalid or missing list of videos in config file.')
 
 # delete 'em
 else:
-	videosProcessed = 0
+	videos_processed = 0
 	row_list = [['operation','video_id','result']]
 	with concurrent.futures.ThreadPoolExecutor(max_workers = 5) as executor:
-		future_to_videoid = {executor.submit(deleteVideo, videoID): videoID for videoID in videoList}
-		for future in concurrent.futures.as_completed(future_to_videoid):
-			video = future_to_videoid[future]
+		future_to_video_id = {executor.submit(delete_video, video_id): video_id for video_id in videoList}
+		for future in concurrent.futures.as_completed(future_to_video_id):
+			video = future_to_video_id[future]
 			try:
 				data = future.result()
 			except Exception as exc:
 				eprint(f'{video} generated an exception: {exc}')
 			else:
 				# display counter every 100 videos
-				videosProcessed += 1
-				if(videosProcessed%100==0):
-					showProgress(videosProcessed)
-				if(data):
+				videos_processed += 1
+				if videos_processed%100==0:
+					show_progress(videos_processed)
+				if data:
 					row_list.append(['delete', data[0], data[1]])
 
-	showProgress(videosProcessed)
+	show_progress(videos_processed)
 
 	#write list to file
 	try:

@@ -8,15 +8,15 @@ row_list = [ ['id', 'name', 'state', 'reference_id', 'created_at', 'tags'] ]
 counter_lock = Lock()
 data_lock = Lock()
 
-videosProcessed = 0
+videos_processed = 0
 
-def showProgress(progress):
+def show_progress(progress):
 	sys.stderr.write(f'\r{progress} processed...\r')
 	sys.stderr.flush()
 
-def createCSV(video):
+def create_csv(video):
 	global row_list
-	global videosProcessed
+	global videos_processed
 
 	row = [ video.get(field) for field in row_list[0] ]
 
@@ -24,18 +24,18 @@ def createCSV(video):
 		row_list.append(row)
 
 	with counter_lock:
-		videosProcessed += 1
+		videos_processed += 1
 
-	if(videosProcessed%100==0):
-		showProgress(videosProcessed)
+	if videos_processed%100==0:
+		show_progress(videos_processed)
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
 	#generate the CSV list
-	main(createCSV)
-	showProgress(videosProcessed)
+	main(create_csv)
+	show_progress(videos_processed)
 
 	#write list to file
 	list_to_csv(row_list, GetArgs().o)

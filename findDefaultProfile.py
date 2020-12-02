@@ -20,37 +20,36 @@ args = parser.parse_args()
 account_id, client_id, client_secret, opts = LoadAccountInfo(args.config)
 
 # if account ID was provided override the one from config
-if(args.account):
-	account_id = args.account
+account_id = args.account or account_id
 
 # create a Ingest Profiles API instance
-ingestProfiles = IngestProfiles( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
+ingest_profiles = IngestProfiles( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # list of account IDs to check
 acc_ids = []
 
 # if list is empty try to get it from xls or config JSON
-if(not acc_ids):
+if not acc_ids:
 	# if we have an xls/csv
-	if(args.xls):
+	if args.xls:
 		acc_ids = videos_from_file(args.xls, column_name='account_id')
 
 	# otherwise just use the options from the config file
-	elif(opts):
+	elif opts:
 		acc_ids = opts.get('target_account_ids')
 
-if(acc_ids):
+if acc_ids:
 	print('account_id, display_name, name')
 	for acc_id in acc_ids:
 
-		response = ingestProfiles.GetDefaultProfile(accountID=acc_id)
-		if(response.status_code == 200):
+		response = ingest_profiles.GetDefaultProfile(account_id=acc_id)
+		if response.status_code == 200:
 			dpid = response.json().get('default_profile_id')
 
-			response = ingestProfiles.GetIngestProfile(accountID=acc_id, profileID=dpid)
-			if(response.status_code == 200):
-				displayName = response.json().get('display_name')
+			response = ingest_profiles.GetIngestProfile(account_id=acc_id, profile_id=dpid)
+			if response.status_code == 200:
+				display_name = response.json().get('display_name')
 				name = response.json().get('name')
-				print(f'{acc_id}, {displayName}, {name}')
+				print(f'{acc_id}, {display_name}, {name}')
 else:
 	eprint('No account IDs provided.')

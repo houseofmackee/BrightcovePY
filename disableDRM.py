@@ -4,26 +4,26 @@ from mackee import main, GetCMS
 #===========================================
 # callback to disable DRM
 #===========================================
-def disableDRM(video):
+def disable_drm(video):
 	# does video have DRM?
-	isDRMDisabled = video.get('drm_disabled')
-	if(isDRMDisabled is not None and isDRMDisabled==False):
+	is_drm_enabled = video.get('drm_disabled')
+	if is_drm_enabled == False:
 		# get the video ID
-		videoID = str(video.get('id'))
+		video_id = video.get('id')
 		# create the JSON body
-		jsonBody = ('{ "drm_disabled": true }')
+		json_body = ('{ "drm_disabled": true }')
 		# make the PATCH call
-		r = GetCMS().UpdateVideo(videoID=videoID, jsonBody=jsonBody)
+		r = GetCMS().UpdateVideo(video_id=video_id, json_body=json_body)
 		# check if all went well
-		if(r.status_code in [200,202]):
-			print(('Disabled DRM for video ID {videoid} with status {status}.').format(videoid=videoID, status=r.status_code))
+		if r.status_code in [200,202]:
+			print(f'Disabled DRM for video ID {video_id} with status {r.status_code}.')
 		# otherwise report the error
 		else:
-			print(('Error code {error} disabling DRM for video ID {videoid}:').format(error=r.status_code, videoid=videoID))
+			print(f'Error code {r.status_code} disabling DRM for video ID {video_id}:')
 			print(r.text)
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	main(disableDRM)
+	main(disable_drm)

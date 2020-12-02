@@ -4,11 +4,11 @@ import mackee
 #===========================================
 # example callback function
 #===========================================
-def exampleFunction(video):
+def example_function(video):
 	print(video.get('id'), video.get('name'))
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	mackee.main(exampleFunction)
+	mackee.main(example_function)

@@ -4,16 +4,16 @@ from mackee import main, GetCMS
 #===========================================
 # callback to delete digital masters
 #===========================================
-def deleteMasters(video):
-	if(video.get('has_digital_master')):
+def delete_masters(video):
+	if video.get('has_digital_master'):
 		shared = video.get('sharing')
-		if(shared and shared.get('by_external_acct')):
+		if shared and shared.get('by_external_acct'):
 			return
-		videoID = str(video.get('id'))
-		print('Deleting master for video ID '+videoID+': '+ str(GetCMS().DeleteMaster(videoID=videoID).status_code))
+		video_id = video.get('id')
+		print(f'Deleting master for video ID {video_id}: {GetCMS().DeleteMaster(video_id=video_id).status_code}')
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	main(deleteMasters)
+	main(delete_masters)
