@@ -8,7 +8,7 @@ import time
 import queue
 import logging
 import functools
-from typing import Callable, Tuple
+from typing import Callable, Tuple, Union
 from threading import Thread
 from os.path import expanduser, basename
 from abc import ABC, abstractproperty
@@ -45,14 +45,34 @@ class Base(ABC):
 
 	def __init__(self, query=None):
 		self.search_query = query
-		self.__session = self.__get_session()
+		self.__session = self._get_session()
 
 	@staticmethod
-	def __get_session() -> requests.Session:
+	def _get_session() -> requests.Session:
 		sess = requests.Session()
 		adapter = requests.adapters.HTTPAdapter(pool_connections=100, pool_maxsize=100)
 		sess.mount('https://', adapter)
 		return sess
+
+	@staticmethod
+	def _json_to_string(json_object:Union[str, dict]) -> Union[str, None]:
+		"""
+		If json_object is a dict convert to str.
+		If json_object is a str validate it.
+		Returns str if it's valid JSON, None otherwise.
+		"""
+		result = json_object
+
+		if isinstance(json_object, dict):
+			result = json.dumps(json_object)
+
+		if isinstance(result, str):
+			try:
+				_ = json.loads(result)
+			except:
+				result = None
+
+		return result
 
 	@property
 	def search_query(self) -> str:
@@ -68,7 +88,7 @@ class Base(ABC):
 
 
 class DeliveryRules(Base):
-	base_url = 'https://delivery-rules.api.brightcove.com/accounts/{pubid}'
+	base_url = 'https://delivery-rules.api.brightcove.com/accounts/{account_id}'
 
 	def __init__(self, oauth):
 		self.__oauth = oauth
@@ -79,54 +99,54 @@ class DeliveryRules(Base):
 	def GetDeliveryRules(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliveryRules.base_url).format(pubid=account_id)
+		url = (DeliveryRules.base_url).format(account_id=account_id)
 		return requests.get(url, headers=headers)
 
 	def GetConditions(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliveryRules.base_url+'/conditions').format(pubid=account_id)
+		url = (DeliveryRules.base_url+'/conditions').format(account_id=account_id)
 		return requests.get(url, headers=headers)
 
 	def UpdateConditions(self, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliveryRules.base_url+'/conditions').format(pubid=account_id)
-		return requests.put(url, headers=headers, data=json_body)
+		url = (DeliveryRules.base_url+'/conditions').format(account_id=account_id)
+		return requests.put(url, headers=headers, data=self._json_to_string(json_body))
 
 	def GetActions(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliveryRules.base_url+'/actions').format(pubid=account_id)
+		url = (DeliveryRules.base_url+'/actions').format(account_id=account_id)
 		return requests.get(url, headers=headers)
 
 	def GetSpecificAction(self, action_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliveryRules.base_url+'/actions/{action_id}').format(pubid=account_id, action_id=action_id)
+		url = (DeliveryRules.base_url+'/actions/{action_id}').format(account_id=account_id, action_id=action_id)
 		return requests.get(url, headers=headers)
 
 	def CreateAction(self, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliveryRules.base_url+'/actions').format(pubid=account_id)
-		return requests.post(url, headers=headers, data=json_body)
+		url = (DeliveryRules.base_url+'/actions').format(account_id=account_id)
+		return requests.post(url, headers=headers, data=self._json_to_string(json_body))
 
 	def UpdateAction(self, action_id, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliveryRules.base_url+'/actions/{action_id}').format(pubid=account_id, action_id=action_id)
-		return requests.put(url, headers=headers, data=json_body)
+		url = (DeliveryRules.base_url+'/actions/{action_id}').format(account_id=account_id, action_id=action_id)
+		return requests.put(url, headers=headers, data=self._json_to_string(json_body))
 
 	def DeleteAction(self, action_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliveryRules.base_url+'/actions/{action_id}').format(pubid=account_id, action_id=action_id)
+		url = (DeliveryRules.base_url+'/actions/{action_id}').format(account_id=account_id, action_id=action_id)
 		return requests.delete(url, headers=headers)
 
 class Social(Base):
 
-	base_url = 'https://edge.social.api.brightcove.com/v1/accounts/{pubid}'
+	base_url = 'https://edge.social.api.brightcove.com/v1/accounts/{account_id}'
 
 	def __init__(self, oauth, query=None):
 		super().__init__(query)
@@ -136,33 +156,33 @@ class Social(Base):
 		account_id = account_id or self.__oauth.account_id
 		search_query = search_query or self.search_query
 		headers = self.__oauth.get_headers()
-		url = (Social.base_url+'/videos/status?{query_string}').format(pubid=account_id, query_string=search_query)
+		url = (Social.base_url+'/videos/status?{query_string}').format(account_id=account_id, query_string=search_query)
 		return self.session.get(url, headers=headers)
 
 	def ListStatusForVideo(self, video_id, search_query=None, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		search_query = search_query or self.search_query
 		headers = self.__oauth.get_headers()
-		url = (Social.base_url+'/videos/{video_id}/status?{query_string}').format(pubid=account_id, video_id=video_id, query_string=search_query)
+		url = (Social.base_url+'/videos/{video_id}/status?{query_string}').format(account_id=account_id, video_id=video_id, query_string=search_query)
 		return self.session.get(url, headers=headers)
 
 	def ListHistoryForVideos(self, search_query=None, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		search_query = search_query or self.search_query
 		headers = self.__oauth.get_headers()
-		url = (Social.base_url+'/videos/history?{query_string}').format(pubid=account_id, query_string=search_query)
+		url = (Social.base_url+'/videos/history?{query_string}').format(account_id=account_id, query_string=search_query)
 		return self.session.get(url, headers=headers)
 
 	def ListHistoryForVideo(self, video_id, search_query=None, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		search_query = search_query or self.search_query
 		headers = self.__oauth.get_headers()
-		url = (Social.base_url+'/videos/{video_id}/history?{query_string}').format(pubid=account_id, video_id=video_id, query_string=search_query)
+		url = (Social.base_url+'/videos/{video_id}/history?{query_string}').format(account_id=account_id, video_id=video_id, query_string=search_query)
 		return self.session.get(url, headers=headers)
 
 class SocialSyndication(Base):
 
-	base_url = 'https://social.api.brightcove.com/v1/accounts/{pubid}/mrss/syndications'
+	base_url = 'https://social.api.brightcove.com/v1/accounts/{account_id}/mrss/syndications'
 
 	def __init__(self, oauth):
 		self.__oauth = oauth
@@ -170,48 +190,48 @@ class SocialSyndication(Base):
 	def GetAllSyndications(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (SocialSyndication.base_url).format(pubid=account_id)
+		url = (SocialSyndication.base_url).format(account_id=account_id)
 		return requests.get(url, headers=headers)
 
 	def GetSyndication(self, syndication_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (SocialSyndication.base_url+'/{syndicationid}').format(pubid=account_id, syndicationid=syndication_id)
+		url = (SocialSyndication.base_url+'/{syndicationid}').format(account_id=account_id, syndicationid=syndication_id)
 		return requests.get(url, headers=headers)
 
 	def CreateSyndication(self, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (SocialSyndication.base_url).format(pubid=account_id)
-		return requests.post(url, headers=headers, data=json_body)
+		url = (SocialSyndication.base_url).format(account_id=account_id)
+		return requests.post(url, headers=headers, data=self._json_to_string(json_body))
 
 	def DeleteSyndication(self, syndication_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (SocialSyndication.base_url+'/{syndicationid}').format(pubid=account_id, syndicationid=syndication_id)
+		url = (SocialSyndication.base_url+'/{syndicationid}').format(account_id=account_id, syndicationid=syndication_id)
 		return requests.delete(url, headers=headers)
 
 	def UpdateSyndication(self, syndication_id, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (SocialSyndication.base_url+'/{syndicationid}').format(pubid=account_id, syndicationid=syndication_id)
-		return requests.patch(url, headers=headers, data=json_body)
+		url = (SocialSyndication.base_url+'/{syndicationid}').format(account_id=account_id, syndicationid=syndication_id)
+		return requests.patch(url, headers=headers, data=self._json_to_string(json_body))
 
 	def GetTemplate(self, syndication_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (SocialSyndication.base_url+'/{syndicationid}/template').format(pubid=account_id, syndicationid=syndication_id)
+		url = (SocialSyndication.base_url+'/{syndicationid}/template').format(account_id=account_id, syndicationid=syndication_id)
 		return requests.get(url, headers=headers)
 
 	def UploadTemplate(self, syndication_id, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (SocialSyndication.base_url+'/{syndicationid}/template').format(pubid=account_id, syndicationid=syndication_id)
-		return requests.put(url, headers=headers, data=json_body)
+		url = (SocialSyndication.base_url+'/{syndicationid}/template').format(account_id=account_id, syndicationid=syndication_id)
+		return requests.put(url, headers=headers, data=self._json_to_string(json_body))
 
 class PlayerManagement(Base):
 
-	base_url = 'https://players.api.brightcove.com/v2/accounts/{pubid}'
+	base_url = 'https://players.api.brightcove.com/v2/accounts/{account_id}'
 
 	def __init__(self, oauth):
 		super().__init__()
@@ -220,52 +240,52 @@ class PlayerManagement(Base):
 	def GetListOfPlayers(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlayerManagement.base_url+'/players').format(pubid=account_id)
+		url = (PlayerManagement.base_url+'/players').format(account_id=account_id)
 		return self.session.get(url, headers=headers)
 
 	def GetSinglePlayer(self, account_id=None, player_id=None):
 		account_id = account_id or self.__oauth.account_id
 		player_id = player_id or 'default'
 		headers = self.__oauth.get_headers()
-		url = (PlayerManagement.base_url+'/players/{playerid}').format(pubid=account_id, playerid=player_id)
+		url = (PlayerManagement.base_url+'/players/{playerid}').format(account_id=account_id, playerid=player_id)
 		return self.session.get(url, headers=headers)
 
 	def CreatePlayer(self, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlayerManagement.base_url+'/players').format(pubid=account_id)
-		return self.session.post(url, headers=headers, data=json_body)
+		url = (PlayerManagement.base_url+'/players').format(account_id=account_id)
+		return self.session.post(url, headers=headers, data=self._json_to_string(json_body))
 
 	def DeletePlayer(self, player_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlayerManagement.base_url+'/players/{playerid}').format(pubid=account_id, playerid=player_id)
+		url = (PlayerManagement.base_url+'/players/{playerid}').format(account_id=account_id, playerid=player_id)
 		return self.session.delete(url, headers=headers)
 
 	def PublishPlayer(self, player_id=None, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		player_id = player_id or 'default'
 		headers = self.__oauth.get_headers()
-		url = (PlayerManagement.base_url+'/players/{playerid}/publish').format(pubid=account_id, playerid=player_id)
+		url = (PlayerManagement.base_url+'/players/{playerid}/publish').format(account_id=account_id, playerid=player_id)
 		return self.session.post(url, headers=headers)
 
 	def UpdatePlayer(self, player_id, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlayerManagement.base_url+'/players/{playerid}').format(pubid=account_id, playerid=player_id)
-		return self.session.patch(url, headers=headers, data=json_body)
+		url = (PlayerManagement.base_url+'/players/{playerid}').format(account_id=account_id, playerid=player_id)
+		return self.session.patch(url, headers=headers, data=self._json_to_string(json_body))
 
 	def GetPlayerConfiguration(self, player_id, branch, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlayerManagement.base_url+'/players/{playerid}/configuration/{branch}').format(pubid=account_id, playerid=player_id, branch=branch)
+		url = (PlayerManagement.base_url+'/players/{playerid}/configuration/{branch}').format(account_id=account_id, playerid=player_id, branch=branch)
 		return self.session.get(url, headers=headers)
 
 	def UpdatePlayerConfiguration(self, player_id, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlayerManagement.base_url+'/players/{playerid}/configuration').format(pubid=account_id, playerid=player_id)
-		return self.session.patch(url, headers=headers, data=json_body)
+		url = (PlayerManagement.base_url+'/players/{playerid}/configuration').format(account_id=account_id, playerid=player_id)
+		return self.session.patch(url, headers=headers, data=self._json_to_string(json_body))
 
 	def GetAllPlugins(self, template_version=None):
 		headers = self.__oauth.get_headers()
@@ -289,13 +309,13 @@ class PlayerManagement(Base):
 	def GetAllEmbeds(self, player_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlayerManagement.base_url+'/players/{playerid}/embeds').format(pubid=account_id, playerid=player_id)
+		url = (PlayerManagement.base_url+'/players/{playerid}/embeds').format(account_id=account_id, playerid=player_id)
 		return self.session.get(url, headers=headers)
 
 	def GetEmbed(self, player_id, embed_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlayerManagement.base_url+'/players/{playerid}/embeds/{embedid}').format(pubid=account_id, playerid=player_id, embedid=embed_id)
+		url = (PlayerManagement.base_url+'/players/{playerid}/embeds/{embedid}').format(account_id=account_id, playerid=player_id, embedid=embed_id)
 		return self.session.get(url, headers=headers)
 
 class OAuth(Base):
@@ -330,7 +350,7 @@ class OAuth(Base):
 
 class JWT(Base):
 
-	base_url = 'https://playback-auth.api.brightcove.com/v1/accounts/{pubid}'
+	base_url = 'https://playback-auth.api.brightcove.com/v1/accounts/{account_id}'
 
 	def __init__(self, oauth):
 		self.__oauth = oauth
@@ -338,31 +358,31 @@ class JWT(Base):
 	def RegisterKey(self, key_data, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (JWT.base_url+'/keys').format(pubid=account_id)
+		url = (JWT.base_url+'/keys').format(account_id=account_id)
 		json_body = '{ "value":"'+key_data+'" }'
-		return requests.post(url, headers=headers, data=json_body)
+		return requests.post(url, headers=headers, data=self._json_to_string(json_body))
 
 	def ListKeys(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (JWT.base_url+'/keys').format(pubid=account_id)
+		url = (JWT.base_url+'/keys').format(account_id=account_id)
 		return requests.get(url, headers=headers)
 
 	def GetKey(self, key_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (JWT.base_url+'/keys/{keyid}').format(pubid=account_id,keyid=key_id)
+		url = (JWT.base_url+'/keys/{keyid}').format(account_id=account_id,keyid=key_id)
 		return requests.get(url, headers=headers)
 
 	def DeleteKey(self, key_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (JWT.base_url+'/keys/{keyid}').format(pubid=account_id,keyid=key_id)
+		url = (JWT.base_url+'/keys/{keyid}').format(account_id=account_id,keyid=key_id)
 		return requests.delete(url, headers=headers)
 
 class PlaybackRights(Base):
 
-	base_url ='https://playback-rights.api.brightcove.com/v1/accounts/{pubid}'
+	base_url ='https://playback-rights.api.brightcove.com/v1/accounts/{account_id}'
 
 	def __init__(self, oauth):
 		self.__oauth = oauth
@@ -370,54 +390,54 @@ class PlaybackRights(Base):
 	def CreatePlaybackRight(self, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlaybackRights.base_url+'/playback_rights').format(pubid=account_id)
-		return requests.post(url=url, headers=headers, data=json_body)
+		url = (PlaybackRights.base_url+'/playback_rights').format(account_id=account_id)
+		return requests.post(url=url, headers=headers, data=self._json_to_string(json_body))
 
 	def GetPlaybackRights(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlaybackRights.base_url+'/playback_rights').format(pubid=account_id)
+		url = (PlaybackRights.base_url+'/playback_rights').format(account_id=account_id)
 		return requests.get(url=url, headers=headers)
 
 	def GetPlaybackRight(self, epa_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlaybackRights.base_url+'/playback_rights/{epaid}').format(pubid=account_id, epaid=epa_id)
+		url = (PlaybackRights.base_url+'/playback_rights/{epaid}').format(account_id=account_id, epaid=epa_id)
 		return requests.get(url=url, headers=headers)
 
 	def UpdatePlaybackRight(self, epa_id, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlaybackRights.base_url+'/playback_rights/{epaid}').format(pubid=account_id, epaid=epa_id)
-		return requests.put(url=url, headers=headers, data=json_body)
+		url = (PlaybackRights.base_url+'/playback_rights/{epaid}').format(account_id=account_id, epaid=epa_id)
+		return requests.put(url=url, headers=headers, data=self._json_to_string(json_body))
 
 	def DeletePlaybackRight(self, epa_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlaybackRights.base_url+'/playback_rights/{epaid}').format(pubid=account_id, epaid=epa_id)
+		url = (PlaybackRights.base_url+'/playback_rights/{epaid}').format(account_id=account_id, epaid=epa_id)
 		return requests.delete(url=url, headers=headers)
 
 	def GetAllUserDevices(self, user_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlaybackRights.base_url+'/users/{userid}/devices').format(pubid=account_id, userid=user_id)
+		url = (PlaybackRights.base_url+'/users/{userid}/devices').format(account_id=account_id, userid=user_id)
 		return requests.get(url=url, headers=headers)
 
 	def DeleteAllUserDevices(self, user_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlaybackRights.base_url+'/users/{userid}/devices').format(pubid=account_id, userid=user_id)
+		url = (PlaybackRights.base_url+'/users/{userid}/devices').format(account_id=account_id, userid=user_id)
 		return requests.delete(url=url, headers=headers)
 
 	def DeleteUserDevice(self, user_id, device_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (PlaybackRights.base_url+'/users/{userid}/devices/{deviceid}').format(pubid=account_id, userid=user_id, deviceid=device_id)
+		url = (PlaybackRights.base_url+'/users/{userid}/devices/{deviceid}').format(account_id=account_id, userid=user_id, deviceid=device_id)
 		return requests.delete(url=url, headers=headers)
 
 class DeliverySystem(Base):
 
-	base_url = 'https://repos.api.brightcove.com/v1/accounts/{pubid}/repos'
+	base_url = 'https://repos.api.brightcove.com/v1/accounts/{account_id}/repos'
 
 	def __init__(self, oauth):
 		self.__oauth = oauth
@@ -425,49 +445,49 @@ class DeliverySystem(Base):
 	def ListRepositories(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliverySystem.base_url).format(pubid=account_id)
+		url = (DeliverySystem.base_url).format(account_id=account_id)
 		return requests.get(url=url, headers=headers)
 
 	def GetRepositoryDetails(self, repo_name, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliverySystem.base_url+'/{reponame}').format(pubid=account_id,reponame=repo_name)
+		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id,reponame=repo_name)
 		return requests.get(url, headers=headers)
 
 	def DeleteRepository(self, repo_name, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliverySystem.base_url+'/{reponame}').format(pubid=account_id,reponame=repo_name)
+		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id,reponame=repo_name)
 		return requests.delete(url, headers=headers)
 
 	def CreateRepository(self, repo_name, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliverySystem.base_url+'/{reponame}').format(pubid=account_id,reponame=repo_name)
+		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id,reponame=repo_name)
 		return requests.put(url, headers=headers)
 
 	def ListFilesInRepository(self, repo_name, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliverySystem.base_url+'/{reponame}/files').format(pubid=account_id,reponame=repo_name)
+		url = (DeliverySystem.base_url+'/{reponame}/files').format(account_id=account_id,reponame=repo_name)
 		return requests.get(url, headers=headers)
 
 	def DeleteFileInRepository(self, repo_name, file_name, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(pubid=account_id,reponame=repo_name,filename=file_name)
+		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(account_id=account_id,reponame=repo_name,filename=file_name)
 		return requests.delete(url, headers=headers)
 
 	def AddFileToRepository(self, repo_name, file_name, account_id=None):
 		account_id = account_id or self.__oauth.account_id
-		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(pubid=account_id,reponame=repo_name,filename=basename(file_name))
+		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(account_id=account_id,reponame=repo_name,filename=basename(file_name))
 		m = MultipartEncoder( fields={'contents': (None, open(file_name, 'rb'), 'text/plain')} )
 		access_token = self.__oauth.get_access_token()
 		headers = { 'Authorization': 'Bearer ' + access_token, 'Content-Type': m.content_type }
 		return requests.put(url, headers=headers, data=m)
 
 class CMS(Base):
-	base_url = 'https://cms.api.brightcove.com/v1/accounts/{pubid}'
+	base_url = 'https://cms.api.brightcove.com/v1/accounts/{account_id}'
 
 	def __init__(self, oauth:OAuth, query:str=None):
 		super().__init__(query)
@@ -496,7 +516,8 @@ class CMS(Base):
 		account_id = account_id or self.__oauth.account_id
 		search_query = search_query or self.search_query
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/count?q={query}').format(pubid=account_id,query=search_query)
+		#url = (CMS.base_url+'/videos/count?q={query}').format(account_id=account_id,query=search_query)
+		url = f'{CMS.base_url}/videos/count?q={search_query}'.format(account_id=account_id)
 		r = self.session.get(url, headers=headers)
 		if r.status_code == 200:
 			return r.json().get('count')
@@ -508,10 +529,9 @@ class CMS(Base):
 	def CreateVideo(self, video_title='Video Title', json_body=None, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/').format(pubid=account_id)
-		if not json_body:
-			json_body = '{"name": "' + video_title + '"}'
-		return self.session.post(url=url, headers=headers, data=json_body)
+		url = (CMS.base_url+'/videos/').format(account_id=account_id)
+		json_body = json_body or '{"name": "'+video_title+'"}'
+		return self.session.post(url=url, headers=headers, data=self._json_to_string(json_body))
 
 	#===========================================
 	# get a video
@@ -519,7 +539,7 @@ class CMS(Base):
 	def GetVideo(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}').format(pubid=account_id,video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}').format(account_id=account_id,video_id=video_id)
 		return self.session.get(url=url, headers=headers)
 
 	#===========================================
@@ -529,7 +549,7 @@ class CMS(Base):
 		account_id = account_id or self.__oauth.account_id
 		search_query = search_query or self.search_query
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos?limit={page_size}&offset={offset}&sort=created_at{query}').format(pubid=account_id, page_size=page_size, offset=page_offset, query='&q=' + search_query)
+		url = f'{CMS.base_url}/videos?limit={page_size}&offset={page_offset}&sort=created_at&q={search_query}'.format(account_id=account_id)
 		return self.session.get(url, headers=headers)
 
 	#===========================================
@@ -539,7 +559,7 @@ class CMS(Base):
 		account_id = account_id or self.__oauth.account_id
 		search_query = search_query or self.search_query
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/lightvideos?limit={page_size}&offset={offset}&sort=created_at{query}').format(pubid=account_id, page_size=page_size, offset=page_offset, query='&q=' + search_query)
+		url = (CMS.base_url+'/lightvideos?limit={page_size}&offset={offset}&sort=created_at{query}').format(account_id=account_id, page_size=page_size, offset=page_offset, query='&q=' + search_query)
 		return self.session.get(url, headers=headers)
 
 	#===========================================
@@ -548,7 +568,7 @@ class CMS(Base):
 	def GetVideoSources(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/sources').format(pubid=account_id,video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}/sources').format(account_id=account_id,video_id=video_id)
 		return self.session.get(url=url, headers=headers)
 
 	#===========================================
@@ -557,7 +577,7 @@ class CMS(Base):
 	def GetVideoImages(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/images').format(pubid=account_id,video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}/images').format(account_id=account_id,video_id=video_id)
 		return self.session.get(url=url, headers=headers)
 
 	#===========================================
@@ -566,7 +586,7 @@ class CMS(Base):
 	def GetVideoAudioTracks(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/audio_tracks').format(pubid=account_id,video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}/audio_tracks').format(account_id=account_id,video_id=video_id)
 		return self.session.get(url=url, headers=headers)
 
 	#===========================================
@@ -575,7 +595,7 @@ class CMS(Base):
 	def GetVideoAudioTrack(self, video_id, track_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/audio_tracks/{trackid}').format(pubid=account_id,video_id=video_id,trackid=track_id)
+		url = (CMS.base_url+'/videos/{video_id}/audio_tracks/{trackid}').format(account_id=account_id,video_id=video_id,trackid=track_id)
 		return self.session.get(url=url, headers=headers)
 
 	#===========================================
@@ -584,7 +604,7 @@ class CMS(Base):
 	def DeleteVideoAudioTrack(self, video_id, track_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/audio_tracks/{trackid}').format(pubid=account_id,video_id=video_id,trackid=track_id)
+		url = (CMS.base_url+'/videos/{video_id}/audio_tracks/{trackid}').format(account_id=account_id,video_id=video_id,trackid=track_id)
 		return self.session.delete(url=url, headers=headers)
 
 	#===========================================
@@ -593,8 +613,8 @@ class CMS(Base):
 	def UpdateVideoAudioTrack(self, video_id, track_id, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/audio_tracks/{trackid}').format(pubid=account_id,video_id=video_id,trackid=track_id)
-		return self.session.patch(url=url, headers=headers, data=json_body)
+		url = (CMS.base_url+'/videos/{video_id}/audio_tracks/{trackid}').format(account_id=account_id,video_id=video_id,trackid=track_id)
+		return self.session.patch(url=url, headers=headers, data=self._json_to_string(json_body))
 
 	#===========================================
 	# delete a video
@@ -602,7 +622,7 @@ class CMS(Base):
 	def DeleteVideo(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}').format(pubid=account_id,video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}').format(account_id=account_id,video_id=video_id)
 		return self.session.delete(url=url, headers=headers)
 
 	#===========================================
@@ -611,7 +631,7 @@ class CMS(Base):
 	def GetDigitalMasterInfo(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/digital_master').format(pubid=account_id,video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}/digital_master').format(account_id=account_id,video_id=video_id)
 		return self.session.get(url=url, headers=headers)
 
 	#===========================================
@@ -620,7 +640,7 @@ class CMS(Base):
 	def DeleteMaster(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/digital_master').format(pubid=account_id,video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}/digital_master').format(account_id=account_id,video_id=video_id)
 		return self.session.delete(url=url, headers=headers)
 
 	#===========================================
@@ -629,8 +649,8 @@ class CMS(Base):
 	def UpdateVideo(self, video_id, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}').format(pubid=account_id,video_id=video_id)
-		return self.session.patch(url, headers=headers, data=json_body)
+		url = (CMS.base_url+'/videos/{video_id}').format(account_id=account_id,video_id=video_id)
+		return self.session.patch(url, headers=headers, data=self._json_to_string(json_body))
 
 	#===========================================
 	# get custom fields
@@ -638,7 +658,7 @@ class CMS(Base):
 	def GetCustomFields(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/video_fields').format(pubid=account_id)
+		url = (CMS.base_url+'/videos/video_fields').format(account_id=account_id)
 		return self.session.get(url=url, headers=headers)
 
 	#===========================================
@@ -647,7 +667,7 @@ class CMS(Base):
 	def GetStatusOfIngestJob(self, video_id, job_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/ingest_jobs/{jobid}').format(pubid=account_id,video_id=video_id,jobid=job_id)
+		url = (CMS.base_url+'/videos/{video_id}/ingest_jobs/{jobid}').format(account_id=account_id,video_id=video_id,jobid=job_id)
 		return self.session.get(url=url, headers=headers)
 
 	#===========================================
@@ -656,7 +676,7 @@ class CMS(Base):
 	def GetStatusOfIngestJobs(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/ingest_jobs').format(pubid=account_id,video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}/ingest_jobs').format(account_id=account_id,video_id=video_id)
 		return self.session.get(url=url, headers=headers)
 
 	#===========================================
@@ -665,31 +685,31 @@ class CMS(Base):
 	def GetAllVideoVariants(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/variants').format(pubid=account_id,video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}/variants').format(account_id=account_id,video_id=video_id)
 		return self.session.get(url=url, headers=headers)
 
 	def CreateVideoVariant(self, video_id, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/variants').format(pubid=account_id,video_id=video_id)
-		return self.session.post(url=url, headers=headers, data=json_body)
+		url = (CMS.base_url+'/videos/{video_id}/variants').format(account_id=account_id,video_id=video_id)
+		return self.session.post(url=url, headers=headers, data=self._json_to_string(json_body))
 
 	def GetVideoVariant(self, video_id, language, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/variants/{language}').format(pubid=account_id,video_id=video_id, language=language)
+		url = (CMS.base_url+'/videos/{video_id}/variants/{language}').format(account_id=account_id,video_id=video_id, language=language)
 		return self.session.get(url=url, headers=headers)
 
 	def UpdateVideoVariant(self, video_id, language, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/variants/{language}').format(pubid=account_id,video_id=video_id, language=language)
-		return self.session.patch(url=url, headers=headers, data=json_body)
+		url = (CMS.base_url+'/videos/{video_id}/variants/{language}').format(account_id=account_id,video_id=video_id, language=language)
+		return self.session.patch(url=url, headers=headers, data=self._json_to_string(json_body))
 
 	def DeleteVideoVariant(self, video_id, language, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/variants/{language}').format(pubid=account_id,video_id=video_id, language=language)
+		url = (CMS.base_url+'/videos/{video_id}/variants/{language}').format(account_id=account_id,video_id=video_id, language=language)
 		return self.session.delete(url=url, headers=headers)
 
 	#===========================================
@@ -698,26 +718,26 @@ class CMS(Base):
 	def GetSubscriptionsList(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/subscriptions').format(pubid=account_id)
+		url = (CMS.base_url+'/subscriptions').format(account_id=account_id)
 		return self.session.get(url, headers=headers)
 
 	def GetSubscription(self, sub_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/subscriptions/{subid}').format(pubid=account_id, subid=sub_id)
+		url = (CMS.base_url+'/subscriptions/{subid}').format(account_id=account_id, subid=sub_id)
 		return self.session.get(url, headers=headers)
 
 	def CreateSubscription(self, callback_url, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/subscriptions').format(pubid=account_id)
+		url = (CMS.base_url+'/subscriptions').format(account_id=account_id)
 		json_body = ('{ "endpoint":"' + callback_url + '", "events":["video-change"] }')
-		return self.session.post(url, headers=headers, data=json_body)
+		return self.session.post(url, headers=headers, data=self._json_to_string(json_body))
 
 	def DeleteSubscription(self, sub_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/subscriptions/{subid}').format(pubid=account_id,subid=sub_id)
+		url = (CMS.base_url+'/subscriptions/{subid}').format(account_id=account_id,subid=sub_id)
 		return self.session.delete(url, headers=headers)
 
 	#===========================================
@@ -726,51 +746,51 @@ class CMS(Base):
 	def GetFolders(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/folders').format(pubid=account_id)
+		url = (CMS.base_url+'/folders').format(account_id=account_id)
 		return self.session.get(url, headers=headers)
 
 	def CreateFolder(self, folder_name, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/folders').format(pubid=account_id)
+		url = (CMS.base_url+'/folders').format(account_id=account_id)
 		json_body = ('{ "name":"' + folder_name + '" }')
-		return self.session.post(url, headers=headers, data=json_body)
+		return self.session.post(url, headers=headers, data=self._json_to_string(json_body))
 
 	def DeleteFolder(self, folder_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/folders/{folderid}').format(pubid=account_id, folderid=folder_id)
+		url = (CMS.base_url+'/folders/{folderid}').format(account_id=account_id, folderid=folder_id)
 		return self.session.delete(url, headers=headers)
 
 	def GetFolderInformation(self, folder_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/folders/{folderid}').format(pubid=account_id, folderid=folder_id)
+		url = (CMS.base_url+'/folders/{folderid}').format(account_id=account_id, folderid=folder_id)
 		return self.session.get(url, headers=headers)
 
 	def UpdateFolderName(self, folder_id, folder_name, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/folders/{folderid}').format(pubid=account_id, folderid=folder_id)
+		url = (CMS.base_url+'/folders/{folderid}').format(account_id=account_id, folderid=folder_id)
 		json_body = ('{ "name":"' + folder_name + '" }')
-		return self.session.patch(url, headers=headers, data=json_body)
+		return self.session.patch(url, headers=headers, data=self._json_to_string(json_body))
 
 	def AddVideoToFolder(self, folder_id, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/folders/{folderid}/videos/{video_id}').format(pubid=account_id, folderid=folder_id, video_id=video_id)
+		url = (CMS.base_url+'/folders/{folderid}/videos/{video_id}').format(account_id=account_id, folderid=folder_id, video_id=video_id)
 		return self.session.put(url, headers=headers)
 
 	def RemoveVideoFromFolder(self, folder_id, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/folders/{folderid}/videos/{video_id}').format(pubid=account_id, folderid=folder_id, video_id=video_id)
+		url = (CMS.base_url+'/folders/{folderid}/videos/{video_id}').format(account_id=account_id, folderid=folder_id, video_id=video_id)
 		return self.session.delete(url, headers=headers)
 
 	def GetVideosInFolder(self, folder_id, page_size=100, page_offset=0, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/folders/{folderid}/videos?limit={limit}&offset={offset}').format(pubid=account_id,folderid=folder_id,limit=page_size, offset=page_offset)
+		url = (CMS.base_url+'/folders/{folderid}/videos?limit={limit}&offset={offset}').format(account_id=account_id,folderid=folder_id,limit=page_size, offset=page_offset)
 		return self.session.get(url, headers=headers)
 
 	#===========================================
@@ -779,50 +799,50 @@ class CMS(Base):
 	def GetPlaylistsForVideo(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/references').format(pubid=account_id, video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}/references').format(account_id=account_id, video_id=video_id)
 		return self.session.get(url, headers=headers)
 
 	def RemoveVideoFromAllPlaylists(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/references').format(pubid=account_id, video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}/references').format(account_id=account_id, video_id=video_id)
 		return self.session.delete(url, headers=headers)
 
 	def GetVideosInPlaylist(self, playlist_id, include_details=True, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/playlists/{playlistid}/videos?include_details={details}').format(pubid=account_id, playlistid=playlist_id, details=('false','true')[include_details])
+		url = (CMS.base_url+'/playlists/{playlistid}/videos?include_details={details}').format(account_id=account_id, playlistid=playlist_id, details=('false','true')[include_details])
 		return self.session.get(url, headers=headers)
 
 	def GetVideoCountInPlaylist(self, playlist_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/counts/playlists/{playlistid}/videos').format(pubid=account_id, playlistid=playlist_id)
+		url = (CMS.base_url+'/counts/playlists/{playlistid}/videos').format(account_id=account_id, playlistid=playlist_id)
 		return self.session.get(url, headers=headers)
 
 	def DeletePlaylist(self, playlist_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=account_id, playlistid=playlist_id)
+		url = (CMS.base_url+'/playlists/{playlistid}').format(account_id=account_id, playlistid=playlist_id)
 		return self.session.delete(url, headers=headers)
 
 	def UpdatePlaylist(self, playlist_id, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=account_id, playlistid=playlist_id)
-		return self.session.patch(url, headers=headers, data=json_body)
+		url = (CMS.base_url+'/playlists/{playlistid}').format(account_id=account_id, playlistid=playlist_id)
+		return self.session.patch(url, headers=headers, data=self._json_to_string(json_body))
 
 	def GetPlaylistByID(self, playlist_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/playlists/{playlistid}').format(pubid=account_id, playlistid=playlist_id)
+		url = (CMS.base_url+'/playlists/{playlistid}').format(account_id=account_id, playlistid=playlist_id)
 		return self.session.get(url, headers=headers)
 
 	def GetPlaylistCount(self, search_query=None, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		search_query = search_query or self.search_query
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/counts/playlists?q={query}').format(pubid=account_id, query=search_query)
+		url = (CMS.base_url+'/counts/playlists?q={query}').format(account_id=account_id, query=search_query)
 		return self.session.get(url, headers=headers)
 
 	def GetPlaylists(self, sort='-updated_at', search_query=None, page_size=100, page_offset=0, account_id=None):
@@ -831,14 +851,14 @@ class CMS(Base):
 		headers = self.__oauth.get_headers()
 		if sort not in ['name', 'reference_id', 'created_at', 'published_at', 'updated_at', 'schedule.starts_at', 'schedule.ends_at', 'state', 'plays_total', 'plays_trailing_week', '-name', '-reference_id', '-created_at', '-published_at', '-updated_at', '-schedule.starts_at', '-schedule.ends_at', '-state', '-plays_total', '-plays_trailing_week']:
 			sort = '-updated_at'
-		url = (CMS.base_url+'/playlists?limit={limit}&offset={offset}&sort={sort}&q={query}').format(pubid=account_id, limit=page_size, offset=page_offset, sort=sort, query=search_query)
+		url = (CMS.base_url+'/playlists?limit={limit}&offset={offset}&sort={sort}&q={query}').format(account_id=account_id, limit=page_size, offset=page_offset, sort=sort, query=search_query)
 		return self.session.get(url, headers=headers)
 
 	def CreatePlaylist(self, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/playlists').format(pubid=account_id)
-		return self.session.post(url, headers=headers, data=json_body)
+		url = (CMS.base_url+'/playlists').format(account_id=account_id)
+		return self.session.post(url, headers=headers, data=self._json_to_string(json_body))
 
 	#===========================================
 	# Assets stuff
@@ -846,13 +866,13 @@ class CMS(Base):
 	def GetDynamicRenditions(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/assets/dynamic_renditions').format(pubid=account_id, video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}/assets/dynamic_renditions').format(account_id=account_id, video_id=video_id)
 		return self.session.get(url, headers=headers)
 
 	def GetRenditionList(self, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (CMS.base_url+'/videos/{video_id}/assets/renditions').format(pubid=account_id, video_id=video_id)
+		url = (CMS.base_url+'/videos/{video_id}/assets/renditions').format(account_id=account_id, video_id=video_id)
 		return self.session.get(url, headers=headers)
 
 class EPG(Base):
@@ -878,7 +898,7 @@ class EPG(Base):
 
 class XDR(Base):
 
-	base_url = 'https://data.brightcove.com/v1/xdr/accounts/{pubid}'
+	base_url = 'https://data.brightcove.com/v1/xdr/accounts/{account_id}'
 
 	def __init__(self, oAuth):
 		self.__oauth = oAuth
@@ -887,18 +907,18 @@ class XDR(Base):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
 		limit = 1000 if (limit>10000 or limit<1) else limit
-		url = (XDR.base_url+'/playheads/{viewerid}?limit={limit}').format(pubid=account_id, viewerid=viewer_id, limit=limit)
+		url = (XDR.base_url+'/playheads/{viewerid}?limit={limit}').format(account_id=account_id, viewerid=viewer_id, limit=limit)
 		return requests.get(url=url, headers=headers)
 
 	def GetViewerVideoPlayheads(self, viewer_id, video_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (XDR.base_url+'/playheads/{viewerid}/{video_id}').format(pubid=account_id, viewerid=viewer_id, video_id=video_id)
+		url = (XDR.base_url+'/playheads/{viewerid}/{video_id}').format(account_id=account_id, viewerid=viewer_id, video_id=video_id)
 		return requests.get(url=url, headers=headers)
 
 class IngestProfiles(Base):
 
-	base_url = 'https://ingestion.api.brightcove.com/v1/accounts/{pubid}'
+	base_url = 'https://ingestion.api.brightcove.com/v1/accounts/{account_id}'
 
 	def __init__(self, oAuth):
 		super().__init__()
@@ -919,7 +939,7 @@ class IngestProfiles(Base):
 		# if it's not the same as before then find it and cache it
 		if account_id != self.__defaultProfileAccount:
 			headers = self.__oauth.get_headers()
-			url = (IngestProfiles.base_url+'/configuration').format(pubid=account_id)
+			url = (IngestProfiles.base_url+'/configuration').format(account_id=account_id)
 			self.__defaultProfileResponse = self.session.get(url=url, headers=headers)
 			self.__defaultProfileAccount = account_id
 		# return cached response
@@ -930,7 +950,7 @@ class IngestProfiles(Base):
 		# if it's not the same as before then find it and cache it
 		if self.__getProfileAccount != account_id or self.__getProfileID != profile_id:
 			headers = self.__oauth.get_headers()
-			url = (IngestProfiles.base_url+'/profiles/{profileid}').format(pubid=account_id, profileid=profile_id)
+			url = (IngestProfiles.base_url+'/profiles/{profileid}').format(account_id=account_id, profileid=profile_id)
 			self.__getProfileID = profile_id
 			self.__getProfileAccount = account_id
 			self.__getProfileResponse = self.session.get(url=url, headers=headers)
@@ -957,23 +977,23 @@ class IngestProfiles(Base):
 		self.__previousProfile = None
 		self.__previousAccount = None
 		headers = self.__oauth.get_headers()
-		url = (IngestProfiles.base_url+'/configuration').format(pubid=account_id)
-		return self.session.put(url=url, headers=headers, data=json_body)
+		url = (IngestProfiles.base_url+'/configuration').format(account_id=account_id)
+		return self.session.put(url=url, headers=headers, data=self._json_to_string(json_body))
 
 	def SetDefaultProfile(self, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		self.__previousProfile = None
 		self.__previousAccount = None
 		headers = self.__oauth.get_headers()
-		url = (IngestProfiles.base_url+'/configuration').format(pubid=account_id)
-		return self.session.post(url=url, headers=headers, data=json_body)
+		url = (IngestProfiles.base_url+'/configuration').format(account_id=account_id)
+		return self.session.post(url=url, headers=headers, data=self._json_to_string(json_body))
 
 	def DeleteIngestProfile(self, profile_id, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		self.__previousProfile = None
 		self.__previousAccount = None
 		headers = self.__oauth.get_headers()
-		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(pubid=account_id,profileid=profile_id)
+		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(account_id=account_id,profileid=profile_id)
 		return self.session.delete(url=url, headers=headers)
 
 	def UpdateIngestProfile(self, profile_id, json_body, account_id=None):
@@ -981,32 +1001,30 @@ class IngestProfiles(Base):
 		self.__previousProfile = None
 		self.__previousAccount = None
 		headers = self.__oauth.get_headers()
-		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(pubid=account_id,profileid=profile_id)
-		return self.session.put(url=url, headers=headers, data=json_body)
+		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(account_id=account_id,profileid=profile_id)
+		return self.session.put(url=url, headers=headers, data=self._json_to_string(json_body))
 
 	def CreateIngestProfile(self, json_body, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (IngestProfiles.base_url+'/profiles').format(pubid=account_id)
-		return self.session.post(url=url, headers=headers, data=json_body)
+		url = (IngestProfiles.base_url+'/profiles').format(account_id=account_id)
+		return self.session.post(url=url, headers=headers, data=self._json_to_string(json_body))
 
 	def GetAllIngestProfiles(self, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		headers = self.__oauth.get_headers()
-		url = (IngestProfiles.base_url+'/profiles').format(pubid=account_id)
+		url = (IngestProfiles.base_url+'/profiles').format(account_id=account_id)
 		return self.session.get(url=url, headers=headers)
 
 class DynamicIngest(Base):
 
-	base_url = 'https://ingest.api.brightcove.com/v1/accounts/{pubid}'
+	base_url = 'https://ingest.api.brightcove.com/v1/accounts/{account_id}'
 
 	def __init__(self, oAuth, ingest_profile=None, priority_queue='normal'):
 		super().__init__()
 		self.__oauth = oAuth
 		self.__previous_profile = None
 		self.__previous_account = None
-		self.__ingest_profile = None
-		self.__priority_queue = priority_queue
 		self.__ip = IngestProfiles(oAuth)
 		self.SetIngestProfile(ingest_profile)
 		self.SetPriorityQueue(priority_queue)
@@ -1039,7 +1057,7 @@ class DynamicIngest(Base):
 		priority = priority_queue or self.__priority_queue
 
 		headers = self.__oauth.get_headers()
-		url = (DynamicIngest.base_url+'/videos/{video_id}/ingest-requests').format(pubid=account_id, video_id=video_id)
+		url = (DynamicIngest.base_url+'/videos/{video_id}/ingest-requests').format(account_id=account_id, video_id=video_id)
 		data =	'{ "profile":"'+profile+'", "master": { "use_archived_master": true }, "priority": "'+priority+'","capture-images": '+str(capture_images).lower()+' }'
 		return self.session.post(url=url, headers=headers, data=data)
 
@@ -1057,7 +1075,7 @@ class DynamicIngest(Base):
 
 		priority = priority_queue or self.__priority_queue
 
-		url = (DynamicIngest.base_url+'/videos/{video_id}/ingest-requests').format(pubid=account_id, video_id=video_id)
+		url = (DynamicIngest.base_url+'/videos/{video_id}/ingest-requests').format(account_id=account_id, video_id=video_id)
 		data =	'{ "profile":"'+profile+'", "master": { "url": "'+source_url+'" }, "priority": "'+priority+'", "capture-images": '+str(capture_images).lower()+' }'
 		return self.session.post(url=url, headers=headers, data=data)
 
@@ -1066,7 +1084,7 @@ class DynamicIngest(Base):
 	def UploadFile(self, video_id, file_name, callback=None, account_id=None):
 		account_id = account_id or self.__oauth.account_id
 		# Perform an authorized request to obtain a file upload location
-		url = (CMS.base_url+'/videos/{video_id}/upload-urls/{sourcefilename}').format(pubid=account_id, video_id=video_id, sourcefilename=file_name)
+		url = (CMS.base_url+'/videos/{video_id}/upload-urls/{sourcefilename}').format(account_id=account_id, video_id=video_id, sourcefilename=file_name)
 		r = self.session.get(url=url, headers=self.__oauth.get_headers())
 		if r.status_code in DynamicIngest.success_responses:
 			upload_urls_response = r.json()
@@ -1082,10 +1100,10 @@ class DynamicIngest(Base):
 				aws_secret_access_key=upload_urls_response.get('secret_access_key'),
 				aws_session_token=upload_urls_response.get('session_token'))
 
-			def emptyCB(muu):
+			def empty_cb(muu):
 				pass
 
-			callback = callback or emptyCB
+			callback = callback or empty_cb
 
 			s3.Object(upload_urls_response.get('bucket'), upload_urls_response.get('object_key')).upload_file(file_name, Callback=callback)
 			return upload_urls_response
@@ -1149,17 +1167,12 @@ def aspect_ratio(width: int , height: int) -> Tuple[int, int]:
 	if width == height:
 		return 1,1
 
-	swapped = False
-	if width < height:
-		swapped = True
-		width, height = height, width
+	if width > height:
+		divisor = gcd(width, height)
+	else:
+		divisor = gcd(height, width)
 
-	divisor = gcd(width, height)
-
-	x = int(width / divisor) if not swapped else int(height / divisor)
-	y = int(height / divisor) if not swapped else int(width / divisor)
-
-	return x,y
+	return int(width / divisor), int(height / divisor)
 
 class TimeString():
 
@@ -1186,6 +1199,16 @@ class TimeString():
 #===========================================
 @static_vars(di=None)
 def GetDI(oauth:OAuth=None, profile:str=None, priority:str='normal') -> DynamicIngest:
+	"""Returns an existing DynamicIngest instance. Creates one if information is provided.
+
+	Args:
+		oauth (OAuth, optional): OAuth instance to use. Defaults to None.
+		profile (str, optional): Ingest profile ID. Defaults to None.
+		priority (str, optional): Priority queue. Defaults to 'normal'.
+
+	Returns:
+		DynamicIngest: DynamicIngest instance. None if none was created yet.
+	"""
 	if not GetDI.di and oauth:
 		GetDI.di = DynamicIngest(oAuth=oauth, ingest_profile=profile, priority_queue=priority)
 		logging.info('Obtained DI instance')
@@ -1194,6 +1217,15 @@ def GetDI(oauth:OAuth=None, profile:str=None, priority:str='normal') -> DynamicI
 
 @static_vars(cms=None)
 def GetCMS(oauth:OAuth=None, query:str=None) -> CMS:
+	"""Returns an existing CMS instance. Creates one if information is provided.
+
+	Args:
+		oauth (OAuth, optional): OAuth instance to use. Defaults to None.
+		query (str, optional): Query string to use. Defaults to None.
+
+	Returns:
+		CMS: CMS instance. None if none was created yet.
+	"""
 	if not GetCMS.cms and oauth:
 		GetCMS.cms = CMS(oauth=oauth, query=query)
 		logging.info('Obtained CMS instance')
