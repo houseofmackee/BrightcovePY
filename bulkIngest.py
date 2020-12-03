@@ -7,9 +7,11 @@ import sqlite3
 import datetime
 import hashlib
 import threading
+import botocore
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
 import dropbox # pip3 install dropbox
+from pathlib import Path
 from mackee import CMS
 from mackee import OAuth
 from mackee import LoadAccountInfo
@@ -279,11 +281,14 @@ def main(db_history:IngestHistory):
 		except:
 			print(f'Error: no AWS credentials found for profile "{s3_profile_name}"')
 		else:
-			s3 = boto3.resource('s3')
-			bucket = s3.Bucket(s3_bucket_name)
-
 			try:
-				for filename in [obj.key for obj in bucket.objects.all() if is_video(obj.key)]:
+				s3 = boto3.resource('s3')
+				bucket = s3.Bucket(s3_bucket_name).objects.all()
+				filenames = [obj.key for obj in bucket if is_video(obj.key)]
+			except Exception as e:
+				print(f'Error accessing bucket "{s3_bucket_name}" for profile "{s3_profile_name}".\n')
+			else:
+				for filename in filenames:
 					s3_url = f'https://{s3_bucket_name}.s3.amazonaws.com/'+((filename).replace(' ', '%20'))
 					hash_value = db_history.CreateHash(account_id, s3_url)
 					ingest_record = db_history.FindHashInIngestHistory(hash_value)
@@ -294,8 +299,6 @@ def main(db_history:IngestHistory):
 							db_history.AddIngestHistory(account_id=account_id, video_id=video_id, request_id=request_id, remote_url=s3_url)
 					else:
 						print(f'Already ingested on {ingest_record[2]}: "{s3_url}"')
-			except:
-				print(f'Error: bucket "{s3_bucket_name}" not found for profile "{s3_profile_name}".\n')
 
 	#===========================================
 	# do the Dropbox bulk ingest
@@ -306,9 +309,13 @@ def main(db_history:IngestHistory):
 		except:
 			print('Error: invalid Dropbox API token.')
 		else:
-			dbx_folder = f'/{dbx_folder}'
 			try:
-				for filename in [entry.name for entry in dbx.files_list_folder(path=dbx_folder, include_non_downloadable_files=False).entries if is_video(entry.name)]:
+				dbx_folder = f'/{dbx_folder}'
+				filenames = [entry.name for entry in dbx.files_list_folder(path=dbx_folder, include_non_downloadable_files=False).entries if is_video(entry.name)]
+			except:
+				print(f'Error: folder "{dbx_folder}" not found in Dropbox.\n')
+			else:
+				for filename in filenames:
 					dbx_path = f'{dbx_folder}/{filename}'
 					source_url = str(dbx.sharing_create_shared_link(path=dbx_path).url).replace('?dl=0','?dl=1')
 					hash_value = db_history.CreateHash(account_id, source_url)
@@ -321,20 +328,20 @@ def main(db_history:IngestHistory):
 					else:
 						print(f'Already ingested on {ingest_record[2]}: "{dbx_path}"')
 
-			except:
-				print(f'Error: folder "{dbx_folder}" not found in Dropbox.\n')
-
 	#===========================================
 	# do the local bulk ingest
 	#===========================================
 	if local_folder:
+		def get_list_of_files_in_dir(directory: str, file_types: str ='*') -> list:
+			return [str(f) for f in Path(directory).glob(file_types) if f.is_file()]
+
 		try:
-			file_list = os.listdir(local_folder)
+			file_list = get_list_of_files_in_dir(local_folder)
 		except:
 			print(f'Error: unable to access folder "{local_folder}"')
 		else:
 			for file_path in [file for file in file_list if is_video(file)]:
-				ingest_single_file(f'{local_folder}\{file_path}')
+				ingest_single_file(file_path)
 
 #===========================================
 # only run code if it's not imported
