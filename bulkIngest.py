@@ -1,21 +1,21 @@
 #!/usr/bin/env python3
 import sys
-import json
 import argparse
 import os
 import sqlite3
 import datetime
 import hashlib
 import threading
-import botocore
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
 import dropbox # pip3 install dropbox
+import boxsdk as box
 from pathlib import Path
 from mackee import CMS
 from mackee import OAuth
-from mackee import LoadAccountInfo
 from mackee import DynamicIngest
+from mackee import LoadAccountInfo
+from mackee import eprint
 
 # pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
@@ -95,8 +95,8 @@ class IngestHistory:
 			return False
 
 	# add an ingest history entry to database
-	def AddIngestHistory(self, account_id, video_id, request_id, remote_url):
-		hash_value = self.CreateHash(account_id, remote_url)
+	def AddIngestHistory(self, account_id, video_id, request_id, remote_url, hash_value=None):
+		hash_value = hash_value or self.CreateHash(account_id, remote_url)
 		history = (hash_value, str(datetime.datetime.now()), account_id, video_id, request_id, remote_url)
 
 		sql = 'INSERT INTO ingest_history(ingest_hash,ingest_date,account_id,video_id,request_id,remote_path) VALUES(?,?,?,?,?,?)'
@@ -152,8 +152,8 @@ def ingest_video(account_id, video_id, source_url, priority_queue):
 	elif response.status_code==429:
 		pass # implement retries for when the queue is maxed out
 	else:
-		print(f'Ingest Call ({priority_queue}) failed for video ID {video_id}: {response.status_code}')
-		print(response.text)
+		eprint(f'Ingest Call ({priority_queue}) failed for video ID {video_id}: {response.status_code}')
+		eprint(response.text)
 	return None
 
 def create_and_ingest(account_id, filename, source_url, priority):
@@ -164,7 +164,7 @@ def create_and_ingest(account_id, filename, source_url, priority):
 		if request_id:
 			return video_id, request_id
 	else:
-		print(f'Create Video failed: {video.status_code}')
+		eprint(f'Create Video failed: {video.status_code}')
 	return None, None
 
 def is_video(filename):
@@ -187,6 +187,8 @@ def main(db_history:IngestHistory):
 	parser.add_argument('--s3profile', metavar='<AWS profile name>', type=str, help='Name of the AWS profile to use if other than default', default='default')
 	parser.add_argument('--dbxfolder', metavar='<Dropbox folder>', type=str, help='Name of the Dropbox folder to ingest from')
 	parser.add_argument('--dbxtoken', metavar='<Dropbox API token>', type=str, help='Token for Dropbox API access')
+	parser.add_argument('--boxfolder', metavar='<Box folder>', type=str, help='Name of the Box folder to ingest from')
+	parser.add_argument('--boxtokens', metavar='<Box API token>', type=str, help='Tokens for Box API access')
 	parser.add_argument('--folder', metavar='<path to folder>', type=str, help='Name and path of local folder to ingest from (use / or \\\\)')
 	parser.add_argument('--file', metavar='<path to file>', type=str, help='Name and path of local file to ingest from (use / or \\\\)')
 	parser.add_argument('--account', metavar='<account ID>', type=str, help='Brightcove Account ID to ingest videos into')
@@ -216,20 +218,23 @@ def main(db_history:IngestHistory):
 	dbx_folder = args.dbxfolder
 	dbx_token = args.dbxtoken
 
+	# get Box info if available
+	box_folder = args.boxfolder
+	box_tokens = args.boxtokens
+
 	# get local folder if available
 	local_folder = args.folder
 
 	# error out if we have neither S3 nor Dropbox info
-#	if not s3_bucket_name and not dbx_folder and not local_folder and not args.dbreset and not args.file:
-	if not (s3_bucket_name or dbx_folder or local_folder or args.file):
-		print('Error: no S3 bucket, Dropbox folder, local folder, file or tokens specified.\n')
+	if not (s3_bucket_name or dbx_folder or box_folder or local_folder or args.file):
+		eprint('Error: no S3 bucket, Dropbox folder, local folder, file or tokens specified.\n')
 		return
 
 	# get ingest priority
 	if(args.priority in ['low', 'normal', 'high']):
 		ingest_priority = args.priority
 	else:
-		print('Error: invalid ingest queue priority specified.\n')
+		eprint('Error: invalid ingest queue priority specified.\n')
 		return
 
 	# create the OAuth token from the account config info file
@@ -261,7 +266,7 @@ def main(db_history:IngestHistory):
 					if request_id and not args.dbignore:
 						db_history.AddIngestHistory(account_id=account_id, video_id=video_id, request_id=request_id, remote_url=file_path)
 				else:
-					print(f'Error: failed to upload "{file_path}" to temporary S3 bucket.')
+					eprint(f'Error: failed to upload "{file_path}" to temporary S3 bucket.')
 			else:
 				print(f'Already ingested on {ingest_record[2]}')
 
@@ -286,7 +291,7 @@ def main(db_history:IngestHistory):
 				bucket = s3.Bucket(s3_bucket_name).objects.all()
 				filenames = [obj.key for obj in bucket if is_video(obj.key)]
 			except Exception as e:
-				print(f'Error accessing bucket "{s3_bucket_name}" for profile "{s3_profile_name}".\n')
+				eprint(f'Error accessing bucket "{s3_bucket_name}" for profile "{s3_profile_name}".\n')
 			else:
 				for filename in filenames:
 					s3_url = f'https://{s3_bucket_name}.s3.amazonaws.com/'+((filename).replace(' ', '%20'))
@@ -307,13 +312,13 @@ def main(db_history:IngestHistory):
 		try:
 			dbx = dropbox.Dropbox(dbx_token)
 		except:
-			print('Error: invalid Dropbox API token.')
+			eprint('Error: invalid Dropbox API token.')
 		else:
 			try:
 				dbx_folder = f'/{dbx_folder}'
 				filenames = [entry.name for entry in dbx.files_list_folder(path=dbx_folder, include_non_downloadable_files=False).entries if is_video(entry.name)]
 			except:
-				print(f'Error: folder "{dbx_folder}" not found in Dropbox.\n')
+				eprint(f'Error: folder "{dbx_folder}" not found in Dropbox.\n')
 			else:
 				for filename in filenames:
 					dbx_path = f'{dbx_folder}/{filename}'
@@ -329,6 +334,51 @@ def main(db_history:IngestHistory):
 						print(f'Already ingested on {ingest_record[2]}: "{dbx_path}"')
 
 	#===========================================
+	# do the Box bulk ingest
+	#===========================================
+	if box_folder:
+		def box_get_files_in_folder(client: box.Client, folder_id='0') -> list:
+			"""
+			Returns a list of file names and IDs in a Box folder.
+			"""
+			items = client.folder(folder_id=folder_id).get_items()
+			return [ [item.name, item.id] for item in items if item.type == 'file' and is_video(item.name) ]
+
+		try:
+			box_client_id, box_client_secret, box_dev_token = str(box_tokens).split(sep=',', maxsplit=3)
+			box_oauth = box.OAuth2(client_id=box_client_id, client_secret=box_client_secret, access_token=box_dev_token)
+			box_client = box.Client(box_oauth)
+		except ValueError:
+			eprint(f'Error: unable to parse Box tokens.\n')
+		except:
+			eprint(f'Error: unable to use provided credentials.\n')
+		else:
+			filenames = []
+			if box_folder == '.':
+				filenames = box_get_files_in_folder(box_client)
+			else:
+				items = box_client.folder(folder_id='0').get_items()
+				for item in items:
+					if item.type == 'folder' and item.name == box_folder:
+						filenames=box_get_files_in_folder(box_client, item.id)
+						break
+				else:
+					eprint(f'Error: folder "{box_folder}" not found in Box account root.')
+
+			for filename, box_id in filenames:
+				box_path = f'{box_folder}/{filename}'
+				source_url = box_client.file(box_id).get_download_url()
+				hash_value = db_history.CreateHash(account_id, box_path)
+				ingest_record = db_history.FindHashInIngestHistory(hash_value)
+				if ingest_record is None or args.dbignore:
+					print(f'Ingesting: "{box_path}"')
+					video_id, request_id = create_and_ingest(account_id, filename, source_url, ingest_priority)
+					if request_id and not args.dbignore:
+						db_history.AddIngestHistory(account_id=account_id, video_id=video_id, request_id=request_id, remote_url=source_url, hash_value=hash_value)
+				else:
+					print(f'Already ingested on {ingest_record[2]}: "{box_path}"')
+
+	#===========================================
 	# do the local bulk ingest
 	#===========================================
 	if local_folder:
@@ -338,7 +388,7 @@ def main(db_history:IngestHistory):
 		try:
 			file_list = get_list_of_files_in_dir(local_folder)
 		except:
-			print(f'Error: unable to access folder "{local_folder}"')
+			eprint(f'Error: unable to access folder "{local_folder}"')
 		else:
 			for file_path in [file for file in file_list if is_video(file)]:
 				ingest_single_file(file_path)
@@ -350,7 +400,7 @@ if __name__ == '__main__':
 	try:
 		db_history = IngestHistory(os.path.expanduser('~')+'/bulkingest.sqlite')
 	except:
-		print('Error: can not connect to ingest history database.')
+		eprint('Error: can not connect to ingest history database.')
 	else:
 		main(db_history)
 		db_history.CommitAndCloseConnection()
