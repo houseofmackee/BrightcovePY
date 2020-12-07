@@ -8,14 +8,16 @@ import time
 import queue
 import logging
 import functools
-from typing import Callable, Tuple, Union
-from threading import Thread
-from os.path import expanduser, basename
+from typing import Callable, Tuple, Union, Optional, Dict, Any
+from threading import Thread, Lock
+from os.path import expanduser, basename, getsize
 from abc import ABC, abstractproperty
 from requests_toolbelt import MultipartEncoder # pip3 install requests_toolbelt
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
 import pandas
+
+mac_logger = logging.getLogger()
 
 # disable certificate warnings
 requests.urllib3.disable_warnings()
@@ -31,6 +33,24 @@ def static_vars(**kwargs):
 			setattr(func, k, kwargs[k])
 		return func
 	return decorate
+
+class ProgressPercentage(object):
+	"""
+	Class to provide a simple progress indicator
+	"""
+	def __init__(self, filename=None, target=0):
+		self._filename = filename
+		self._size = int(getsize(filename)) if filename else target
+		self._seen_so_far = 0
+		self._lock = Lock()
+
+	def __call__(self, bytes_amount, add_info=''):
+		# To simplify, assume this is hooked up to a single filename
+		with self._lock:
+			self._seen_so_far += bytes_amount
+			percentage = (self._seen_so_far / self._size) * 100
+			sys.stdout.write("\rProgress: %s / %s  (%.2f%%)%s\r" % (self._seen_so_far, self._size, percentage, add_info))
+			sys.stdout.flush()
 
 class Base(ABC):
 
@@ -1211,7 +1231,7 @@ def GetDI(oauth:OAuth=None, profile:str=None, priority:str='normal') -> DynamicI
 	"""
 	if not GetDI.di and oauth:
 		GetDI.di = DynamicIngest(oAuth=oauth, ingest_profile=profile, priority_queue=priority)
-		logging.info('Obtained DI instance')
+		mac_logger.info('Obtained DI instance')
 
 	return GetDI.di
 
@@ -1228,7 +1248,7 @@ def GetCMS(oauth:OAuth=None, query:str=None) -> CMS:
 	"""
 	if not GetCMS.cms and oauth:
 		GetCMS.cms = CMS(oauth=oauth, query=query)
-		logging.info('Obtained CMS instance')
+		mac_logger.info('Obtained CMS instance')
 
 	return GetCMS.cms
 
@@ -1236,7 +1256,7 @@ def GetCMS(oauth:OAuth=None, query:str=None) -> CMS:
 def GetOAuth(account_id:str=None, client_id:str=None, client_secret:str=None) -> OAuth:
 	if not GetOAuth.oauth:
 		GetOAuth.oauth = OAuth(account_id, client_id, client_secret)
-		logging.info('Obtained OAuth instance')
+		mac_logger.info('Obtained OAuth instance')
 
 	return GetOAuth.oauth
 
@@ -1244,7 +1264,7 @@ def GetOAuth(account_id:str=None, client_id:str=None, client_secret:str=None) ->
 def GetArgs(parser=None):
 	if not GetArgs.args and parser:
 		GetArgs.args = parser.parse_args()
-		logging.info('Obtained arguments')
+		mac_logger.info('Obtained arguments')
 
 	return GetArgs.args
 
@@ -1252,7 +1272,7 @@ def GetArgs(parser=None):
 def GetSession():
 	if not GetArgs.session:
 		GetArgs.session = requests.Session()
-		logging.info('Obtained Requests Session')
+		mac_logger.info('Obtained Requests Session')
 
 	return GetArgs.session
 
@@ -1279,7 +1299,7 @@ def is_json(myjson: str) -> bool:
 # converts asset ID to string
 #===========================================
 @functools.lru_cache()
-def normalize_id(asset_id) -> str:
+def normalize_id(asset_id:Union[str, int, float]) -> Optional[str]:
 	"""Converts an asset ID to string
 
 	Args:
@@ -1295,7 +1315,7 @@ def normalize_id(asset_id) -> str:
 # test if a value is a valid ID
 #===========================================
 @functools.lru_cache()
-def is_valid_id(asset_id) -> bool:
+def is_valid_id(asset_id:Union[str, int, float]) -> bool:
 	"""Function to check if a given value is a valid asset ID
 
 	Args:
@@ -1312,7 +1332,7 @@ def is_valid_id(asset_id) -> bool:
 # to string
 #===========================================
 @functools.lru_cache()
-def wrangle_id(asset_id) -> Tuple[bool, str]:
+def wrangle_id(asset_id:Union[str, int, float]) -> Tuple[bool, Optional[str]]:
 	"""Converts ID to string and checks if it's a valid ID
 
 	Args:
@@ -1357,7 +1377,7 @@ def wrangle_id(asset_id) -> Tuple[bool, str]:
 #===========================================
 # read list of video IDs from XLS/CSV
 #===========================================
-def videos_from_file(filename:str, column_name:str='video_id', validate:bool=True, unique:bool=True) -> list:
+def videos_from_file(filename:str, column_name:str='video_id', validate:bool=True, unique:bool=True) -> Optional[list]:
 	"""Function to read a list of video IDs from an xls/csv file
 
 	Args:
@@ -1383,7 +1403,7 @@ def videos_from_file(filename:str, column_name:str='video_id', validate:bool=Tru
 				video_list = [video_id for video_id in data[column_name] if is_valid_id(video_id)]
 			else:
 				video_list = list(data[column_name])
-		except KeyError as e:
+		except KeyError:
 			eprint(f'Error while trying to read {filename} -> missing key: "{column_name}"')
 
 	# make list unique
@@ -1423,7 +1443,7 @@ def list_to_csv(row_list:list, filename:str) -> bool:
 # default processing function
 #===========================================
 def list_videos(video:dict) -> None:
-	print(video.get('id')+', "'+video.get('name')+'"')
+	print(f'{video.get("id")}, {video.get("name")}')
 
 #===========================================
 # function to fill queue with all videos
@@ -1467,7 +1487,8 @@ def process_account(work_queue:queue.Queue, account_id:str, cms_obj:CMS) -> None
 			# make sure we actually got some data
 			if len(json_data) > 0:
 				# let's put all videos in a queue
-				[ work_queue.put_nowait(video) for video in json_data ]
+				for video in json_data:
+					work_queue.put_nowait(video)
 				# reset retries count and increase page offset
 				retries = 10
 				current_offset += page_size
@@ -1497,7 +1518,7 @@ def process_account(work_queue:queue.Queue, account_id:str, cms_obj:CMS) -> None
 #===========================================
 # function to process a single video
 #===========================================
-def process_single_video_id(account_id:str, video_id:str, cms_obj:CMS, process_callback:Callable[[], None]) -> bool:
+def process_single_video_id(account_id:str, video_id:str, cms_obj:CMS, process_callback:Callable[[Dict[Any, Any]], None]) -> bool:
 	"""Function to process a single video using a provided callback function
 
 	Args:
@@ -1547,11 +1568,11 @@ class Worker(Thread):
 			try:
 				work = self.q.get()
 			except queue.Empty:
-				logging.info('Queue empty -> exiting worker thread')
+				mac_logger.info('Queue empty -> exiting worker thread')
 				return
 			# is it the exit signal?
 			if work == 'EXIT':
-				logging.info('EXIT found -> exiting worker thread')
+				mac_logger.info('EXIT found -> exiting worker thread')
 				keep_working = False
 			# do whatever work you have to do on work
 			elif isinstance(work, dict):
@@ -1583,7 +1604,7 @@ def process_input(inputfile=None, process_callback=list_videos, video_id=None) -
 
 	# if async is enabled use more than one thread
 	max_threads = GetArgs().a or 1
-	logging.info(f'Using {max_threads} thread(s) for processing')
+	mac_logger.info(f'Using {max_threads} thread(s) for processing')
 
 	#=========================================================
 	#=========================================================
@@ -1595,7 +1616,7 @@ def process_input(inputfile=None, process_callback=list_videos, video_id=None) -
 		return process_single_video_id(account_id, video_id, GetCMS(), process_callback)
 
 	# create the work queue because everything below uses it
-	work_queue = queue.Queue(maxsize=0)
+	work_queue:queue.Queue = queue.Queue(maxsize=0)
 
 	#=========================================================
 	#=========================================================
@@ -1611,7 +1632,8 @@ def process_input(inputfile=None, process_callback=list_videos, video_id=None) -
 		num_videos = len(video_list)
 		eprint(f'Found {num_videos} videos in options file. Processing them now.')
 		# let's put all video IDs in a queue
-		[ work_queue.put_nowait(video_id) for video_id in video_list ]
+		for video_id in video_list:
+			work_queue.put_nowait(video_id)
 		# starting worker threads on queue processing
 		num_threads = min(max_threads, num_videos)
 		for _ in range(num_threads):
@@ -1637,13 +1659,15 @@ def process_input(inputfile=None, process_callback=list_videos, video_id=None) -
 	account_page_thread.start()
 
 	# starting worker threads on queue processing
-	[ Worker(q=work_queue, cms_obj=GetCMS(), account_id=account_id, process_callback=process_callback).start() for _ in range(max_threads) ]
+	for _ in range(max_threads):
+		Worker(q=work_queue, cms_obj=GetCMS(), account_id=account_id, process_callback=process_callback).start()
 
 	# first wait for the queue filling thread to finish
 	account_page_thread.join()
 
 	# once the queue is filled with videos add exit signals
-	[ work_queue.put_nowait("EXIT") for _ in range(max_threads) ]
+	for _ in range(max_threads):
+		work_queue.put_nowait("EXIT")
 
 	# now we wait until the queue has been processed
 	if not work_queue.empty():
@@ -1654,7 +1678,7 @@ def process_input(inputfile=None, process_callback=list_videos, video_id=None) -
 #===========================================
 # parse args and do the thing
 #===========================================
-def main(process_func:Callable[[], None]) -> None:
+def main(process_func:Callable[[Dict[Any, Any]], None]) -> None:
 	# init the argument parsing
 	parser = argparse.ArgumentParser(prog=sys.argv[0])
 	parser.add_argument('-i', type=str, help='Name and path of account config information file')
@@ -1671,7 +1695,7 @@ def main(process_func:Callable[[], None]) -> None:
 
 	if GetArgs().d:
 		logging.basicConfig(level=logging.INFO, format='[%(levelname)s:%(lineno)d]: %(message)s')
-		logging.info('Logging enabled')
+		mac_logger.info('Logging at INFO level enabled')
 	else:
 		logging.basicConfig(level=logging.CRITICAL, format='[%(levelname)s:%(lineno)d]: %(message)s')
 
@@ -1682,4 +1706,5 @@ def main(process_func:Callable[[], None]) -> None:
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
+	print('video_id, title')
 	main(list_videos)
