@@ -4,7 +4,7 @@ import argparse
 from pprint import pprint
 from mackee import CMS
 from mackee import OAuth
-from mackee import LoadAccountInfo
+from mackee import load_account_info
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -19,7 +19,7 @@ args = parser.parse_args()
 
 # get account info from config file
 try:
-	account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
+	account_id, client_id, client_secret, _ = load_account_info(args.config)
 except Exception as e:
 	print(e)
 	sys.exit(2)

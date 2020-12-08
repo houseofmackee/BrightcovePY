@@ -1133,7 +1133,7 @@ class DynamicIngest(Base):
 #===========================================
 # read account info from JSON file
 #===========================================
-def LoadAccountInfo(input_filename:Optional[str]=None) -> Tuple[str, str, str, dict]:
+def load_account_info(input_filename:Optional[str]=None) -> Tuple[str, str, str, dict]:
 	"""Function to get information about account from config JSON file
 
 	Args:
@@ -1440,7 +1440,12 @@ def list_to_csv(row_list:list, filename:str) -> bool:
 #===========================================
 # default processing function
 #===========================================
+@static_vars(print_header=True)
 def list_videos(video:dict) -> None:
+	if list_videos.print_header:
+		print('video_id, title')
+		list_videos.print_header = False
+
 	print(f'{video.get("id")}, {video.get("name")}')
 
 #===========================================
@@ -1594,10 +1599,10 @@ class Worker(Thread):
 #===========================================
 # this is the main loop to process videos
 #===========================================
-def process_input(inputfile:str=None, process_callback:Callable[[Dict[Any, Any]], None]=list_videos, video_id:str=None) -> bool:
+def process_input(account_info_file:str=None, process_callback:Callable[[Dict[Any, Any]], None]=list_videos, video_id:str=None) -> bool:
 	# get the account info and credentials
 	try:
-		account_id, client_id, client_secret, opts = LoadAccountInfo(inputfile)
+		account_id, client_id, client_secret, opts = load_account_info(account_info_file)
 	except Exception as e:
 		print(e)
 		return False
@@ -1710,11 +1715,10 @@ def main(process_func:Callable[[Dict[Any, Any]], None]) -> None:
 		logging.basicConfig(level=logging.CRITICAL, format='[%(levelname)s:%(lineno)d]: %(message)s')
 
 	# go through the library and do stuff
-	process_input(inputfile=GetArgs().i, process_callback=process_func, video_id=GetArgs().v)
+	process_input(account_info_file=GetArgs().i, process_callback=process_func, video_id=GetArgs().v)
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	print('video_id, title')
 	main(list_videos)

@@ -9,7 +9,7 @@ from mackee import CMS
 from mackee import OAuth
 from mackee import wrangle_id
 from mackee import videos_from_file
-from mackee import LoadAccountInfo
+from mackee import load_account_info
 
 # account/API credentials (can be None to use user defaults)
 account_id = None
@@ -52,7 +52,7 @@ args = parser.parse_args()
 # get account info from config file if not hardcoded
 if account_id is None and client_id is None and client_secret is None:
 	try:
-		account_id, client_id, client_secret, opts = LoadAccountInfo(args.config)
+		account_id, client_id, client_secret, opts = load_account_info(args.config)
 	except Exception as e:
 		print(e)
 		sys.exit(2)

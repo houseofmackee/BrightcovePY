@@ -4,7 +4,7 @@ import argparse
 from calendar import monthrange
 from mackee import CMS
 from mackee import OAuth
-from mackee import LoadAccountInfo
+from mackee import load_account_info
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -38,7 +38,7 @@ if start_year==end_year and start_month>end_month:
 
 # get account info from config file
 try:
-	account_id, client_id, client_secret, _ = LoadAccountInfo()
+	account_id, client_id, client_secret, _ = load_account_info()
 except Exception as e:
 	print(e)
 	sys.exit(2)

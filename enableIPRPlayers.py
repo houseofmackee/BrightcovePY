@@ -2,7 +2,7 @@
 import sys
 from mackee import PlayerManagement
 from mackee import OAuth
-from mackee import LoadAccountInfo
+from mackee import load_account_info
 
 # edit details as required
 account_id = ''
@@ -12,7 +12,7 @@ client_secret = ''
 # get account info from config file
 if client_id==account_id==client_secret=='':
 	try:
-		account_id, client_id, client_secret, _ = LoadAccountInfo()
+		account_id, client_id, client_secret, _ = load_account_info()
 	except Exception as e:
 		print(e)
 		sys.exit(2)

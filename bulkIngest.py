@@ -14,7 +14,7 @@ from pathlib import Path
 from mackee import CMS
 from mackee import OAuth
 from mackee import DynamicIngest
-from mackee import LoadAccountInfo
+from mackee import load_account_info
 from mackee import eprint
 
 # pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
@@ -238,7 +238,7 @@ def main(db_history:IngestHistory):
 		return
 
 	try:
-		account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
+		account_id, client_id, client_secret, _ = load_account_info(args.config)
 	except Exception as e:
 		print(e)
 		return

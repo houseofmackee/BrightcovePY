@@ -3,7 +3,7 @@ import sys
 import argparse
 from mackee import CMS
 from mackee import OAuth
-from mackee import LoadAccountInfo
+from mackee import load_account_info
 from mackee import list_to_csv
 
 # account/API credentials (can be None to use user defaults)
@@ -25,7 +25,7 @@ args = parser.parse_args()
 # get account info from config file if not hardcoded
 if None in [account_id, client_id, client_secret]:
 	try:
-		account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
+		account_id, client_id, client_secret, _ = load_account_info(args.config)
 	except Exception as e:
 		print(e)
 		sys.exit(2)

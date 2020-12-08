@@ -2,7 +2,7 @@
 import sys
 from mackee import Social
 from mackee import OAuth
-from mackee import LoadAccountInfo
+from mackee import load_account_info
 from mackee import list_to_csv
 
 videos_processed = 0
@@ -23,7 +23,7 @@ report_name = 'social_report.csv'
 # get account info from config file if not hardcoded
 if None in [account_id, client_id, client_secret]:
 	try:
-		account_id, client_id, client_secret, _ = LoadAccountInfo()
+		account_id, client_id, client_secret, _ = load_account_info()
 	except Exception as e:
 		print(e)
 		sys.exit(2)
