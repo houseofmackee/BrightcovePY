@@ -19,7 +19,11 @@ parser.add_argument('--account', metavar='<Brightcove Account ID>', type=str, he
 args = parser.parse_args()
 
 # get account info from config file
-account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
+try:
+	account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
+except Exception as e:
+	print(e)
+	sys.exit(2)
 
 # if account ID was provided override the one from config
 account_id = args.account or account_id

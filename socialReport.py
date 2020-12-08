@@ -22,7 +22,11 @@ report_name = 'social_report.csv'
 
 # get account info from config file if not hardcoded
 if None in [account_id, client_id, client_secret]:
-	account_id, client_id, client_secret, _ = LoadAccountInfo()
+	try:
+		account_id, client_id, client_secret, _ = LoadAccountInfo()
+	except Exception as e:
+		print(e)
+		sys.exit(2)
 
 # create a Social API instance
 social = Social( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )

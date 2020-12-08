@@ -37,7 +37,11 @@ if start_year==end_year and start_month>end_month:
 	sys.exit(2)
 
 # get account info from config file
-account_id, client_id, client_secret, _ = LoadAccountInfo()
+try:
+	account_id, client_id, client_secret, _ = LoadAccountInfo()
+except Exception as e:
+	print(e)
+	sys.exit(2)
 
 # create a CMS API instance
 cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )

@@ -1,17 +1,21 @@
 #!/usr/bin/env python3
+import sys
 from mackee import PlayerManagement
 from mackee import OAuth
 from mackee import LoadAccountInfo
 
-# get account info from config file
-account_id, client_id, client_secret, _ = LoadAccountInfo()
+# edit details as required
+account_id = ''
+client_id = ''
+client_secret = ''
 
-if None in [account_id, client_id, client_secret]:
-	print('Using default values for credentials.')
-	# edit details as required
-	account_id = ''
-	client_id = ''
-	client_secret = ''
+# get account info from config file
+if client_id==account_id==client_secret=='':
+	try:
+		account_id, client_id, client_secret, _ = LoadAccountInfo()
+	except Exception as e:
+		print(e)
+		sys.exit(2)
 
 # create a Player Management API instance
 pms = PlayerManagement( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )

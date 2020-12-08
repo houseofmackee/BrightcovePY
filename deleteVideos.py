@@ -51,7 +51,11 @@ args = parser.parse_args()
 
 # get account info from config file if not hardcoded
 if account_id is None and client_id is None and client_secret is None:
-	account_id, client_id, client_secret, opts = LoadAccountInfo(args.config)
+	try:
+		account_id, client_id, client_secret, opts = LoadAccountInfo(args.config)
+	except Exception as e:
+		print(e)
+		sys.exit(2)
 
 # if account ID was provided override the one from config
 account_id = args.account or account_id

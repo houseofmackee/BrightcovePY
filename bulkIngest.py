@@ -226,19 +226,22 @@ def main(db_history:IngestHistory):
 	local_folder = args.folder
 
 	# error out if we have neither S3 nor Dropbox info
-	if not (s3_bucket_name or dbx_folder or box_folder or local_folder or args.file):
+	if not any([s3_bucket_name, dbx_folder, box_folder, local_folder, args.file]):
 		eprint('Error: no S3 bucket, Dropbox folder, local folder, file or tokens specified.\n')
 		return
 
 	# get ingest priority
-	if(args.priority in ['low', 'normal', 'high']):
+	if args.priority in ['low', 'normal', 'high']:
 		ingest_priority = args.priority
 	else:
 		eprint('Error: invalid ingest queue priority specified.\n')
 		return
 
-	# create the OAuth token from the account config info file
-	account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
+	try:
+		account_id, client_id, client_secret, _ = LoadAccountInfo(args.config)
+	except Exception as e:
+		print(e)
+		return
 
 	account_id = args.account or account_id
 	ingest_profile = args.profile
@@ -246,6 +249,7 @@ def main(db_history:IngestHistory):
 	global cms
 	global di
 
+	# create the OAuth token from the account config info file
 	oauth = OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret)
 	cms = CMS(oauth)
 	di = DynamicIngest(oAuth=oauth, ingest_profile=ingest_profile, priority_queue=ingest_priority)
@@ -337,7 +341,7 @@ def main(db_history:IngestHistory):
 	# do the Box bulk ingest
 	#===========================================
 	if box_folder:
-		def box_get_files_in_folder(client: box.Client, folder_id='0') -> list:
+		def box_get_files_in_folder(client:box.Client, folder_id:str='0') -> list:
 			"""
 			Returns a list of file names and IDs in a Box folder.
 			"""
