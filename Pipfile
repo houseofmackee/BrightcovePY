@@ -1,0 +1,22 @@
+[[source]]
+url = "https://pypi.org/simple"
+verify_ssl = true
+name = "pypi"
+
+[packages]
+numpy = "==1.19.3"
+requests = "*"
+requests-toolbelt = "*"
+boto3 = "*"
+dropbox = "*"
+boxsdk = "*"
+pandas = "*"
+
+[dev-packages]
+pytest = "*"
+mypy = "*"
+ipdb = "*"
+pylint = "*"
+
+[requires]
+python_version = "3.8"
