@@ -1,5 +1,4 @@
 ignoreme
-environments
 pytest
 __pycache__
 *.pyc
@@ -8,6 +7,7 @@ packages
 [Oo]bj
 .vs
 .vscode
+.venv
 *.user
 *Test.py
 test_*.py
