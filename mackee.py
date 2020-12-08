@@ -5,14 +5,16 @@ import csv
 import json
 import argparse
 import time
-import queue
 import logging
 import functools
+from queue import Queue, Empty
 from typing import Callable, Tuple, Union, Optional, Dict, Any
 from threading import Thread, Lock
 from os.path import expanduser, basename, getsize
 from abc import ABC, abstractproperty
-from requests_toolbelt import MultipartEncoder # pip3 install requests_toolbelt
+from requests.adapters import Response
+from requests_toolbelt import MultipartEncoder # type: ignore # pip3 install requests_toolbelt
+from dataclasses import dataclass
 import requests # pip3 install requests
 import boto3 # pip3 install boto3
 import pandas
@@ -63,8 +65,8 @@ class Base(ABC):
 	# generally accepted success responses
 	success_responses = [200,201,202,203,204]
 
-	def __init__(self, query=None):
-		self.search_query = query
+	def __init__(self, query:Optional[str]=None) -> None:
+		self.search_query:Optional[str] = query
 		self.__session = self._get_session()
 
 	@staticmethod
@@ -75,31 +77,28 @@ class Base(ABC):
 		return sess
 
 	@staticmethod
-	def _json_to_string(json_object:Union[str, dict]) -> Union[str, None]:
+	def _json_to_string(json_object:Union[str, dict]) -> Optional[str]:
 		"""
 		If json_object is a dict convert to str.
 		If json_object is a str validate it.
 		Returns str if it's valid JSON, None otherwise.
 		"""
-		result = json_object
-
 		if isinstance(json_object, dict):
-			result = json.dumps(json_object)
-
-		if isinstance(result, str):
+			return json.dumps(json_object)
+		elif isinstance(json_object, str):
 			try:
-				_ = json.loads(result)
+				_ = json.loads(json_object)
+				return json_object
 			except:
-				result = None
-
-		return result
+				pass
+		return None
 
 	@property
-	def search_query(self) -> str:
+	def search_query(self) -> Optional[str]:
 		return self.__search_query
 
 	@search_query.setter
-	def search_query(self, query: str):
+	def search_query(self, query: Optional[str]) -> None:
 		self.__search_query = '' if not query else requests.utils.quote(query)
 
 	@property
@@ -1134,7 +1133,7 @@ class DynamicIngest(Base):
 #===========================================
 # read account info from JSON file
 #===========================================
-def LoadAccountInfo(input_filename:str=None) -> Tuple[str, str, str, dict]:
+def LoadAccountInfo(input_filename:Optional[str]=None) -> Tuple[str, str, str, dict]:
 	"""Function to get information about account from config JSON file
 
 	Args:
@@ -1151,8 +1150,7 @@ def LoadAccountInfo(input_filename:str=None) -> Tuple[str, str, str, dict]:
 		with open(input_filename, 'r') as file:
 			obj = json.loads( file.read() )
 	except:
-		eprint(f'Error: unable to open {input_filename}')
-		return None, None, None, None
+		raise Exception(f'Error: unable to open {input_filename}')
 
 	# grab data, make it strings and strip it
 	account = obj.get('account_id')
@@ -1280,7 +1278,7 @@ def GetSession():
 # test if a value is a valid JSON string
 #===========================================
 @functools.lru_cache()
-def is_json(myjson: str) -> bool:
+def is_json(myjson:str) -> bool:
 	"""Function to check if a string is valid JSON
 
 	Args:
@@ -1377,7 +1375,7 @@ def wrangle_id(asset_id:Union[str, int, float]) -> Tuple[bool, Optional[str]]:
 #===========================================
 # read list of video IDs from XLS/CSV
 #===========================================
-def videos_from_file(filename:str, column_name:str='video_id', validate:bool=True, unique:bool=True) -> Optional[list]:
+def videos_from_file(filename:str, column_name:str='video_id', validate:bool=True, unique:bool=True) -> list:
 	"""Function to read a list of video IDs from an xls/csv file
 
 	Args:
@@ -1389,7 +1387,7 @@ def videos_from_file(filename:str, column_name:str='video_id', validate:bool=Tru
 	Returns:
 		List: List object with the video IDs from the file. None if there was an error processing the file.
 	"""
-	video_list = None
+	video_list = []
 	try:
 		if filename.lower().endswith('csv'):
 			data = pandas.read_csv(filename)
@@ -1449,11 +1447,11 @@ def list_videos(video:dict) -> None:
 # function to fill queue with all videos
 # from a Video Cloud account
 #===========================================
-def process_account(work_queue:queue.Queue, account_id:str, cms_obj:CMS) -> None:
+def process_account(work_queue:Queue, account_id:str, cms_obj:CMS) -> None:
 	"""Function to fill a Queue with a list of all video IDs in an account
 
 	Args:
-		work_queue (queue.Queue): Queue to be filled with IDs
+		work_queue (Queue): Queue to be filled with IDs
 		cms_obj (CMS): CMS class instance
 		account_id (str): Video Cloud account ID
 	"""
@@ -1555,8 +1553,16 @@ def process_single_video_id(account_id:str, video_id:str, cms_obj:CMS, process_c
 
 # worker class for multithreading
 class Worker(Thread):
+
+	@dataclass
+	class WorkerData:
+		queue: Queue
+		account_id: str
+		callback: callable
+		cms_instance: CMS
+
 	def __init__(self, q, cms_obj, account_id, process_callback, *args, **kwargs):
-		self.q = q
+		self.queue = q
 		self.cms_obj = cms_obj
 		self.account_id = account_id
 		self.process_callback = process_callback
@@ -1566,8 +1572,8 @@ class Worker(Thread):
 		keep_working = True
 		while keep_working:
 			try:
-				work = self.q.get()
-			except queue.Empty:
+				work = self.queue.get()
+			except Empty:
 				mac_logger.info('Queue empty -> exiting worker thread')
 				return
 			# is it the exit signal?
@@ -1583,14 +1589,18 @@ class Worker(Thread):
 										cms_obj=self.cms_obj,
 										process_callback=self.process_callback)
 
-			self.q.task_done()
+			self.queue.task_done()
 
 #===========================================
 # this is the main loop to process videos
 #===========================================
-def process_input(inputfile=None, process_callback=list_videos, video_id=None) -> bool:
+def process_input(inputfile:str=None, process_callback:Callable[[Dict[Any, Any]], None]=list_videos, video_id:str=None) -> bool:
 	# get the account info and credentials
-	account_id, client_id, client_secret, opts = LoadAccountInfo(inputfile)
+	try:
+		account_id, client_id, client_secret, opts = LoadAccountInfo(inputfile)
+	except Exception as e:
+		print(e)
+		return False
 
 	if None in [account_id, client_id, client_secret, opts]:
 		return False
@@ -1616,7 +1626,7 @@ def process_input(inputfile=None, process_callback=list_videos, video_id=None) -
 		return process_single_video_id(account_id, video_id, GetCMS(), process_callback)
 
 	# create the work queue because everything below uses it
-	work_queue:queue.Queue = queue.Queue(maxsize=0)
+	work_queue:Queue = Queue(maxsize=0)
 
 	#=========================================================
 	#=========================================================
