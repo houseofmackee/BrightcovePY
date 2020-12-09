@@ -8,6 +8,7 @@ packages
 .vs
 .vscode
 .venv
+.*_cache
 *.user
 *Test.py
 test_*.py
