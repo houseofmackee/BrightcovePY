@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import sys
-from mackee import Social
-from mackee import OAuth
-from mackee import load_account_info
-from mackee import list_to_csv
+from brightcove.Social import Social
+from brightcove.OAuth import OAuth
+from brightcove.utils import load_account_info
+from brightcove.utils import list_to_csv
 
 videos_processed = 0
 hits_to_process = 0

@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-from mackee import OAuth
-from mackee import IngestProfiles
-from mackee import load_account_info
-from mackee import videos_from_file
-from mackee import eprint
+from brightcove.OAuth import OAuth
+from brightcove.IngestProfiles import IngestProfiles
+from brightcove.utils import load_account_info
+from brightcove.utils import videos_from_file
+from brightcove.utils import eprint
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])

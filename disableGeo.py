@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
-from mackee import main, GetCMS, eprint
+from mackee import main, get_cms
+from brightcove.utils import eprint
 from threading import Lock
 
 counter_lock = Lock()
@@ -22,7 +23,7 @@ def disable_geo(video):
 		# create the JSON body
 		json_body = ('{ "geo": null }')
 		# make the PATCH call
-		r = GetCMS().UpdateVideo(video_id=video_id, json_body=json_body)
+		r = get_cms().UpdateVideo(video_id=video_id, json_body=json_body)
 		# check if all went well
 		if r.status_code not in [200,202]:
 			eprint(f'Error code {r.status_code} disabling Geo for video ID {video_id}:')

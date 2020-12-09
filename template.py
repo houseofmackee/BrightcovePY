@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import mackee
+from mackee import main
 
 #===========================================
 # example callback function
@@ -11,4 +11,4 @@ def example_function(video):
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	mackee.main(example_function)
+	main(example_function)

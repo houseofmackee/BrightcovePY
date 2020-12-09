@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-from mackee import main, GetCMS, aspect_ratio
-
+from mackee import main, get_cms
+from brightcove.utils import aspect_ratio
 #=============================================
 # callback to find the aspect ratio of videos
 #=============================================
@@ -10,14 +10,14 @@ def find_aspect_ratios(video):
 	source_w, source_h, response = None, None, None
 
 	if delivery_type == 'static_origin':
-		response = GetCMS().GetRenditionList(video_id=video_id)
+		response = get_cms().GetRenditionList(video_id=video_id)
 	elif delivery_type == 'dynamic_origin':
-		response = GetCMS().GetDynamicRenditions(video_id=video_id)
+		response = get_cms().GetDynamicRenditions(video_id=video_id)
 	else:
 		print(f'No video dimensions found for video ID {video_id} (delivery type: {delivery_type}).')
 		return
 
-	if response.status_code in GetCMS().success_responses:
+	if response.status_code in get_cms().success_responses:
 		renditions = response.json()
 		for rendition in renditions:
 			if rendition.get('media_type') == 'video' or rendition.get('audio_only') == False:

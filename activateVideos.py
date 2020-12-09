@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from mackee import main, GetCMS
+from mackee import main, get_cms
 
 #===========================================
 # callback to activate a video
@@ -8,7 +8,7 @@ def activate_video(video):
 	if video.get('state')=='INACTIVE':
 		video_id = video.get('id')
 		json = '{ "state": "ACTIVE" }'
-		print(f'Activating video ID {video_id}: {GetCMS().UpdateVideo(video_id=video_id, json_body=json).status_code}')
+		print(f'Activating video ID {video_id}: {get_cms().UpdateVideo(video_id=video_id, json_body=json).status_code}')
 
 #===========================================
 # only run code if it's not imported

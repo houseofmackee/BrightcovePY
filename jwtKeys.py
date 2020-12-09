@@ -2,9 +2,9 @@
 import sys
 import argparse
 from pprint import pprint
-from mackee import OAuth
-from mackee import JWT
-from mackee import load_account_info
+from brightcove.OAuth import OAuth
+from brightcove.JWT import JWT
+from brightcove.utils import load_account_info
 
 # disable certificate warnings
 import urllib3

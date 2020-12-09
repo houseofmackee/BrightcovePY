@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from mackee import main, GetCMS
+from mackee import main, get_cms
 
 #===========================================
 # function to get size of master
@@ -10,7 +10,7 @@ def get_master_storage(video):
 		shared = video.get('sharing')
 		if shared and shared.get('by_external_acct'):
 			return 0
-		response = GetCMS().GetDigitalMasterInfo(video_id=video.get('id'))
+		response = get_cms().GetDigitalMasterInfo(video_id=video.get('id'))
 		if response.status_code == 200:
 			master_size = response.json().get('size')
 
@@ -22,8 +22,8 @@ def get_master_storage(video):
 def get_rendition_sizes(video):
 	ren_size = 0
 
-	response = GetCMS().GetDynamicRenditions(video_id=video.get('id'))
-	if response.status_code in GetCMS().success_responses:
+	response = get_cms().GetDynamicRenditions(video_id=video.get('id'))
+	if response.status_code in get_cms().success_responses:
 		renditions = response.json()
 		for rendition in renditions:
 			ren_size += rendition.get('size')

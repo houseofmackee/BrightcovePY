@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import mackee
+from mackee import main
 
 #===========================================
 # callback to find videos with text tracks
@@ -15,4 +15,4 @@ def find_tt(video):
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	mackee.main(find_tt)
+	main(find_tt)

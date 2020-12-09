@@ -3,10 +3,9 @@ import sys
 import argparse
 import pandas
 import time
-from mackee import CMS
-from mackee import OAuth
-from mackee import load_account_info
-from mackee import normalize_id
+from brightcove.CMS import CMS
+from brightcove.OAuth import OAuth
+from brightcove.utils import load_account_info, normalize_id
 
 cms = None
 

@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
-from mackee import main, eprint, GetCMS, GetArgs, TimeString, list_to_csv
+from mackee import main, get_cms, get_args
+from brightcove.utils import list_to_csv, eprint
+from brightcove.utils import TimeString
 import sys
 import time
 from threading import Lock
@@ -23,7 +25,7 @@ def get_master_storage(video: dict) -> int:
 
 	if video.get('has_digital_master'):
 		try:
-			response = GetCMS().GetDigitalMasterInfo(video_id=video.get('id'))
+			response = get_cms().GetDigitalMasterInfo(video_id=video.get('id'))
 		except:
 			response = None
 			master_size = -1
@@ -50,9 +52,9 @@ def get_rendition_sizes(video: dict) -> dict:
 
 	try:
 		if delivery_type == 'static_origin':
-			response = GetCMS().GetRenditionList(video_id=video_id)
+			response = get_cms().GetRenditionList(video_id=video_id)
 		elif delivery_type == 'dynamic_origin':
-			response = GetCMS().GetDynamicRenditions(video_id=video_id)
+			response = get_cms().GetDynamicRenditions(video_id=video_id)
 	except:
 		response = None
 		sizes = { key:-1 for key in sizes }
@@ -78,11 +80,11 @@ def get_rendition_sizes(video: dict) -> dict:
 		# if it's Dynamic Delivery we need to get MP4 sizes from the sources endpoint
 		if delivery_type == 'dynamic_origin' and sizes['mp4_size'] == 0:
 			try:
-				response = GetCMS().GetVideoSources(video_id=video_id)
+				response = get_cms().GetVideoSources(video_id=video_id)
 			except:
 				sizes['mp4_size'] = -1
 			else:
-				if response.status_code in GetCMS().success_responses:
+				if response.status_code in get_cms().success_responses:
 					sizes['mp4_size'] += sum(set([rendition.get('size') for rendition in response.json() if rendition.get('container') == 'MP4']))
 
 	return sizes
@@ -124,7 +126,7 @@ if __name__ == '__main__':
 	show_progress(videos_processed)
 
 	#write list to file
-	list_to_csv(row_list, GetArgs().o)
+	list_to_csv(row_list, get_args().o)
 
 	elapsed = time.perf_counter() - s
 	eprint(f"\n{__file__} executed in {TimeString.from_seconds(elapsed)}.")

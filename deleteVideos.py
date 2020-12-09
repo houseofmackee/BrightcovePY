@@ -4,12 +4,9 @@ import argparse
 import csv
 import concurrent.futures
 from typing import List
-from mackee import eprint
-from mackee import CMS
-from mackee import OAuth
-from mackee import wrangle_id
-from mackee import videos_from_file
-from mackee import load_account_info
+from brightcove.CMS import CMS
+from brightcove.OAuth import OAuth
+from brightcove.utils import load_account_info, eprint, wrangle_id, videos_from_file
 
 # account/API credentials (can be None to use user defaults)
 account_id = None

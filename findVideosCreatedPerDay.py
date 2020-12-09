@@ -2,9 +2,9 @@
 import sys
 import argparse
 from calendar import monthrange
-from mackee import CMS
-from mackee import OAuth
-from mackee import load_account_info
+from brightcove.CMS import CMS
+from brightcove.OAuth import OAuth
+from brightcove.utils import load_account_info
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])

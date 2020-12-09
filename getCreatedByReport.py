@@ -1,5 +1,6 @@
 #!/usr/bin/env python3
-from mackee import main, eprint, GetCMS, GetArgs, list_to_csv
+from mackee import main, get_cms, get_args
+from brightcove.utils import list_to_csv, eprint
 import sys
 import time
 from threading import Lock
@@ -22,7 +23,7 @@ def get_created_by_report(video):
 	global created_by_dict
 	global videos_processed
 
-	creator = GetCMS().GetCreatedBy(video)
+	creator = get_cms().GetCreatedBy(video)
 
 	with data_lock:
 		created_by_dict[creator] += 1
@@ -48,4 +49,4 @@ if __name__ == '__main__':
 		row_list.append([x,y])
 
 	#write list to file
-	list_to_csv(row_list, GetArgs().o)
+	list_to_csv(row_list, get_args().o)

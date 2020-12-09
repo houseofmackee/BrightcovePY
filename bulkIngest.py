@@ -11,11 +11,11 @@ import boto3 # pip3 install boto3
 import dropbox # pip3 install dropbox
 import boxsdk as box
 from pathlib import Path
-from mackee import CMS
-from mackee import OAuth
-from mackee import DynamicIngest
-from mackee import load_account_info
-from mackee import eprint
+from brightcove.CMS import CMS
+from brightcove.OAuth import OAuth
+from brightcove.DynamicIngest import DynamicIngest
+from brightcove.utils import eprint
+from brightcove.utils import load_account_info
 
 # pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
@@ -252,7 +252,7 @@ def main(db_history:IngestHistory):
 	# create the OAuth token from the account config info file
 	oauth = OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret)
 	cms = CMS(oauth)
-	di = DynamicIngest(oAuth=oauth, ingest_profile=ingest_profile, priority_queue=ingest_priority)
+	di = DynamicIngest(oauth=oauth, ingest_profile=ingest_profile, priority_queue=ingest_priority)
 
 	# this needs moving outside, but for now I'm whatever about it
 	def ingest_single_file(file_path:str):

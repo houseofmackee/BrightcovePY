@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from mackee import main, GetCMS
+from mackee import main, get_cms
 import requests # pip3 install requests
 from clint.textui import progress # pip3 install clint
 
@@ -11,7 +11,7 @@ def download_video(video):
 	source_url, source_w, source_h = None, 0, 0
 
 	# get sources for the video and try to find the biggest MP4 video
-	sourceList = GetCMS().GetVideoSources(video_id=video_id).json()
+	sourceList = get_cms().GetVideoSources(video_id=video_id).json()
 	for source in sourceList:
 		sourceType = source.get('container')
 		if sourceType and sourceType=='MP4':
