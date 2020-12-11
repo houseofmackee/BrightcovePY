@@ -10,7 +10,7 @@ videos_processed = 0
 counter_lock = Lock()
 data_lock = Lock()
 
-created_by_dict = defaultdict(int)
+created_by_dict:defaultdict = defaultdict(int)
 
 def show_progress(progress):
 	sys.stderr.write(f'\r{progress} processed...\r')
@@ -49,4 +49,7 @@ if __name__ == '__main__':
 		row_list.append([x,y])
 
 	#write list to file
-	list_to_csv(row_list, get_args().o)
+	try:
+		list_to_csv(row_list, get_args().o)
+	except Exception as e:
+		eprint(f'\n{e}')

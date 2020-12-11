@@ -24,7 +24,7 @@ def retranscode(video):
 	# retranscode specific settings
 	ingest_profile = 'multi-platform-extended-static-with-mp4'
 	priority = 'low'
-	capture_images = 'false'
+	capture_images = False
 
 	# if it has a master then use that for retranscode
 	if has_master:
@@ -44,7 +44,7 @@ def retranscode(video):
 
 		# if a source was found download it, using the video ID as filename
 		if source_url:
-			print(f'{video_id}: retranscoding using highest resolution MP4 ({source_w}x{source_h}) -> {get_di().SubmitIngest(video_id=video_id, source_url=source_url, ingest_profile=ingest_profile,capture_images=capture_images, priority_queue=priority).status_code}')
+			print(f'{video_id}: retranscoding using highest resolution MP4 ({source_w}x{source_h}) -> {get_di().SubmitIngest(video_id=video_id, source_url=source_url, profile_id=ingest_profile,capture_images=capture_images, priority_queue=priority).status_code}')
 
 		else:
 			print(f'{video_id}: can not be retranscoded (no master or MP4 video rendition)')

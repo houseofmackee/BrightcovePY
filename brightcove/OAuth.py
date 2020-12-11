@@ -5,7 +5,7 @@ import requests
 class OAuth():
 	base_url = 'https://oauth.brightcove.com/v4/access_token'
 
-	def __init__(self, account_id, client_id, client_secret):
+	def __init__(self, account_id:str, client_id:str, client_secret:str) -> None:
 		self.account_id = account_id
 		self.client_id = client_id
 		self.client_secret = client_secret

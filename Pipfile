@@ -18,6 +18,8 @@ pytest = "*"
 mypy = "*"
 ipdb = "*"
 pylint = "*"
+boto3-stubs = "*"
+data-science-types = "*"
 
 [requires]
 python_version = "3.8"

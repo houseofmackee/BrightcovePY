@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-from brightcove.DeliveryRules import DeliverySystem
+from brightcove.DeliverySystem import DeliverySystem
 from brightcove.OAuth import OAuth
 from brightcove.utils import load_account_info
 

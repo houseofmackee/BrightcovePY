@@ -1,20 +1,11 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-import csv
 import concurrent.futures
 from typing import List
 from brightcove.CMS import CMS
 from brightcove.OAuth import OAuth
-from brightcove.utils import load_account_info, eprint, wrangle_id, videos_from_file
-
-# account/API credentials (can be None to use user defaults)
-account_id = None
-client_id = None
-client_secret = None
-
-cms = None
-opts = None
+from brightcove.utils import load_account_info, eprint, wrangle_id, videos_from_file, list_to_csv
 
 def show_progress(progress:int) -> None:
 	sys.stderr.write(f'\r{progress} processed...\r')
@@ -46,8 +37,14 @@ parser.add_argument('--column', metavar='<column name>', type=str, help='Name of
 # parse the args
 args = parser.parse_args()
 
+# account/API credentials (can be None to use user defaults)
+account_id = ''
+client_id = ''
+client_secret = ''
+opts:dict = {}
+
 # get account info from config file if not hardcoded
-if account_id is None and client_id is None and client_secret is None:
+if '' in [account_id, client_id, client_secret]:
 	try:
 		account_id, client_id, client_secret, opts = load_account_info(args.config)
 	except Exception as e:
@@ -99,11 +96,6 @@ else:
 
 	#write list to file
 	try:
-		with open('report.csv' if not args.report else args.report, 'w', newline='', encoding='utf-8') as file:
-			try:
-				writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
-				writer.writerows(row_list)
-			except Exception as e:
-				eprint(f'\nError writing CSV data to file: {e}')
+		list_to_csv(row_list=row_list, filename=args.report)
 	except Exception as e:
-		eprint(f'\nError creating outputfile: {e}')
+		eprint(f'\n{e}')

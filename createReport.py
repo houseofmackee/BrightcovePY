@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 from mackee import main, get_args
-from brightcove.utils import list_to_csv
+from brightcove.utils import list_to_csv, eprint
 from threading import Lock
 import sys
 
@@ -39,5 +39,7 @@ if __name__ == '__main__':
 	show_progress(videos_processed)
 
 	#write list to file
-	list_to_csv(row_list, get_args().o)
-
+	try:
+		list_to_csv(row_list, get_args().o)
+	except Exception as e:
+		eprint(f'\n{e}')

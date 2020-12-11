@@ -39,6 +39,9 @@ if args.add:
 if args.delete:
 	# the actual delete function
 	def delete_sid(s_id):
+		"""
+		Delete a single syndication ID
+		"""
 		print( f'Deleting syndication ID {s_id}: {mrss.DeleteSyndication(account_id=account_id, syndication_id=s_id).status_code}')
 
 	# delete all?

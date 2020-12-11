@@ -15,8 +15,8 @@ class Base(ABC):
 	# generally accepted success responses
 	success_responses = [200,201,202,203,204]
 
-	def __init__(self, oauth:OAuth, query:Optional[str]=None) -> None:
-		self.search_query:Optional[str] = query
+	def __init__(self, oauth:OAuth, query:str='') -> None:
+		self.search_query:str = query
 		self.__session = self._get_session()
 		self.__oauth = oauth
 
@@ -45,12 +45,12 @@ class Base(ABC):
 		return None
 
 	@property
-	def search_query(self) -> Optional[str]:
+	def search_query(self) -> str:
 		return self.__search_query
 
 	@search_query.setter
-	def search_query(self, query: Optional[str]) -> None:
-		self.__search_query = '' if not query else requests.utils.quote(query)
+	def search_query(self, query:str) -> None:
+		self.__search_query = '' if not query else requests.utils.quote(query) # type: ignore
 
 	@property
 	def session(self) -> requests.Session:

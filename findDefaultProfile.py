@@ -30,7 +30,7 @@ account_id = args.account or account_id
 ingest_profiles = IngestProfiles( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # list of account IDs to check
-acc_ids = []
+acc_ids:list = []
 
 # if list is empty try to get it from xls or config JSON
 if not acc_ids:
@@ -40,7 +40,7 @@ if not acc_ids:
 
 	# otherwise just use the options from the config file
 	elif opts:
-		acc_ids = opts.get('target_account_ids')
+		acc_ids = opts.get('target_account_ids', [])
 
 if acc_ids:
 	print('account_id, display_name, name')

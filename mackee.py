@@ -21,23 +21,24 @@ from brightcove.utils import videos_from_file
 mac_logger = logging.getLogger()
 
 # disable certificate warnings
-requests.urllib3.disable_warnings()
+requests.urllib3.disable_warnings() #type: ignore
 
 #===========================================
 # returns a DI instance
 #===========================================
 @static_vars(di=None)
-def get_di(oauth:OAuth=None, profile:str=None, priority:str='normal') -> DynamicIngest:
+def get_di(oauth:OAuth=None, profile:str='', priority:str='normal') -> DynamicIngest:
 	"""Returns an existing DynamicIngest instance. Creates one if information is provided.
 
 	Args:
 		oauth (OAuth, optional): OAuth instance to use. Defaults to None.
-		profile (str, optional): Ingest profile ID. Defaults to None.
+		profile (str, optional): Ingest profile ID. Defaults to ''.
 		priority (str, optional): Priority queue. Defaults to 'normal'.
 
 	Returns:
 		DynamicIngest: DynamicIngest instance. None if none was created yet.
 	"""
+
 	if not get_di.di and oauth:
 		get_di.di = DynamicIngest(oauth=oauth, ingest_profile=profile, priority_queue=priority)
 		mac_logger.info('Obtained DI instance')
@@ -45,7 +46,7 @@ def get_di(oauth:OAuth=None, profile:str=None, priority:str='normal') -> Dynamic
 	return get_di.di
 
 @static_vars(cms=None)
-def get_cms(oauth:OAuth=None, query:str=None) -> CMS:
+def get_cms(oauth:OAuth=None, query:str='') -> CMS:
 	"""Returns an existing CMS instance. Creates one if information is provided.
 
 	Args:
@@ -62,7 +63,7 @@ def get_cms(oauth:OAuth=None, query:str=None) -> CMS:
 	return get_cms.cms
 
 @static_vars(oauth=None)
-def get_oauth(account_id:str=None, client_id:str=None, client_secret:str=None) -> OAuth:
+def get_oauth(account_id:str='', client_id:str='', client_secret:str='') -> OAuth:
 	if not get_oauth.oauth:
 		get_oauth.oauth = OAuth(account_id, client_id, client_secret)
 		mac_logger.info('Obtained OAuth instance')
@@ -108,6 +109,7 @@ def process_account(work_queue:Queue, account_id:str, cms_obj:CMS) -> None:
 		cms_obj (CMS): CMS class instance
 		account_id (str): Video Cloud account ID
 	"""
+
 	# ok, let's process all videos
 	# get number of videos in account
 	num_videos = cms_obj.GetVideoCount(account_id=account_id)
@@ -122,19 +124,18 @@ def process_account(work_queue:Queue, account_id:str, cms_obj:CMS) -> None:
 	page_size = 50
 	retries = 10
 
-	while(current_offset < num_videos):
+	while current_offset < num_videos:
 
-		response = None
-		status = 0
 		try:
 			response = cms_obj.GetVideos(account_id=account_id, page_size=page_size, page_offset=current_offset)
 			status = response.status_code
 		except:
+			response = None # type: ignore
 			status = -1
 
 		# good result
 		if status in [200,202]:
-			json_data = response.json()
+			json_data = response.json() # type: ignore
 			# make sure we actually got some data
 			if len(json_data) > 0:
 				# let's put all videos in a queue
@@ -181,6 +182,7 @@ def process_single_video_id(account_id:str, video_id:str, cms_obj:CMS, process_c
 	Returns:
 		bool: True if there was no error, False otherwise
 	"""
+
 	response = None
 	try:
 		response = cms_obj.GetVideo(account_id=account_id, video_id=video_id)
@@ -198,7 +200,7 @@ def process_single_video_id(account_id:str, video_id:str, cms_obj:CMS, process_c
 		if response is None:
 			code = 'exception'
 		else:
-			code = response.status_code
+			code = str(response.status_code)
 		eprint(f'Error getting information for video ID {video_id} ({code}).')
 		return False
 
@@ -211,7 +213,7 @@ class Worker(Thread):
 	class WorkerData:
 		queue: Queue
 		account_id: str
-		callback: callable
+		callback: Callable
 		cms_instance: CMS
 
 	def __init__(self, q, cms_obj, account_id, process_callback, *args, **kwargs):
@@ -289,7 +291,7 @@ def process_input(account_info_file:str=None, process_callback:Callable[[Dict[An
 	if get_args().x:
 		video_list = videos_from_file(get_args().x)
 	else:
-		video_list = opts.get('video_ids')
+		video_list = opts.get('video_ids', [])
 
 	if video_list and video_list[0] != 'all':
 		num_videos = len(video_list)

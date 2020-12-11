@@ -6,10 +6,11 @@ import sqlite3
 import datetime
 import hashlib
 import threading
-import requests # pip3 install requests
-import boto3 # pip3 install boto3
-import dropbox # pip3 install dropbox
-import boxsdk as box
+import requests
+import boto3
+import dropbox # type: ignore
+import boxsdk as box # type: ignore
+from typing import Callable, Tuple, Union, Optional, Dict, Any
 from pathlib import Path
 from brightcove.CMS import CMS
 from brightcove.OAuth import OAuth
@@ -22,9 +23,8 @@ from brightcove.utils import load_account_info
 # allowed success response codes
 success_responses = [200,201,202,203,204]
 
-# globals for API stuff
-cms = None
-di = None
+cms:CMS
+di:DynamicIngest
 
 class IngestHistory:
 	def __init__(self, db_name):
@@ -178,7 +178,7 @@ def is_video(filename):
 #===========================================
 def main(db_history:IngestHistory):
 	# disable certificate warnings
-	requests.urllib3.disable_warnings()
+	requests.urllib3.disable_warnings() # type: ignore
 
 	# init the argument parsing
 	parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -286,7 +286,7 @@ def main(db_history:IngestHistory):
 	if s3_bucket_name:
 		# Let's use Amazon S3
 		try:
-			boto3.Session(profile_name=s3_profile_name)
+			boto3.Session(profile_name=s3_profile_name) # type: ignore
 		except:
 			print(f'Error: no AWS credentials found for profile "{s3_profile_name}"')
 		else:

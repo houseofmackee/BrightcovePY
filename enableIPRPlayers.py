@@ -31,7 +31,7 @@ for account in account_list:
 	print(f'Processing players in account ID {account}:')
 
 	# get the items in the list of players
-	player_list = pms.GetListOfPlayers(account_id=account).json()['items']
+	player_list = pms.GetListOfPlayers(account_id=account).json().get('items', [])
 
 	# patch every player in the account using the above JSON body
 	for player in player_list:

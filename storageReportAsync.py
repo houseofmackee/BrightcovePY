@@ -95,13 +95,13 @@ def get_rendition_sizes(video: dict) -> dict:
 def find_storage_size(video: dict) -> None:
 	global videos_processed
 
-	row = [ video.get('id'), video.get('delivery_type') ]
+	row = [ str(video.get('id')), str(video.get('delivery_type')) ]
 
 	shared = video.get('sharing')
 	if shared and shared.get('by_external_acct'):
-		row.extend( [0 for _ in range(len(row_list[0])-len(row))] )
+		row.extend( ['0' for _ in range(len(row_list[0])-len(row))] )
 	else:
-		row.append( get_master_storage(video) )
+		row.append( str(get_master_storage(video)) )
 		sizes = get_rendition_sizes(video)
 		row.extend( [sizes["hls_size"], sizes["mp4_size"], sizes["audio_size"], sizes["flv_size"]] )
 
@@ -126,7 +126,10 @@ if __name__ == '__main__':
 	show_progress(videos_processed)
 
 	#write list to file
-	list_to_csv(row_list, get_args().o)
+	try:
+		list_to_csv(row_list, get_args().o)
+	except Exception as e:
+		eprint(f'\n{e}')
 
 	elapsed = time.perf_counter() - s
-	eprint(f"\n{__file__} executed in {TimeString.from_seconds(elapsed)}.")
+	eprint(f"\n{__file__} executed in {TimeString.from_seconds(int(elapsed))}.")

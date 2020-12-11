@@ -3,24 +3,17 @@ import sys
 import argparse
 import pandas
 import time
+from typing import Callable, Tuple, Union, Optional, Dict, Any
 from brightcove.CMS import CMS
 from brightcove.OAuth import OAuth
 from brightcove.utils import load_account_info, normalize_id
-
-cms = None
-
-# account/API credentials (can be None to use user defaults)
-account_id = None
-client_id = None
-client_secret = None
 
 # names of the columns in the xls file
 video_id_col = "video_id"
 ref_id_col =  "reference_id"
 
 # function to check if a video ID is valid and then update it
-def update_video(video_id, update_data):
-	global cms
+def update_video(cms:CMS, video_id:str, update_data:Union[str, dict]) -> None:
 	video_id = normalize_id(video_id)
 	if video_id:
 		response = cms.UpdateVideo(video_id=video_id, json_body=update_data).status_code
@@ -32,7 +25,7 @@ def update_video(video_id, update_data):
 				sys.stderr.flush()
 				time.sleep(1)
 			# let's call ourself again, shall we?
-			update_video(video_id=video_id, update_data=update_data)
+			update_video(cms=cms, video_id=video_id, update_data=update_data)
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -44,8 +37,13 @@ parser.add_argument('--validate', action='store_true', default=False, help='Vali
 # parse the args
 args = parser.parse_args()
 
+# account/API credentials (can be None to use user defaults)
+account_id = ''
+client_id = ''
+client_secret = ''
+
 # get account info from config file if not hardcoded
-if None in [account_id, client_id, client_secret]:
+if '' in [account_id, client_id, client_secret]:
 	try:
 		account_id, client_id, client_secret, _ = load_account_info(args.config)
 	except Exception as e:
@@ -56,11 +54,11 @@ if None in [account_id, client_id, client_secret]:
 account_id = args.account or account_id
 
 # create a CMS API instance
-cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
+cms = CMS( oauth=OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # if we have an xls let's get going
 if args.xls:
-	data = pandas.read_excel(args.xls)
+	data = pandas.read_excel(args.xls) # type: ignore
 
 	# check if all ref IDs are unique
 	num_rows = len(data)
@@ -92,12 +90,10 @@ if args.xls:
 		sys.exit(2)
 
 	for row in range(0, len(data) ):
-		video_id = int(video_data[row])
+		video_id = str(video_data[row])
 		ref_id = str(ref_data[row])
-
-		json_body = ('{ "reference_id":"' + ref_id + '" }')
-
-		update_video(video_id=video_id, update_data=json_body)
+		json_body = { "reference_id": ref_id }
+		update_video(cms=cms, video_id=video_id, update_data=json_body)
 
 # no pandas, so just use the options from the config file
 else:

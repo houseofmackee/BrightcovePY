@@ -1,7 +1,7 @@
 {
     "_meta": {
         "hash": {
-            "sha256": "5bd652b588911ce864681a53e7cb704ea9635bd9fec2f0f8ec018419a83351e8"
+            "sha256": "13b756d5d119c71ebb8c63074bc672400df2eb5a9f4ca5641b0d4b6634b4ada7"
         },
         "pipfile-spec": 6,
         "requires": {
@@ -32,18 +32,18 @@
         },
         "boto3": {
             "hashes": [
-                "sha256:21a482c23cedf06eab040a5ca770d7b9e9d00c5bcd1dd3ef22c1fdce4371de27",
-                "sha256:2f4b4e3a78efd3979a26f2c4c9e3e7ce359c3244450f8eb9628138e4f0d523b3"
+                "sha256:0aba88dadc9ae5d103c6d8de7ac88df67b3b0198da82346993b0c52b7477a5dd",
+                "sha256:aaccf2aec5c2dc15c81b3105d00db930fe40fd84114a5cebc33f9948ec0258ee"
             ],
             "index": "pypi",
-            "version": "==1.16.32"
+            "version": "==1.16.33"
         },
         "botocore": {
             "hashes": [
-                "sha256:6631e4bb9f2fc1bede6e6ee538255e0af944d4f71e1530c2e39d03b64baa0bf1",
-                "sha256:74c7351b99d8f4bf9d8d9c66da8766c861254865d4c049e7107c39ac6b65e4bf"
+                "sha256:0f5f316ae1b089da3efac85524345954fa54e6e682ed60579f8c95c0d5aee3c4",
+                "sha256:3c741da411e117a08545877790e01b94c804cfb85b1981e40378cb8594af5406"
             ],
-            "version": "==1.19.32"
+            "version": "==1.19.33"
         },
         "boxsdk": {
             "hashes": [
@@ -277,6 +277,14 @@
             ],
             "version": "==0.2.0"
         },
+        "boto3-stubs": {
+            "hashes": [
+                "sha256:0da88fd2332d3c6996ab5441aa9708f411a3263ac08b282d69ea27eb5f24fed9",
+                "sha256:7bfcfc48630143eeb9ed6ca0fd4f840a71bf9ccb2462f29e1147024a15eaf37c"
+            ],
+            "index": "pypi",
+            "version": "==1.16.33.0"
+        },
         "colorama": {
             "hashes": [
                 "sha256:5941b2b48a20143d2267e95b1c2a7603ce057ee39fd88e7329b0c292aa16869b",
@@ -284,6 +292,14 @@
             ],
             "markers": "sys_platform == 'win32' and sys_platform == 'win32' and sys_platform == 'win32'",
             "version": "==0.4.4"
+        },
+        "data-science-types": {
+            "hashes": [
+                "sha256:03a65f5d4ee788c2c3d79b587093cf30b2d299611bff8cce32845eda6018fb2b",
+                "sha256:d893fa4eab51b017a24c9aa08b665c97b86c51903c7aa0ae16fb71faa699bb98"
+            ],
+            "index": "pypi",
+            "version": "==0.2.21"
         },
         "decorator": {
             "hashes": [

@@ -3,13 +3,38 @@ import functools
 import csv
 import json
 from threading import Lock
-from pandas import read_csv, read_excel
 from os.path import expanduser, getsize
 from typing import Callable, Tuple, Union, Optional, Dict, Any
+from pandas import read_csv, read_excel #type: ignore
+
+class TimeString():
+	"""
+	Class to provide a simple timestamp string from an int
+	"""
+
+	return_format = '{hh:02}:{mm:02}:{ss:02}'
+
+	@classmethod
+	def from_milliseconds(cls, millis:Union[int, float], fmt:str=None) -> str:
+		seconds = int(int(millis)/1000)
+		hours, seconds = divmod(seconds, 60*60)
+		minutes, seconds = divmod(seconds, 60)
+		fmt = fmt if fmt else cls.return_format
+		return fmt.format(hh=hours, mm=minutes, ss=seconds)
+
+	@classmethod
+	def from_seconds(cls, seconds:Union[int, float], fmt:str=None) -> str:
+		return cls.from_milliseconds(seconds*1000, fmt)
+
+	@classmethod
+	def from_minutes(cls, minutes:Union[int, float], fmt:str=None) -> str:
+		return cls.from_seconds(minutes*60, fmt)
+
 class ProgressPercentage(object):
 	"""
 	Class to provide a simple progress indicator
 	"""
+
 	def __init__(self, filename=None, target=0):
 		self._filename = filename
 		self._size = int(getsize(filename)) if filename else target
@@ -23,7 +48,6 @@ class ProgressPercentage(object):
 			percentage = (self._seen_so_far / self._size) * 100
 			sys.stdout.write("\rProgress: %s / %s  (%.2f%%)%s\r" % (self._seen_so_far, self._size, percentage, add_info))
 			sys.stdout.flush()
-
 
 # function to print to stderr
 def eprint(*args, **kwargs):
@@ -51,6 +75,7 @@ def aspect_ratio(width: int , height: int) -> Tuple[int, int]:
 	Returns:
 		Tuple[int, int]: ratio of width to height
 	"""
+
 	def gcd(a, b):
 		return a if b == 0 else gcd(b, a % b)
 
@@ -64,32 +89,10 @@ def aspect_ratio(width: int , height: int) -> Tuple[int, int]:
 
 	return int(width / divisor), int(height / divisor)
 
-
-class TimeString():
-
-	return_format = '{hh:02}:{mm:02}:{ss:02}'
-
-	@classmethod
-	def from_milliseconds(cls, millis:int, fmt:str=None) -> str:
-		seconds = int(int(millis)/1000)
-		hours, seconds = divmod(seconds, 60*60)
-		minutes, seconds = divmod(seconds, 60)
-		fmt = fmt if fmt else cls.return_format
-		return fmt.format(hh=hours, mm=minutes, ss=seconds)
-
-	@classmethod
-	def from_seconds(cls, seconds:int, fmt:str=None) -> str:
-		return cls.from_milliseconds(int(seconds)*1000, fmt)
-
-	@classmethod
-	def from_minutes(cls, minutes:int, fmt:str=None) -> str:
-		return cls.from_seconds(int(minutes)*60, fmt)
-
-
 #===========================================
 # write list of rows to CSV file
 #===========================================
-def list_to_csv(row_list:list, filename:str) -> bool:
+def list_to_csv(row_list:list, filename:Optional[str]):
 	"""Function to write a list of rows to a CSV file
 
 	Args:
@@ -99,19 +102,16 @@ def list_to_csv(row_list:list, filename:str) -> bool:
 	Returns:
 		bool: True if CSV successfully created, False otherwise
 	"""
-	result = False
+
 	try:
 		with open(filename if filename else 'report.csv', 'w', newline='', encoding='utf-8') as file:
 			try:
 				writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
 				writer.writerows(row_list)
-				result = True
 			except Exception as e:
-				eprint(f'\nError writing CSV data to file: {e}')
+				raise Exception(f'Error writing CSV data to file: {e}')
 	except Exception as e:
-		eprint(f'\nError creating outputfile: {e}')
-
-	return result
+		raise Exception(f'Error creating outputfile: {e}')
 
 #===========================================
 # read account info from JSON file
@@ -125,6 +125,7 @@ def load_account_info(input_filename:Optional[str]=None) -> Tuple[str, str, str,
 	Returns:
 		Tuple[str, str, str, dict]: account ID, client ID, client secret and the full deserialized JSON object
 	"""
+
 	# if no config file was passed we use the default
 	input_filename = input_filename or expanduser('~')+'/account_info.json'
 
@@ -153,7 +154,7 @@ def load_account_info(input_filename:Optional[str]=None) -> Tuple[str, str, str,
 # converts asset ID to string
 #===========================================
 @functools.lru_cache()
-def normalize_id(asset_id:Union[str, int, float]) -> Optional[str]:
+def normalize_id(asset_id:Union[str, int, float]) -> str:
 	"""Converts an asset ID to string
 
 	Args:
@@ -162,6 +163,7 @@ def normalize_id(asset_id:Union[str, int, float]) -> Optional[str]:
 	Returns:
 		str: string representation of the ID, None if invalid ID
 	"""
+
 	_, response = wrangle_id(asset_id)
 	return response
 
@@ -178,6 +180,7 @@ def is_valid_id(asset_id:Union[str, int, float]) -> bool:
 	Returns:
 		bool: True if it's a valid ID, False otherwise
 	"""
+
 	response, _ = wrangle_id(asset_id)
 	return response
 
@@ -186,7 +189,7 @@ def is_valid_id(asset_id:Union[str, int, float]) -> bool:
 # to string
 #===========================================
 @functools.lru_cache()
-def wrangle_id(asset_id:Union[str, int, float]) -> Tuple[bool, Optional[str]]:
+def wrangle_id(asset_id:Union[str, int, float]) -> Tuple[bool, str]:
 	"""Converts ID to string and checks if it's a valid ID
 
 	Args:
@@ -195,8 +198,9 @@ def wrangle_id(asset_id:Union[str, int, float]) -> Tuple[bool, Optional[str]]:
 	Returns:
 		(bool, str): True and string representation of ID if valid, False and None otherwise
 	"""
+
 	is_valid = False
-	work_id = None
+	work_id = ''
 
 	# is it an int?
 	if isinstance(asset_id, int) and asset_id > 0:
@@ -241,6 +245,7 @@ def is_json(myjson:str) -> bool:
 	Returns:
 		bool: true if myjson is valid JSON, false otherwise
 	"""
+
 	try:
 		_ = json.loads(myjson)
 	except:
@@ -262,6 +267,7 @@ def videos_from_file(filename:str, column_name:str='video_id', validate:bool=Tru
 	Returns:
 		List: List object with the video IDs from the file. None if there was an error processing the file.
 	"""
+
 	video_list = []
 	try:
 		if filename.lower().endswith('csv'):

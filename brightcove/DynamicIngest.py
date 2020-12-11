@@ -1,78 +1,99 @@
+"""
+Implements wrapper class and methods to work with Brightcove's Dynamic Ingest API.
+
+See: https://apis.support.brightcove.com/dynamic-ingest/references/reference.html
+"""
+
 from .Base import Base
 from .OAuth import OAuth
 from .IngestProfiles import IngestProfiles
 from .CMS import CMS
-
+import functools
 import boto3
+from typing import Callable, Optional
 
 class DynamicIngest(Base):
 
 	base_url = 'https://ingest.api.brightcove.com/v1/accounts/{account_id}'
 
-	def __init__(self, oauth, ingest_profile=None, priority_queue='normal'):
+	def __init__(self, oauth:OAuth, ingest_profile:str='', priority_queue:str='normal') -> None:
 		super().__init__(oauth=oauth)
-		self.__previous_profile = None
-		self.__previous_account = None
 		self.__ip = IngestProfiles(oauth)
 		self.SetIngestProfile(ingest_profile)
 		self.SetPriorityQueue(priority_queue)
 
-	def SetIngestProfile(self, profile_id):
-		if self.__ip.ProfileExists(account_id=self.oauth.account_id, profile_id=profile_id):
-			self.__ingest_profile = profile_id
+	@functools.lru_cache()
+	def _verify_profile(self, account_id:str, profile_id:str) -> str:
+		profile = self.__ingest_profile
+		if profile_id and self.__ip.ProfileExists(account_id=account_id, profile_id=profile_id):
+			profile = profile_id
+		elif self.__ingest_profile=='':
+			r = self.__ip.GetDefaultProfile(account_id=account_id)
+			if r.status_code in DynamicIngest.success_responses:
+				profile = r.json().get('default_profile_id')
+		return profile
+
+	def SetIngestProfile(self, profile_id:str) -> str:
+		if profile_id and self.__ip.ProfileExists(account_id=self.oauth.account_id, profile_id=profile_id):
+			self.__ingest_profile:str = profile_id
 		else:
-			self.__ingest_profile = None
+			self.__ingest_profile = ''
 		return self.__ingest_profile
 
-	def SetPriorityQueue(self, priority_queue):
+	def SetPriorityQueue(self, priority_queue:str) -> str:
 		if priority_queue in ['low', 'normal', 'high']:
-			self.__priority_queue = priority_queue
+			self.__priority_queue:str = priority_queue
 		else:
 			self.__priority_queue = 'normal'
 		return self.__priority_queue
 
-	def RetranscodeVideo(self, video_id, profile_id=None, capture_images=True, priority_queue=None, account_id=None):
+	def RetranscodeVideo(self, video_id:str, profile_id:str='', capture_images:bool=True, priority_queue:str='', callbacks:Optional[list]=None, account_id:str=''):
 		account_id = account_id or self.oauth.account_id
 
-		profile = self.__ingest_profile
-		if profile_id and self.__ip.ProfileExists(account_id=account_id, profile_id=profile_id):
-			profile = profile_id
-		elif self.__ingest_profile is None:
-			r = self.__ip.GetDefaultProfile(account_id=account_id)
-			if r.status_code in DynamicIngest.success_responses:
-				profile = r.json().get('default_profile_id')
-
+		profile = self._verify_profile(account_id=account_id, profile_id=profile_id)
 		priority = priority_queue or self.__priority_queue
 
-		headers = self.oauth.get_headers()
-		url = (DynamicIngest.base_url+'/videos/{video_id}/ingest-requests').format(account_id=account_id, video_id=video_id)
-		data =	'{ "profile":"'+profile+'", "master": { "use_archived_master": true }, "priority": "'+priority+'","capture-images": '+str(capture_images).lower()+' }'
-		return self.session.post(url=url, headers=headers, data=data)
+		url = f'{DynamicIngest.base_url}/videos/{video_id}/ingest-requests'.format(account_id=account_id)
+		data = {
+			"profile": profile,
+			"master": {
+				"use_archived_master": True
+			},
+			"priority": priority,
+			"capture-images": capture_images,
+			"callbacks": callbacks
+		}
+		if not callbacks:
+			data.pop('callbacks', None)
 
-	def SubmitIngest(self, video_id, source_url, capture_images=True, priority_queue=None, callbacks=None, ingest_profile=None, account_id=None):
+		return self.session.post(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(data))
+
+	def SubmitIngest(self, video_id:str, source_url:str, capture_images:bool=True, priority_queue:str='', callbacks:Optional[list]=None, profile_id:str='', account_id:str=''):
 		account_id = account_id or self.oauth.account_id
-		headers = self.oauth.get_headers()
-		profile = self.__ingest_profile
-
-		if ingest_profile and self.__ip.ProfileExists(account_id=account_id, profile_id=ingest_profile):
-			profile = ingest_profile
-		elif self.__ingest_profile is None:
-			r = self.__ip.GetDefaultProfile(account_id=account_id)
-			if r.status_code in DynamicIngest.success_responses:
-				profile = r.json().get('default_profile_id')
+		profile = self._verify_profile(account_id=account_id, profile_id=profile_id)
 
 		priority = priority_queue or self.__priority_queue
+		url = f'{DynamicIngest.base_url}/videos/{video_id}/ingest-requests'.format(account_id=account_id)
+		data = {
+			"profile": profile,
+			"master": {
+				"url": source_url
+			},
+			"priority": priority,
+			"capture-images": capture_images,
+			"callbacks": callbacks
+		}
+		if not callbacks:
+			data.pop('callbacks', None)
 
-		url = (DynamicIngest.base_url+'/videos/{video_id}/ingest-requests').format(account_id=account_id, video_id=video_id)
-		data =	'{ "profile":"'+profile+'", "master": { "url": "'+source_url+'" }, "priority": "'+priority+'", "capture-images": '+str(capture_images).lower()+' }'
-		return self.session.post(url=url, headers=headers, data=data)
+		return self.session.post(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(data))
 
 	# get_upload_location_and_upload_file first performs an authenticated request to discover
 	# a Brightcove-provided location to securely upload a source file
-	def UploadFile(self, video_id, file_name, callback=None, account_id=None):
+	def UploadFile(self, video_id:str, file_name:str, callback:Optional[Callable]=None, account_id:str=''):
 		account_id = account_id or self.oauth.account_id
 		# Perform an authorized request to obtain a file upload location
-		url = (CMS.base_url+'/videos/{video_id}/upload-urls/{sourcefilename}').format(account_id=account_id, video_id=video_id, sourcefilename=file_name)
+		url = f'{CMS.base_url}/videos/{video_id}/upload-urls/{file_name}'.format(account_id=account_id)
 		r = self.session.get(url=url, headers=self.oauth.get_headers())
 		if r.status_code in DynamicIngest.success_responses:
 			upload_urls_response = r.json()
