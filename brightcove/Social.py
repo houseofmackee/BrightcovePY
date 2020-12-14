@@ -1,7 +1,7 @@
+from typing import Optional
+from requests.models import Response
 from .Base import Base
 from .OAuth import OAuth
-from requests.models import Response
-from typing import Optional
 
 class Social(Base):
 

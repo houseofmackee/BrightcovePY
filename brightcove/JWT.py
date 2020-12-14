@@ -41,7 +41,7 @@ class JWT(Base):
 			account_id (str, optional): Account ID to get key from. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{JWT.base_url}/keys'.format(account_id=account_id or self.oauth.account_id)
@@ -56,7 +56,7 @@ class JWT(Base):
 			account_id (str, optional): Account ID to get key from. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{JWT.base_url}/keys'.format(account_id=account_id or self.oauth.account_id)
@@ -67,11 +67,11 @@ class JWT(Base):
 		Get the details for a public key in account.
 
 		Args:
-			key_id (str): public key ID.
+			key_id (str): Public key ID.
 			account_id (str, optional): Account ID to get key from. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{JWT.base_url}/keys/{key_id}'.format(account_id=account_id or self.oauth.account_id)
@@ -82,11 +82,11 @@ class JWT(Base):
 		Delete a public key in account.
 
 		Args:
-			key_id (str): public key ID.
+			key_id (str): Public key ID.
 			account_id (str, optional): Account ID to get key from. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{JWT.base_url}/keys/{key_id}'.format(account_id=account_id or self.oauth.account_id)

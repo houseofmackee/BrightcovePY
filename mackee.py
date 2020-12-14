@@ -4,11 +4,15 @@ import sys
 import argparse
 import time
 import logging
+from os import path
+from json import JSONDecodeError
 from queue import Queue, Empty
-from typing import Callable, Tuple, Union, Optional, Dict, Any
-from threading import Thread, Lock
-from requests.adapters import Response
+from typing import Callable, Dict, Any
+from threading import Thread
 from dataclasses import dataclass
+from xlrd import XLRDError
+from pandas.errors import ParserError
+from requests.exceptions import RequestException
 import requests # pip3 install requests
 
 from brightcove.OAuth import OAuth
@@ -97,12 +101,30 @@ def list_videos(video:dict) -> None:
 
 	print(f'{video.get("id")}, {video.get("name")}')
 
+def get_accounts(account_parameter:str) -> list:
+	"""
+	Function to generate a list of account IDs from a CSV/XLS file, a comma separated command line option or just the default account ID from the config.
+
+	Returns:
+		list: [description]
+	"""
+
+	if path.isfile(account_parameter):
+		return videos_from_file(filename=account_parameter, column_name='account_id')
+
+	if ',' in account_parameter:
+		return [x.strip() for x in account_parameter.split(sep=',')]
+
+	return [account_parameter]
+
+
 #===========================================
 # function to fill queue with all videos
 # from a Video Cloud account
 #===========================================
 def process_account(work_queue:Queue, account_id:str, cms_obj:CMS) -> None:
-	"""Function to fill a Queue with a list of all video IDs in an account
+	"""
+	Function to fill a Queue with a list of all video IDs in an account.
 
 	Args:
 		work_queue (Queue): Queue to be filled with IDs
@@ -112,13 +134,17 @@ def process_account(work_queue:Queue, account_id:str, cms_obj:CMS) -> None:
 
 	# ok, let's process all videos
 	# get number of videos in account
-	num_videos = cms_obj.GetVideoCount(account_id=account_id)
-
-	if num_videos <= 0:
-		eprint(f'No videos found in account ID {account_id}''s library.')
+	try:
+		num_videos = cms_obj.GetVideoCount(account_id=account_id)
+	except RequestException as e:
+		eprint(f'Error getting number of videos in account ID {account_id} -> {e}')
 		return
 
-	eprint(f'Found {num_videos} videos in library. Processing them now.')
+	if num_videos <= 0:
+		eprint(f'No videos found in account ID {account_id}\'s library.')
+		return
+
+	eprint(f'Found {num_videos} videos in account ID {account_id}\'s library. Processing them now.')
 
 	current_offset = 0
 	page_size = 50
@@ -129,7 +155,7 @@ def process_account(work_queue:Queue, account_id:str, cms_obj:CMS) -> None:
 		try:
 			response = cms_obj.GetVideos(account_id=account_id, page_size=page_size, page_offset=current_offset)
 			status = response.status_code
-		except:
+		except RequestException:
 			response = None # type: ignore
 			status = -1
 
@@ -144,7 +170,13 @@ def process_account(work_queue:Queue, account_id:str, cms_obj:CMS) -> None:
 				# reset retries count and increase page offset
 				retries = 10
 				current_offset += page_size
-				num_videos = cms_obj.GetVideoCount(account_id=account_id)
+				try:
+					current_num_videos = cms_obj.GetVideoCount(account_id=account_id)
+				except RequestException as e:
+					eprint(f'Warning: error refreshing number of videos in account ID {account_id} -> {e}')
+				else:
+					if current_num_videos > num_videos:
+						num_videos = current_num_videos
 
 			# looks like we got an empty response (it can happen)
 			else:
@@ -186,7 +218,7 @@ def process_single_video_id(account_id:str, video_id:str, cms_obj:CMS, process_c
 	response = None
 	try:
 		response = cms_obj.GetVideo(account_id=account_id, video_id=video_id)
-	except:
+	except RequestException:
 		response = None
 
 	if response and response.status_code in CMS.success_responses:
@@ -253,15 +285,19 @@ def process_input(account_info_file:str=None, process_callback:Callable[[Dict[An
 	# get the account info and credentials
 	try:
 		account_id, client_id, client_secret, opts = load_account_info(account_info_file)
-	except Exception as e:
+	except (OSError, JSONDecodeError) as e:
 		print(e)
 		return False
 
 	if None in [account_id, client_id, client_secret, opts]:
 		return False
 
-	# update account ID if passed in command line
-	account_id = get_args().t or account_id
+	# update account ID if passed in command line or if a list is in the JSON options
+	# command line options override JSON config account ID(s)
+	account_id_list = opts.get('account_ids')
+	if not account_id_list or get_args().t:
+		account_id_list = get_accounts(get_args().t or account_id)
+	account_id = account_id_list[0]
 
 	get_oauth(account_id, client_id, client_secret)
 	get_cms(oauth=get_oauth(), query=get_args().q)
@@ -288,8 +324,13 @@ def process_input(account_info_file:str=None, process_callback:Callable[[Dict[An
 	# check if we should process a given list of videos
 	#=========================================================
 	#=========================================================
+	video_list = []
 	if get_args().x:
-		video_list = videos_from_file(get_args().x)
+		try:
+			video_list = videos_from_file(get_args().x)
+		except (OSError, KeyError, JSONDecodeError, XLRDError, ParserError) as e:
+			print(e)
+			sys.exit(2)
 	else:
 		video_list = opts.get('video_ids', [])
 
@@ -319,24 +360,26 @@ def process_input(account_info_file:str=None, process_callback:Callable[[Dict[An
 	#=========================================================
 	#=========================================================
 
-	# start thread to fill the queue
-	account_page_thread = Thread(target=process_account, args=[work_queue, account_id, get_cms()])
-	account_page_thread.start()
+	for account_id in account_id_list:
+		get_oauth().account_id = account_id
+		# start thread to fill the queue
+		account_page_thread = Thread(target=process_account, args=[work_queue, account_id, get_cms()])
+		account_page_thread.start()
 
-	# starting worker threads on queue processing
-	for _ in range(max_threads):
-		Worker(q=work_queue, cms_obj=get_cms(), account_id=account_id, process_callback=process_callback).start()
+		# starting worker threads on queue processing
+		for _ in range(max_threads):
+			Worker(q=work_queue, cms_obj=get_cms(), account_id=account_id, process_callback=process_callback).start()
 
-	# first wait for the queue filling thread to finish
-	account_page_thread.join()
+		# first wait for the queue filling thread to finish
+		account_page_thread.join()
 
-	# once the queue is filled with videos add exit signals
-	for _ in range(max_threads):
-		work_queue.put_nowait("EXIT")
+		# once the queue is filled with videos add exit signals
+		for _ in range(max_threads):
+			work_queue.put_nowait("EXIT")
 
-	# now we wait until the queue has been processed
-	if not work_queue.empty():
-		work_queue.join()
+		# now we wait until the queue has been processed
+		if not work_queue.empty():
+			work_queue.join()
 
 	return True
 

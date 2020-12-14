@@ -36,7 +36,7 @@ class XDR(Base):
 			account_id (str, optional): Video Cloud account ID. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		limit = 1000 if (limit>10000 or limit<1) else limit
@@ -53,7 +53,7 @@ class XDR(Base):
 			account_id (str, optional): Video Cloud account ID. Defaults to ''
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{XDR.base_url}/playheads/{viewer_id}/{video_id}'.format(account_id=account_id or self.oauth.account_id)

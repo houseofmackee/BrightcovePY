@@ -1,11 +1,11 @@
 """
-Implements wrapper class and methods to work with Brightcove's XDR API.
+Implements wrapper class and methods to work with Brightcove's Player Management API.
 
-See: https://apis.support.brightcove.com/xdr/references/reference.html
+See: https://apis.support.brightcove.com/player-management/
 """
 
-from requests.models import Response
 from typing import Union
+from requests.models import Response
 from .Base import Base
 from .OAuth import OAuth
 

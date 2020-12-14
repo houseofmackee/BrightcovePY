@@ -12,6 +12,7 @@ dropbox = "*"
 boxsdk = "*"
 pandas = "*"
 clint = "*"
+xlrd = "*"
 
 [dev-packages]
 pytest = "*"

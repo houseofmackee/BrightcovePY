@@ -58,18 +58,21 @@ account_id = args.account or account_id
 cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # list to contain all video IDs
-videoList = None
+video_list = []
 
 # if we have an xls/csv
 if args.xls:
-	videoList = videos_from_file(args.xls, column_name=args.column if args.column else 'video_id')
+	try:
+		video_list = videos_from_file(args.xls, column_name=args.column if args.column else 'video_id')
+	except Exception as e:
+		print(e)
 
 # otherwise just use the options from the config file
 elif opts:
-	videoList = opts.get('video_ids')
+	video_list = opts.get('video_ids')
 
 # either no list or "all" was found -> bail
-if not videoList or videoList[0] == 'all':
+if not video_list or video_list[0] == 'all':
 	eprint('Error: invalid or missing list of videos in config file.')
 
 # delete 'em
@@ -77,7 +80,7 @@ else:
 	videos_processed = 0
 	row_list = [['operation','video_id','result']]
 	with concurrent.futures.ThreadPoolExecutor(max_workers = 5) as executor:
-		future_to_video_id = {executor.submit(delete_video, video_id): video_id for video_id in videoList}
+		future_to_video_id = {executor.submit(delete_video, video_id): video_id for video_id in video_list}
 		for future in concurrent.futures.as_completed(future_to_video_id):
 			video = future_to_video_id[future]
 			try:

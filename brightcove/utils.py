@@ -1,3 +1,7 @@
+"""
+Module implementing utility and helper classes and functions for common tasks.
+"""
+
 import sys
 import functools
 import csv
@@ -6,10 +10,12 @@ from threading import Lock
 from os.path import expanduser, getsize
 from typing import Callable, Tuple, Union, Optional, Dict, Any
 from pandas import read_csv, read_excel #type: ignore
+from pandas.errors import ParserError
+from xlrd import XLRDError
 
 class TimeString():
 	"""
-	Class to provide a simple timestamp string from an int
+	Class to provide a simple timestamp string from an int.
 	"""
 
 	return_format = '{hh:02}:{mm:02}:{ss:02}'
@@ -30,24 +36,37 @@ class TimeString():
 	def from_minutes(cls, minutes:Union[int, float], fmt:str=None) -> str:
 		return cls.from_seconds(minutes*60, fmt)
 
-class ProgressPercentage(object):
+class SimpleProgressDisplay(object):
 	"""
-	Class to provide a simple progress indicator
+	Class to provide a simple progress indicator.
 	"""
 
-	def __init__(self, filename=None, target=0):
+	def __init__(self, filename:str='', target:int=0, steps:int=1, add_info:str=''):
 		self._filename = filename
 		self._size = int(getsize(filename)) if filename else target
-		self._seen_so_far = 0
+		self._counter = 0
 		self._lock = Lock()
+		self._steps = steps
+		self._add_info = add_info
 
-	def __call__(self, bytes_amount, add_info=''):
+	def __call__(self, increase:int=1, force_display:bool=False):
 		# To simplify, assume this is hooked up to a single filename
 		with self._lock:
-			self._seen_so_far += bytes_amount
-			percentage = (self._seen_so_far / self._size) * 100
-			sys.stdout.write("\rProgress: %s / %s  (%.2f%%)%s\r" % (self._seen_so_far, self._size, percentage, add_info))
-			sys.stdout.flush()
+			if not force_display:
+				self._counter += increase
+			if force_display or self._counter%self._steps==0:
+				if self._size:
+					percentage = (self._counter / self._size) * 100
+					sys.stdout.write("\rProgress: %s / %s  (%.2f%%) %s\r" % (self._counter, self._size, percentage, self._add_info))
+				else:
+					sys.stderr.write('\rProgress: %s %s\r' % (self._counter, self._add_info) )
+				sys.stdout.flush()
+
+def empty_function(*args, **kwargs):
+	"""
+	It's an empty function.
+	"""
+	pass
 
 # function to print to stderr
 def eprint(*args, **kwargs):
@@ -61,12 +80,33 @@ def static_vars(**kwargs):
 		return func
 	return decorate
 
-#===========================================
-# calculates the aspect ratio of w and h
-#===========================================
+
+def is_shared_by(video:dict) -> bool:
+	"""
+	Checks if a video was shared by an account.
+	Returns True if it was shared by another account, False otherwise.
+	"""
+
+	shared = video.get('sharing')
+	if shared and shared.get('by_external_acct'):
+		return True
+	return False
+
+def is_shared_to(video:dict) -> bool:
+	"""
+	Checks if a video was shared to an account.
+	Returns True if it was shared to another account, False otherwise.
+	"""
+
+	shared = video.get('sharing')
+	if shared and shared.get('to_external_acct'):
+		return True
+	return False
+
 @functools.lru_cache()
 def aspect_ratio(width: int , height: int) -> Tuple[int, int]:
-	"""Function to calculate aspect ratio for two given values
+	"""
+	Function to calculate aspect ratio for two given values.
 
 	Args:
 		width (int): width value
@@ -89,41 +129,36 @@ def aspect_ratio(width: int , height: int) -> Tuple[int, int]:
 
 	return int(width / divisor), int(height / divisor)
 
-#===========================================
-# write list of rows to CSV file
-#===========================================
 def list_to_csv(row_list:list, filename:Optional[str]):
-	"""Function to write a list of rows to a CSV file
+	"""
+	Function to write a list of rows to a CSV file.
 
 	Args:
-		row_list (list): A list of lists (the rows)
+		row_list (list): A list of lists (the rows).
 		filename (str, optional): Name for the CSV file. Defaults to 'report.csv'.
 
 	Returns:
-		bool: True if CSV successfully created, False otherwise
+		bool: True if CSV successfully created, False otherwise.
 	"""
 
 	try:
 		with open(filename if filename else 'report.csv', 'w', newline='', encoding='utf-8') as file:
-			try:
-				writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
-				writer.writerows(row_list)
-			except Exception as e:
-				raise Exception(f'Error writing CSV data to file: {e}')
-	except Exception as e:
-		raise Exception(f'Error creating outputfile: {e}')
+			writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
+			writer.writerows(row_list)
+	except OSError as e:
+		raise OSError(f'Error creating outputfile: {e}') from e
+	except csv.Error as e:
+		raise csv.Error(f'Error writing CSV data to file: {e}') from e
 
-#===========================================
-# read account info from JSON file
-#===========================================
 def load_account_info(input_filename:Optional[str]=None) -> Tuple[str, str, str, dict]:
-	"""Function to get information about account from config JSON file
+	"""
+	Function to get information about account from config JSON file.
 
 	Args:
 		input_filename (str, optional): path and name of the config JSON file. Defaults to None and will use "account_info.json" from the user's home folder.
 
 	Returns:
-		Tuple[str, str, str, dict]: account ID, client ID, client secret and the full deserialized JSON object
+		Tuple[str, str, str, dict]: account ID, client ID, client secret and the full deserialized JSON object.
 	"""
 
 	# if no config file was passed we use the default
@@ -133,8 +168,10 @@ def load_account_info(input_filename:Optional[str]=None) -> Tuple[str, str, str,
 	try:
 		with open(input_filename, 'r') as file:
 			obj = json.loads( file.read() )
-	except:
-		raise Exception(f'Error: unable to open {input_filename}')
+	except OSError as e:
+		raise Exception(f'Error: unable to open {input_filename} -> {e}') from e
+	except json.JSONDecodeError as e:
+		raise Exception(f'Error: error parsing {input_filename} -> {e}') from e
 
 	# grab data, make it strings and strip it
 	account = obj.get('account_id')
@@ -149,54 +186,46 @@ def load_account_info(input_filename:Optional[str]=None) -> Tuple[str, str, str,
 	# return the object just in case it's needed later
 	return account, client, secret, obj
 
-
-#===========================================
-# converts asset ID to string
-#===========================================
 @functools.lru_cache()
 def normalize_id(asset_id:Union[str, int, float]) -> str:
-	"""Converts an asset ID to string
+	"""
+	Converts an asset ID to string.
 
 	Args:
-		asset_id (any): video or playlist ID
+		asset_id (any): video or playlist ID to normalize.
 
 	Returns:
-		str: string representation of the ID, None if invalid ID
+		str: string representation of the ID, None if invalid ID.
 	"""
 
 	_, response = wrangle_id(asset_id)
 	return response
 
-#===========================================
-# test if a value is a valid ID
-#===========================================
 @functools.lru_cache()
 def is_valid_id(asset_id:Union[str, int, float]) -> bool:
-	"""Function to check if a given value is a valid asset ID
+	"""
+	Function to check if a given value is a valid asset ID.
 
 	Args:
-		asset_id (any): value to check
+		asset_id (any): value to check.
 
 	Returns:
-		bool: True if it's a valid ID, False otherwise
+		bool: True if it's a valid ID, False otherwise.
 	"""
 
 	response, _ = wrangle_id(asset_id)
 	return response
 
-#===========================================
-# test if a value is a valid ID and convert
-# to string
-#===========================================
 @functools.lru_cache()
 def wrangle_id(asset_id:Union[str, int, float]) -> Tuple[bool, str]:
-	"""Converts ID to string and checks if it's a valid ID
+	"""
+	Converts ID to string and checks if it's a valid ID.
 
 	Args:
-		asset_id (any): asset ID (video or playlist)
+		asset_id (any): asset ID (video or playlist).
 
 	Returns:
-		(bool, str): True and string representation of ID if valid, False and None otherwise
+		(bool, str): True and string representation of ID if valid, False and None otherwise.
 	"""
 
 	is_valid = False
@@ -232,18 +261,16 @@ def wrangle_id(asset_id:Union[str, int, float]) -> Tuple[bool, str]:
 
 	return is_valid, work_id
 
-#===========================================
-# test if a value is a valid JSON string
-#===========================================
 @functools.lru_cache()
 def is_json(myjson:str) -> bool:
-	"""Function to check if a string is valid JSON
+	"""
+	Function to check if a string is valid JSON.
 
 	Args:
-		myjson (str): string to check
+		myjson (str): string to check.
 
 	Returns:
-		bool: true if myjson is valid JSON, false otherwise
+		bool: true if myjson is valid JSON, false otherwise.
 	"""
 
 	try:
@@ -252,14 +279,12 @@ def is_json(myjson:str) -> bool:
 		return False
 	return True
 
-#===========================================
-# read list of video IDs from XLS/CSV
-#===========================================
 def videos_from_file(filename:str, column_name:str='video_id', validate:bool=True, unique:bool=True) -> list:
-	"""Function to read a list of video IDs from an xls/csv file
+	"""
+	Function to read a list of video IDs from an xls/csv file.
 
 	Args:
-		filename (str): path and name of file to read from
+		filename (str): path and name of file to read from.
 		column_name (str, optional): name of the column in the file which contains the IDs. Defaults to 'video_id'.
 		validate (bool, optional): check IDs to make sure they are valid IDs. Defaults to True.
 		unique (bool, optional): makes sure all video IDs in the list are unique. Defaults to True.
@@ -274,16 +299,20 @@ def videos_from_file(filename:str, column_name:str='video_id', validate:bool=Tru
 			data = read_csv(filename)
 		else:
 			data = read_excel(filename)
-	except Exception as e:
-		eprint(f'Error while trying to read {filename}: {e}')
+	except XLRDError as e:
+		raise XLRDError(f'Error while trying to parse XLS file {filename}: {e}') from e
+	except ParserError as e:
+		raise ParserError(f'Error while trying to parse CSV file {filename}: {e}') from e
+	except OSError as e:
+		raise OSError(f'Error while trying to read {filename} -> {e}') from e
 	else:
 		try:
 			if validate:
 				video_list = [video_id for video_id in data[column_name] if is_valid_id(video_id)]
 			else:
 				video_list = list(data[column_name])
-		except KeyError:
-			eprint(f'Error while trying to read {filename} -> missing key: "{column_name}"')
+		except KeyError as e:
+			raise KeyError(f'Error while trying to parse {filename} -> missing key: "{column_name}"') from e
 
 	# make list unique
 	if video_list and unique:

@@ -4,6 +4,8 @@ from .Base import Base
 from .OAuth import OAuth
 
 class CMS(Base):
+
+	# base URL for API calls
 	base_url = 'https://cms.api.brightcove.com/v1/accounts/{account_id}'
 
 	def __init__(self, oauth:OAuth, query:str=''):

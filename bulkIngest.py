@@ -298,7 +298,7 @@ def main(db_history:IngestHistory):
 				eprint(f'Error accessing bucket "{s3_bucket_name}" for profile "{s3_profile_name}".\n')
 			else:
 				for filename in filenames:
-					s3_url = f'https://{s3_bucket_name}.s3.amazonaws.com/'+((filename).replace(' ', '%20'))
+					s3_url = f's3://{s3_bucket_name}.s3.amazonaws.com/'+((filename).replace(' ', '%20'))
 					hash_value = db_history.CreateHash(account_id, s3_url)
 					ingest_record = db_history.FindHashInIngestHistory(hash_value)
 					if ingest_record is None or args.dbignore:

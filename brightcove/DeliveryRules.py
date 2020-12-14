@@ -4,8 +4,8 @@ Implements wrapper class and methods to work with Brightcove's Delivery Rules AP
 See: https://apis.support.brightcove.com/delivery-rules/index.html
 """
 
-from requests.models import Response
 from typing import Union
+from requests.models import Response
 from .Base import Base
 from .OAuth import OAuth
 
@@ -13,44 +13,54 @@ class DeliveryRules(Base):
 	"""
 	Class to wrap the Brightcove Delivery Rules API calls. Inherits from Base.
 
+	Attributes:
+	-----------
+	base_url (str)
+		Base URL for API calls.
+
 	Methods:
 	--------
-	DeliveryRulesEnabled(self, account_id:str='') -> bool:
+	DeliveryRulesEnabled(self, account_id:str='') -> bool
 		Returns Tue if an account is enabled for Delivery Rules. False otherwise.
 
-	GetDeliveryRules(self, account_id:str='') -> Response:
+	GetDeliveryRules(self, account_id:str='') -> Response
 		Get the Delivery Rules defined for an account.
 
-	GetConditions(self, account_id:str='') -> Response:
+	GetConditions(self, account_id:str='') -> Response
 		Get the Conditions for an account.
 
-	UpdateConditions(self, json_body:Union[str, dict], account_id:str='') -> Response:
+	UpdateConditions(self, json_body:Union[str, dict], account_id:str='') -> Response
 		Update Conditions for an account.
 
-	GetActions(self, account_id:str='') -> Response:
+	GetActions(self, account_id:str='') -> Response
 		Get the Actions for an account.
 
-	GetSpecificAction(self, action_id:str, account_id:str='') -> Response:
+	GetSpecificAction(self, action_id:str, account_id:str='') -> Response
 		Get a specific Action based on its ID.
 
-	CreateAction(self, json_body:Union[str, dict], account_id:str='') -> Response:
+	CreateAction(self, json_body:Union[str, dict], account_id:str='') -> Response
 		Create an Action for a specific account.
 
-	UpdateAction(self, action_id:str, json_body:Union[str, dict], account_id:str='') -> Response:
+	UpdateAction(self, action_id:str, json_body:Union[str, dict], account_id:str='') -> Response
 		Update an Action for a specific account.
 
-	DeleteAction(self, action_id:str, account_id:str='') -> Response:
+	DeleteAction(self, action_id:str, account_id:str='') -> Response
 		Delete an Action for an account.
 	"""
 
 	base_url = 'https://delivery-rules.api.brightcove.com/accounts/{account_id}'
 
 	def __init__(self, oauth:OAuth) -> None:
+		"""
+		Args:
+			oauth (OAuth): OAuth instance to use for the API calls.
+		"""
+
 		super().__init__(oauth=oauth)
 
 	def DeliveryRulesEnabled(self, account_id:str='') -> bool:
 		"""
-		Check if an account has Delivery Rules enabled
+		Check if an account has Delivery Rules enabled.
 
 		Args:
 			account_id (str, optional): Account ID to check. Defaults to ''.
@@ -69,7 +79,7 @@ class DeliveryRules(Base):
 			account_id (str, optional): Account ID to get the Delivery Rules from. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = (DeliveryRules.base_url).format(account_id=account_id or self.oauth.account_id)
@@ -83,7 +93,7 @@ class DeliveryRules(Base):
 			account_id (str, optional): Account ID to get the Conditions from. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{DeliveryRules.base_url}/conditions'.format(account_id=account_id or self.oauth.account_id)
@@ -98,7 +108,7 @@ class DeliveryRules(Base):
 			account_id (str, optional): Account ID where to update the Conditions. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{DeliveryRules.base_url}/conditions'.format(account_id=account_id or self.oauth.account_id)
@@ -112,7 +122,7 @@ class DeliveryRules(Base):
 			account_id (str, optional): Account ID from where to get the Actions from. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{DeliveryRules.base_url}/actions'.format(account_id=account_id or self.oauth.account_id)
@@ -127,7 +137,7 @@ class DeliveryRules(Base):
 			account_id (str, optional): Account ID from where to get the Action from. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{DeliveryRules.base_url}/actions/{action_id}'.format(account_id=account_id or self.oauth.account_id)
@@ -142,7 +152,7 @@ class DeliveryRules(Base):
 			account_id (str, optional): Account ID where to create the Action. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{DeliveryRules.base_url}/actions'.format(account_id=account_id or self.oauth.account_id)
@@ -158,7 +168,7 @@ class DeliveryRules(Base):
 			account_id (str, optional): Account ID where to update the Action. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{DeliveryRules.base_url}/actions/{action_id}'.format(account_id=account_id or self.oauth.account_id)
@@ -173,7 +183,7 @@ class DeliveryRules(Base):
 			account_id (str, optional): Account ID where to delete the Action. Defaults to ''.
 
 		Returns:
-			Response: API resonse as requests Response object.
+			Response: API response as requests Response object.
 		"""
 
 		url = f'{DeliveryRules.base_url}/actions/{action_id}'.format(account_id=account_id or self.oauth.account_id)

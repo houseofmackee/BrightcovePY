@@ -1,55 +1,159 @@
+"""
+Implements wrapper class and methods to work with Brightcove's Delivery System API.
+
+See: https://apis.support.brightcove.com/delivery-system/overview-delivery-system-api.html
+"""
+
+from os.path import basename
+from requests_toolbelt import MultipartEncoder # type: ignore
+from requests.models import Response
 from .Base import Base
 from .OAuth import OAuth
-from os.path import basename
-from requests_toolbelt import MultipartEncoder # type: ignore # pip3 install requests_toolbelt
 
 class DeliverySystem(Base):
+	"""
+	Class to wrap the Brightcove Delivery System API calls. Inherits from Base.
+
+	Attributes:
+	-----------
+	base_url (str)
+		Base URL for API calls.
+
+	Methods:
+	--------
+	ListRepositories(self, account_id:str='') -> Response
+		This will get the the details for all repositories in an account.
+
+	GetRepositoryDetails(self, repo_name:str, account_id:str='') -> Response
+		This will retrieve the details for a repository.
+
+	DeleteRepository(self, repo_name:str, account_id:str='') -> Response
+		Delete a repository.
+
+	CreateRepository(self, repo_name:str, account_id:str='') -> Response
+		Create a repository.
+
+	ListFilesInRepository(self, repo_name:str, account_id:str='') -> Response
+		Lists all the files in a repository.
+
+	DeleteFileInRepository(self, repo_name:str, file_name:str, account_id:str='') -> Response
+		Delete a file in a repository.
+
+	AddFileToRepository(self, repo_name:str, file_name:str, account_id:str='') -> Response
+		Upload a file to a repository.
+	"""
 
 	base_url = 'https://repos.api.brightcove.com/v1/accounts/{account_id}/repos'
 
 	def __init__(self, oauth:OAuth):
+		"""
+		Args:
+			oauth (OAuth): OAuth instance to use for the API calls
+		"""
+
 		super().__init__(oauth=oauth)
 
-	def ListRepositories(self, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		headers = self.oauth.get_headers()
-		url = (DeliverySystem.base_url).format(account_id=account_id)
-		return self.session.get(url=url, headers=headers)
+	def ListRepositories(self, account_id:str='') -> Response:
+		"""
+		This will get the the details for all repositories in an account.
 
-	def GetRepositoryDetails(self, repo_name, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		headers = self.oauth.get_headers()
-		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id,reponame=repo_name)
-		return self.session.get(url, headers=headers)
+		Args:
+			account_id (str, optional): Brightcove Video Cloud account ID. Defaults to ''.
 
-	def DeleteRepository(self, repo_name, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		headers = self.oauth.get_headers()
-		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id,reponame=repo_name)
-		return self.session.delete(url, headers=headers)
+		Returns:
+			Response: API response as requests Response object.
+		"""
 
-	def CreateRepository(self, repo_name, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		headers = self.oauth.get_headers()
-		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id,reponame=repo_name)
-		return self.session.put(url, headers=headers)
+		url = (DeliverySystem.base_url).format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.get_headers())
 
-	def ListFilesInRepository(self, repo_name, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		headers = self.oauth.get_headers()
-		url = (DeliverySystem.base_url+'/{reponame}/files').format(account_id=account_id,reponame=repo_name)
-		return self.session.get(url, headers=headers)
+	def GetRepositoryDetails(self, repo_name:str, account_id:str='') -> Response:
+		"""
+		This will retrieve the details for a repository.
 
-	def DeleteFileInRepository(self, repo_name, file_name, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		headers = self.oauth.get_headers()
-		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(account_id=account_id,reponame=repo_name,filename=file_name)
-		return self.session.delete(url, headers=headers)
+		Args:
+			repo_name (str): name of the repository.
+			account_id (str, optional): Brightcove Video Cloud account ID. Defaults to ''.
 
-	def AddFileToRepository(self, repo_name, file_name, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(account_id=account_id,reponame=repo_name,filename=basename(file_name))
-		m = MultipartEncoder( fields={'contents': (None, open(file_name, 'rb'), 'text/plain')} )
+		Returns:
+			Response: API response as requests Response object.
+		"""
+
+		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id or self.oauth.account_id, reponame=repo_name)
+		return self.session.get(url, headers=self.oauth.get_headers())
+
+	def DeleteRepository(self, repo_name:str, account_id:str='') -> Response:
+		"""
+		Delete a repository.
+
+		Args:
+			repo_name (str): name of the repository.
+			account_id (str, optional): Brightcove Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+
+		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id or self.oauth.account_id,reponame=repo_name)
+		return self.session.delete(url, headers=self.oauth.get_headers())
+
+	def CreateRepository(self, repo_name:str, account_id:str='') -> Response:
+		"""
+		Create a repository.
+
+		Args:
+			repo_name (str): name of the repository.
+			account_id (str, optional): Brightcove Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id or self.oauth.account_id,reponame=repo_name)
+		return self.session.put(url, headers=self.oauth.get_headers())
+
+	def ListFilesInRepository(self, repo_name:str, account_id:str='') -> Response:
+		"""
+		Lists all the files in a repository.
+
+		Args:
+			repo_name (str): name of the repository.
+			account_id (str, optional): Brightcove Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = (DeliverySystem.base_url+'/{reponame}/files').format(account_id=account_id or self.oauth.account_id,reponame=repo_name)
+		return self.session.get(url, headers=self.oauth.get_headers())
+
+	def DeleteFileInRepository(self, repo_name:str, file_name:str, account_id:str='') -> Response:
+		"""
+		Delete a file in a repository.
+
+		Args:
+			repo_name (str): name of the repository.
+			file_name (str): name of the file to delete.
+			account_id (str, optional): Brightcove Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(account_id=account_id or self.oauth.account_id,reponame=repo_name,filename=file_name)
+		return self.session.delete(url, headers=self.oauth.get_headers())
+
+	def AddFileToRepository(self, repo_name:str, file_name:str, account_id:str='') -> Response:
+		"""
+		Upload a file to a repository.
+
+		Args:
+			repo_name (str): name of the repository.
+			file_name (str): name of the file to upload.
+			account_id (str, optional): Brightcove Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(account_id=account_id or self.oauth.account_id,reponame=repo_name,filename=basename(file_name))
+		upload_data = MultipartEncoder( fields={'contents': (None, open(file_name, 'rb'), 'text/plain')} )
 		access_token = self.oauth.get_access_token()
-		headers = { 'Authorization': 'Bearer ' + access_token, 'Content-Type': m.content_type }
-		return self.session.put(url, headers=headers, data=m)
+		headers = { 'Authorization': f'Bearer {access_token}', 'Content-Type': upload_data.content_type }
+		return self.session.put(url, headers=headers, data=upload_data)

@@ -1,3 +1,5 @@
+from typing import Union
+from requests.models import Response
 from .Base import Base
 from .OAuth import OAuth
 
@@ -8,40 +10,38 @@ class IngestProfiles(Base):
 	def __init__(self, oauth:OAuth) -> None:
 		super().__init__(oauth=oauth)
 		# cache for ProfileExists
-		self.__previousProfile = None
-		self.__previousAccount = None
+		self.__previousProfile = ''
+		self.__previousAccount = ''
 		# cache for GetDefaultProfile
-		self.__defaultProfileResponse = None
-		self.__defaultProfileAccount = None
+		self.__defaultProfileResponse = ''
+		self.__defaultProfileAccount = ''
 		# cache for GetProfile
-		self.__getProfileAccount = None
-		self.__getProfileID = None
-		self.__getProfileResponse = None
+		self.__getProfileAccount = ''
+		self.__getProfileID = ''
+		self.__getProfileResponse = ''
 
-	def GetDefaultProfile(self, account_id=None):
+	def GetDefaultProfile(self, account_id:str='') -> Response:
 		account_id = account_id or self.oauth.account_id
 		# if it's not the same as before then find it and cache it
 		if account_id != self.__defaultProfileAccount:
-			headers = self.oauth.get_headers()
 			url = (IngestProfiles.base_url+'/configuration').format(account_id=account_id)
-			self.__defaultProfileResponse = self.session.get(url=url, headers=headers)
+			self.__defaultProfileResponse = self.session.get(url=url, headers=self.oauth.get_headers())
 			self.__defaultProfileAccount = account_id
 		# return cached response
 		return self.__defaultProfileResponse
 
-	def GetIngestProfile(self, profile_id, account_id=None):
+	def GetIngestProfile(self, profile_id:str, account_id:str='') -> Response:
 		account_id = account_id or self.oauth.account_id
 		# if it's not the same as before then find it and cache it
 		if self.__getProfileAccount != account_id or self.__getProfileID != profile_id:
-			headers = self.oauth.get_headers()
 			url = (IngestProfiles.base_url+'/profiles/{profileid}').format(account_id=account_id, profileid=profile_id)
 			self.__getProfileID = profile_id
 			self.__getProfileAccount = account_id
-			self.__getProfileResponse = self.session.get(url=url, headers=headers)
+			self.__getProfileResponse = self.session.get(url=url, headers=self.oauth.get_headers())
 		# return cached response
 		return self.__getProfileResponse
 
-	def ProfileExists(self, profile_id, account_id=None):
+	def ProfileExists(self, profile_id:str, account_id:str='') -> Response:
 		account_id = account_id or self.oauth.account_id
 
 		# check if it's a valid cached account/profile combo
@@ -56,46 +56,30 @@ class IngestProfiles(Base):
 
 		return False
 
-	def UpdateDefaultProfile(self, json_body, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		self.__previousProfile = None
-		self.__previousAccount = None
-		headers = self.oauth.get_headers()
-		url = (IngestProfiles.base_url+'/configuration').format(account_id=account_id)
-		return self.session.put(url=url, headers=headers, data=self._json_to_string(json_body))
+	def UpdateDefaultProfile(self, json_body:Union[str, dict], account_id:str='') -> Response:
+		self.__previousProfile = self.__previousAccount = ''
+		url = (IngestProfiles.base_url+'/configuration').format(account_id=account_id or self.oauth.account_id)
+		return self.session.put(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
 
-	def SetDefaultProfile(self, json_body, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		self.__previousProfile = None
-		self.__previousAccount = None
-		headers = self.oauth.get_headers()
-		url = (IngestProfiles.base_url+'/configuration').format(account_id=account_id)
-		return self.session.post(url=url, headers=headers, data=self._json_to_string(json_body))
+	def SetDefaultProfile(self, json_body:Union[str, dict], account_id:str='') -> Response:
+		self.__previousProfile = self.__previousAccount = ''
+		url = (IngestProfiles.base_url+'/configuration').format(account_id=account_id or self.oauth.account_id)
+		return self.session.post(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
 
-	def DeleteIngestProfile(self, profile_id, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		self.__previousProfile = None
-		self.__previousAccount = None
-		headers = self.oauth.get_headers()
-		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(account_id=account_id,profileid=profile_id)
-		return self.session.delete(url=url, headers=headers)
+	def DeleteIngestProfile(self, profile_id:str, account_id:str='') -> Response:
+		self.__previousProfile = self.__previousAccount = ''
+		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(account_id=account_id or self.oauth.account_id, profileid=profile_id)
+		return self.session.delete(url=url, headers=self.oauth.get_headers())
 
-	def UpdateIngestProfile(self, profile_id, json_body, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		self.__previousProfile = None
-		self.__previousAccount = None
-		headers = self.oauth.get_headers()
-		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(account_id=account_id,profileid=profile_id)
-		return self.session.put(url=url, headers=headers, data=self._json_to_string(json_body))
+	def UpdateIngestProfile(self, profile_id:str, json_body:Union[str, dict], account_id:str='') -> Response:
+		self.__previousProfile = self.__previousAccount = ''
+		url = (IngestProfiles.base_url+'/profiles/{profileid}').format(account_id=account_id or self.oauth.account_id, profileid=profile_id)
+		return self.session.put(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
 
-	def CreateIngestProfile(self, json_body, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		headers = self.oauth.get_headers()
-		url = (IngestProfiles.base_url+'/profiles').format(account_id=account_id)
-		return self.session.post(url=url, headers=headers, data=self._json_to_string(json_body))
+	def CreateIngestProfile(self, json_body:Union[str, dict], account_id:str='') -> Response:
+		url = (IngestProfiles.base_url+'/profiles').format(account_id=account_id or self.oauth.account_id)
+		return self.session.post(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
 
-	def GetAllIngestProfiles(self, account_id=None):
-		account_id = account_id or self.oauth.account_id
-		headers = self.oauth.get_headers()
-		url = (IngestProfiles.base_url+'/profiles').format(account_id=account_id)
-		return self.session.get(url=url, headers=headers)
+	def GetAllIngestProfiles(self, account_id:str='') -> Response:
+		url = (IngestProfiles.base_url+'/profiles').format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.get_headers())

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
 import argparse
+from json import JSONDecodeError
 from brightcove.OAuth import OAuth
 from brightcove.IngestProfiles import IngestProfiles
 from brightcove.utils import load_account_info
@@ -19,7 +20,7 @@ args = parser.parse_args()
 # get account info from config file
 try:
 	account_id, client_id, client_secret, opts = load_account_info(args.config)
-except Exception as e:
+except (OSError, JSONDecodeError) as e:
 	print(e)
 	sys.exit(2)
 
@@ -36,7 +37,11 @@ acc_ids:list = []
 if not acc_ids:
 	# if we have an xls/csv
 	if args.xls:
-		acc_ids = videos_from_file(args.xls, column_name='account_id')
+		try:
+			acc_ids = videos_from_file(args.xls, column_name='account_id')
+		except Exception as e:
+			print(e)
+			sys.exit(2)
 
 	# otherwise just use the options from the config file
 	elif opts:
