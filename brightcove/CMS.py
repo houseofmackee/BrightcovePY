@@ -1,4 +1,4 @@
-from typing import Callable, Tuple, Union, Optional, Dict, Any
+from typing import Union, Optional
 from requests.models import Response
 from .Base import Base
 from .OAuth import OAuth

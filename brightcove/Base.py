@@ -1,5 +1,5 @@
 from abc import ABC, abstractproperty
-from typing import Callable, Tuple, Union, Optional, Dict, Any
+from typing import Union, Optional
 import json
 import requests
 from .OAuth import OAuth
