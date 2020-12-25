@@ -21,6 +21,7 @@ ipdb = "*"
 pylint = "*"
 boto3-stubs = "*"
 data-science-types = "*"
+pyflakes = "*"
 
 [requires]
 python_version = "3.8"
