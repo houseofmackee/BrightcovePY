@@ -5,9 +5,10 @@ from time import perf_counter
 from mackee import main, get_args
 from brightcove.utils import list_to_csv, eprint
 from brightcove.utils import SimpleProgressDisplay, TimeString
+from brightcove.utils import get_value, default_split
 
 # list of information to be added to the report (edit as needed)
-row_list = [ ('account_id','id', 'name', 'state', 'reference_id', 'created_at', 'tags') ]
+row_list = [ ('account_id','id', 'name', 'state', 'reference_id', 'created_at', 'tags', 'created_by.type') ]
 
 # some globals
 data_lock = Lock()
@@ -21,7 +22,7 @@ def create_report(video: dict) -> None:
 		video (dict): video object obtained from the CMS API.
 	"""
 
-	row = (video.get(field) for field in row_list[0])
+	row = (get_value(video, *default_split(field, separator=':', maxsplits=1)) for field in row_list[0])
 	with data_lock:
 		row_list.append(row)
 		show_progress()
