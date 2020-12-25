@@ -8,7 +8,7 @@ import csv
 import json
 from threading import Lock
 from os.path import expanduser, getsize
-from typing import Callable, Tuple, Union, Optional, Dict, Any
+from typing import Tuple, Union, Optional
 from pandas import read_csv, read_excel #type: ignore
 from pandas.errors import ParserError
 from xlrd import XLRDError
@@ -319,3 +319,103 @@ def videos_from_file(filename:str, column_name:str='video_id', validate:bool=Tru
 		video_list = list(set(video_list))
 
 	return video_list
+
+def fetch_value(data: dict, key: str, default: str=''):
+	"""
+	Function to get a value from a key in a dict.
+	Supports getting values from an array index.
+
+	Args:
+		data (dict): A dictionary.
+		key (str): Key for which to get the value. Can have an index attached as [index].
+		default (str, optional): Default return value if key is empty or doesn't exist. Defaults to ''.
+
+	Returns:
+		[type]: Value of key in dictionary if it exists, otherwise the provided default value.
+
+	Raises:
+	IndexError: If provided index is out of bounds.
+	"""
+
+	value = default
+
+	if data and key:
+		try:
+			start = key.index('[')
+			end = key.index(']')
+			value = data.get(key[:start], default)[int(key[start+1:end])]
+		except ValueError:
+			value = data.get(key, default)
+		except IndexError as e:
+			raise IndexError(f'index error using key -> {key}') from e
+		except AttributeError:
+			pass
+
+	return value if value else default
+
+def get_value(video: dict, field: str, default: str=''):
+	"""
+	Function to get the value from a field in a CMS API response.
+	Walks down recursively multiple levels of fields separated to
+	be able to support custom fields and similar.
+
+	Args:
+		video (dict): Video object from CMS API.
+		field (str): Name of the field to get the value from.
+		default (str, optional): Default return value. Defaults to ''.
+
+	Returns:
+		str: Content of the field or default value if field doesn't exist.
+	"""
+
+	if '.' in field:
+		primary, secondary = field.split('.', 1)
+		try:
+			value = fetch_value(video, primary, default)
+			if value == default or value is None:
+				return default
+			else:
+				return get_value(value, secondary, default)
+		except TypeError:
+			return f'ERROR: primary/secondary field error -> {primary}/{secondary}'
+		except IndexError as e:
+			return f'ERROR: {e}'
+	else:
+		try:
+			return fetch_value(video, field, default)
+		except IndexError as e:
+			return f'ERROR: {e}'
+
+def default_split(data: str, separator: str=' ', default: str='', maxsplits: int=0) -> list:
+	"""
+	Function to split a string and return a list of substring.
+	If more splits requested than there are substrings then a
+	default value is used.
+
+	Args:
+		data (str): String to be split.
+		separator (str, optional): Seperator. Defaults to ' '.
+		default (str, optional): Default split value. Defaults to ''.
+		maxsplits (int, optional): Number of splits to perform. Defaults to 0 which means all.
+
+	Returns:
+		list: List of split values.
+	"""
+
+	result = []
+
+	if maxsplits <= 0:
+		maxsplits = data.count(separator)
+
+	while maxsplits:
+		try:
+			value, data = data.split(separator, 1)
+		except ValueError:
+			value = data
+			data = default
+
+		result.append(value)
+		maxsplits -= 1
+
+	result.append(data)
+	return result
