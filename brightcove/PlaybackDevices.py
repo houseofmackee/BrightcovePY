@@ -36,7 +36,7 @@ class PlaybackDevices(Base):
 	# base URL for all API calls
 	base_url ='https://playback-auth.api.brightcove.com/v1/accounts/{account_id}'
 
-	def __init__(self, oauth:OAuth) -> None:
+	def __init__(self, oauth: OAuth) -> None:
 		"""
 		Args:
 			oauth (OAuth): OAuth instance to use for the API calls.
