@@ -21,28 +21,29 @@ class DeliverySystem(Base):
 
 	Methods:
 	--------
-	ListRepositories(self, account_id:str='') -> Response
+	ListRepositories(self, account_id: str='') -> Response
 		This will get the the details for all repositories in an account.
 
-	GetRepositoryDetails(self, repo_name:str, account_id:str='') -> Response
+	GetRepositoryDetails(self, repo_name: str, account_id: str='') -> Response
 		This will retrieve the details for a repository.
 
-	DeleteRepository(self, repo_name:str, account_id:str='') -> Response
+	DeleteRepository(self, repo_name: str, account_id: str='') -> Response
 		Delete a repository.
 
-	CreateRepository(self, repo_name:str, account_id:str='') -> Response
+	CreateRepository(self, repo_name: str, account_id: str='') -> Response
 		Create a repository.
 
-	ListFilesInRepository(self, repo_name:str, account_id:str='') -> Response
+	ListFilesInRepository(self, repo_name: str, account_id: str='') -> Response
 		Lists all the files in a repository.
 
-	DeleteFileInRepository(self, repo_name:str, file_name:str, account_id:str='') -> Response
+	DeleteFileInRepository(self, repo_name: str, file_name: str, account_id: str='') -> Response
 		Delete a file in a repository.
 
-	AddFileToRepository(self, repo_name:str, file_name:str, account_id:str='') -> Response
+	AddFileToRepository(self, repo_name: str, file_name: str, account_id: str='') -> Response
 		Upload a file to a repository.
 	"""
 
+	# base URL for all API calls
 	base_url = 'https://repos.api.brightcove.com/v1/accounts/{account_id}/repos'
 
 	def __init__(self, oauth:OAuth):
@@ -53,7 +54,7 @@ class DeliverySystem(Base):
 
 		super().__init__(oauth=oauth)
 
-	def ListRepositories(self, account_id:str='') -> Response:
+	def ListRepositories(self, account_id: str='') -> Response:
 		"""
 		This will get the the details for all repositories in an account.
 
@@ -64,10 +65,10 @@ class DeliverySystem(Base):
 			Response: API response as requests Response object.
 		"""
 
-		url = (DeliverySystem.base_url).format(account_id=account_id or self.oauth.account_id)
+		url = (self.base_url).format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url=url, headers=self.oauth.get_headers())
 
-	def GetRepositoryDetails(self, repo_name:str, account_id:str='') -> Response:
+	def GetRepositoryDetails(self, repo_name: str, account_id: str='') -> Response:
 		"""
 		This will retrieve the details for a repository.
 
@@ -79,10 +80,10 @@ class DeliverySystem(Base):
 			Response: API response as requests Response object.
 		"""
 
-		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id or self.oauth.account_id, reponame=repo_name)
+		url = f'{self.base_url}/{repo_name}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.get_headers())
 
-	def DeleteRepository(self, repo_name:str, account_id:str='') -> Response:
+	def DeleteRepository(self, repo_name: str, account_id: str='') -> Response:
 		"""
 		Delete a repository.
 
@@ -94,10 +95,10 @@ class DeliverySystem(Base):
 			Response: API response as requests Response object.
 		"""
 
-		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id or self.oauth.account_id,reponame=repo_name)
+		url = f'{self.base_url}/{repo_name}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.delete(url, headers=self.oauth.get_headers())
 
-	def CreateRepository(self, repo_name:str, account_id:str='') -> Response:
+	def CreateRepository(self, repo_name: str, account_id: str='') -> Response:
 		"""
 		Create a repository.
 
@@ -108,10 +109,11 @@ class DeliverySystem(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-		url = (DeliverySystem.base_url+'/{reponame}').format(account_id=account_id or self.oauth.account_id,reponame=repo_name)
+
+		url = f'{self.base_url}/{repo_name}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.put(url, headers=self.oauth.get_headers())
 
-	def ListFilesInRepository(self, repo_name:str, account_id:str='') -> Response:
+	def ListFilesInRepository(self, repo_name: str, account_id: str='') -> Response:
 		"""
 		Lists all the files in a repository.
 
@@ -122,10 +124,11 @@ class DeliverySystem(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-		url = (DeliverySystem.base_url+'/{reponame}/files').format(account_id=account_id or self.oauth.account_id,reponame=repo_name)
+
+		url = f'{self.base_url}/{repo_name}/files'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.get_headers())
 
-	def DeleteFileInRepository(self, repo_name:str, file_name:str, account_id:str='') -> Response:
+	def DeleteFileInRepository(self, repo_name: str, file_name: str, account_id: str='') -> Response:
 		"""
 		Delete a file in a repository.
 
@@ -137,10 +140,11 @@ class DeliverySystem(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(account_id=account_id or self.oauth.account_id,reponame=repo_name,filename=file_name)
+
+		url = f'{self.base_url}/{repo_name}/files/{file_name}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.delete(url, headers=self.oauth.get_headers())
 
-	def AddFileToRepository(self, repo_name:str, file_name:str, account_id:str='') -> Response:
+	def AddFileToRepository(self, repo_name: str, file_name: str, account_id: str='') -> Response:
 		"""
 		Upload a file to a repository.
 
@@ -152,7 +156,8 @@ class DeliverySystem(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-		url = (DeliverySystem.base_url+'/{reponame}/files/{filename}').format(account_id=account_id or self.oauth.account_id,reponame=repo_name,filename=basename(file_name))
+
+		url = f'{self.base_url}/{repo_name}/files/{basename(file_name)}'.format(account_id=account_id or self.oauth.account_id)
 		upload_data = MultipartEncoder( fields={'contents': (None, open(file_name, 'rb'), 'text/plain')} )
 		access_token = self.oauth.get_access_token()
 		headers = { 'Authorization': f'Bearer {access_token}', 'Content-Type': upload_data.content_type }

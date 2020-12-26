@@ -25,29 +25,30 @@ class DynamicIngest(Base):
 
 	Methods:
 	--------
-	_verify_profile(self, account_id:str, profile_id:str) -> str
+	_verify_profile(self, account_id: str, profile_id: str) -> str
 		Checks and verifies that a profile ID exists in an account.
 
-	SetIngestProfile(self, profile_id:str) -> str
+	SetIngestProfile(self, profile_id: str) -> str
 		Sets the ingest profile which should be used as default for this DI instance.
 
-	SetPriorityQueue(self, priority_queue:str) -> str
+	SetPriorityQueue(self, priority_queue: str) -> str
 		Sets the priority queue which should be used as default for this DI instance.
 
-	RetranscodeVideo(self, video_id:str, profile_id:str='', capture_images:bool=True, priority_queue:str='', callbacks:Optional[list]=None, account_id:str='') -> Response
+	RetranscodeVideo(self, video_id: str, profile_id: str='', capture_images: bool=True, priority_queue: str='', callbacks: Optional[list]=None, account_id: str='') -> Response
 		Trigger retranscode for a video using the digital master.
 
-	SubmitIngest(self, video_id:str, source_url:str, capture_images:bool=True, priority_queue:str='', callbacks:Optional[list]=None, profile_id:str='', account_id:str='') -> Response
+	SubmitIngest(self, video_id: str, source_url: str, capture_images: bool=True, priority_queue: str='', callbacks: Optional[list]=None, profile_id: str='', account_id: str='') -> Response
 		Submits an ingest request to the Dynamic Ingest API.
 
-	UploadFile(self, video_id:str, file_name:str, callback:Optional[Callable]=None, account_id:str='') -> dict
+	UploadFile(self, video_id: str, file_name: str, callback: Optional[Callable]=None, account_id: str='') -> dict
 		Upload the contents of a local file to a temporary S3 bucket provided by Brightcove using
 		the boto3 library to perform a multipart upload.
 	"""
 
+	# base URL for all API calls
 	base_url = 'https://ingest.api.brightcove.com/v1/accounts/{account_id}'
 
-	def __init__(self, oauth:OAuth, ingest_profile:str='', priority_queue:str='normal') -> None:
+	def __init__(self, oauth: OAuth, ingest_profile: str='', priority_queue: str='normal') -> None:
 		"""
 		Args:
 			oauth (OAuth): OAuth instance to use for the API calls.
@@ -61,7 +62,7 @@ class DynamicIngest(Base):
 		self.__priority_queue = self.SetPriorityQueue(priority_queue)
 
 	@functools.lru_cache()
-	def _verify_profile(self, account_id:str, profile_id:str) -> str:
+	def _verify_profile(self, account_id: str, profile_id: str) -> str:
 		"""
 		Checks and verifies that a profile ID exists in an account.
 
@@ -82,7 +83,7 @@ class DynamicIngest(Base):
 				profile = response.json().get('default_profile_id')
 		return profile
 
-	def SetIngestProfile(self, profile_id:str) -> str:
+	def SetIngestProfile(self, profile_id: str) -> str:
 		"""
 		Sets the ingest profile which should be used as default for this DI instance.
 
@@ -99,7 +100,7 @@ class DynamicIngest(Base):
 			self.__ingest_profile = ''
 		return self.__ingest_profile
 
-	def SetPriorityQueue(self, priority_queue:str) -> str:
+	def SetPriorityQueue(self, priority_queue: str) -> str:
 		"""
 		Sets the priority queue which should be used as default for this DI instance.
 
@@ -116,7 +117,7 @@ class DynamicIngest(Base):
 			self.__priority_queue = 'normal'
 		return self.__priority_queue
 
-	def RetranscodeVideo(self, video_id:str, profile_id:str='', capture_images:bool=True, priority_queue:str='', callbacks:Optional[list]=None, account_id:str='') -> Response:
+	def RetranscodeVideo(self, video_id: str, profile_id: str='', capture_images: bool=True, priority_queue: str='', callbacks: Optional[list]=None, account_id: str='') -> Response:
 		"""
 		Trigger retranscode for a video using the digital master.
 
@@ -148,7 +149,7 @@ class DynamicIngest(Base):
 
 		return self.session.post(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(data))
 
-	def SubmitIngest(self, video_id:str, source_url:str, capture_images:bool=True, priority_queue:str='', callbacks:Optional[list]=None, profile_id:str='', account_id:str='') -> Response:
+	def SubmitIngest(self, video_id: str, source_url: str, capture_images: bool=True, priority_queue: str='', callbacks: Optional[list]=None, profile_id: str='', account_id: str='') -> Response:
 		"""
 		Submits an ingest request to the Dynamic Ingest API.
 
@@ -181,7 +182,7 @@ class DynamicIngest(Base):
 
 		return self.session.post(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(data))
 
-	def UploadFile(self, video_id:str, file_name:str, callback:Optional[Callable]=None, account_id:str='') -> dict:
+	def UploadFile(self, video_id: str, file_name: str, callback: Optional[Callable]=None, account_id: str='') -> dict:
 		"""
 		Upload the contents of a local file to a temporary S3 bucket provided by Brightcove using
 		the boto3 library to perform a multipart upload.
