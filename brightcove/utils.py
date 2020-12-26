@@ -8,7 +8,7 @@ import csv
 import json
 from threading import Lock
 from os.path import expanduser, getsize
-from typing import Tuple, Union, Optional
+from typing import Tuple, Union
 from pandas import read_csv, read_excel #type: ignore
 from pandas.errors import ParserError
 from xlrd import XLRDError
@@ -21,7 +21,7 @@ class TimeString():
 	return_format = '{hh:02}:{mm:02}:{ss:02}'
 
 	@classmethod
-	def from_milliseconds(cls, millis:Union[int, float], fmt:str=None) -> str:
+	def from_milliseconds(cls, millis: Union[int, float], fmt: str='') -> str:
 		seconds = int(int(millis)/1000)
 		hours, seconds = divmod(seconds, 60*60)
 		minutes, seconds = divmod(seconds, 60)
@@ -29,11 +29,11 @@ class TimeString():
 		return fmt.format(hh=hours, mm=minutes, ss=seconds)
 
 	@classmethod
-	def from_seconds(cls, seconds:Union[int, float], fmt:str=None) -> str:
+	def from_seconds(cls, seconds: Union[int, float], fmt: str='') -> str:
 		return cls.from_milliseconds(seconds*1000, fmt)
 
 	@classmethod
-	def from_minutes(cls, minutes:Union[int, float], fmt:str=None) -> str:
+	def from_minutes(cls, minutes: Union[int, float], fmt: str='') -> str:
 		return cls.from_seconds(minutes*60, fmt)
 
 class SimpleProgressDisplay():
@@ -41,7 +41,7 @@ class SimpleProgressDisplay():
 	Class to provide a simple progress indicator.
 	"""
 
-	def __init__(self, filename:str='', target:int=0, steps:int=1, add_info:str=''):
+	def __init__(self, filename: str='', target: int=0, steps: int=1, add_info: str=''):
 		self._filename = filename
 		self._size = int(getsize(filename)) if filename else target
 		self._counter = 0
@@ -49,8 +49,7 @@ class SimpleProgressDisplay():
 		self._steps = steps
 		self._add_info = add_info
 
-	def __call__(self, increase:int=1, force_display:bool=False):
-		# To simplify, assume this is hooked up to a single filename
+	def __call__(self, increase: int=1, force_display: bool=False):
 		with self._lock:
 			if not force_display:
 				self._counter += increase
@@ -80,7 +79,7 @@ def static_vars(**kwargs):
 	return decorate
 
 
-def is_shared_by(video:dict) -> bool:
+def is_shared_by(video: dict) -> bool:
 	"""
 	Checks if a video was shared by an account.
 	Returns True if it was shared by another account, False otherwise.
@@ -90,7 +89,7 @@ def is_shared_by(video:dict) -> bool:
 		return True
 	return False
 
-def is_shared_to(video:dict) -> bool:
+def is_shared_to(video: dict) -> bool:
 	"""
 	Checks if a video was shared to an account.
 	Returns True if it was shared to another account, False otherwise.
@@ -125,7 +124,7 @@ def aspect_ratio(width: int , height: int) -> Tuple[int, int]:
 
 	return int(width / divisor), int(height / divisor)
 
-def list_to_csv(row_list:list, filename:Optional[str]):
+def list_to_csv(row_list: list, filename: str=''):
 	"""
 	Function to write a list of rows to a CSV file.
 
@@ -145,12 +144,13 @@ def list_to_csv(row_list:list, filename:Optional[str]):
 	except csv.Error as e:
 		raise csv.Error(f'Error writing CSV data to file: {e}') from e
 
-def load_account_info(input_filename:Optional[str]=None) -> Tuple[str, str, str, dict]:
+def load_account_info(input_filename: str='') -> Tuple[str, str, str, dict]:
 	"""
 	Function to get information about account from config JSON file.
 
 	Args:
-		input_filename (str, optional): path and name of the config JSON file. Defaults to None and will use "account_info.json" from the user's home folder.
+		input_filename (str, optional): path and name of the config JSON file.
+			Defaults to '' and will use "account_info.json" from the user's home folder.
 
 	Returns:
 		Tuple[str, str, str, dict]: account ID, client ID, client secret and the full deserialized JSON object.
@@ -181,7 +181,7 @@ def load_account_info(input_filename:Optional[str]=None) -> Tuple[str, str, str,
 	return account, client, secret, obj
 
 @functools.lru_cache()
-def normalize_id(asset_id:Union[str, int, float]) -> str:
+def normalize_id(asset_id: Union[str, int, float]) -> str:
 	"""
 	Converts an asset ID to string.
 
@@ -195,7 +195,7 @@ def normalize_id(asset_id:Union[str, int, float]) -> str:
 	return response
 
 @functools.lru_cache()
-def is_valid_id(asset_id:Union[str, int, float]) -> bool:
+def is_valid_id(asset_id: Union[str, int, float]) -> bool:
 	"""
 	Function to check if a given value is a valid asset ID.
 
@@ -209,7 +209,7 @@ def is_valid_id(asset_id:Union[str, int, float]) -> bool:
 	return response
 
 @functools.lru_cache()
-def wrangle_id(asset_id:Union[str, int, float]) -> Tuple[bool, str]:
+def wrangle_id(asset_id: Union[str, int, float]) -> Tuple[bool, str]:
 	"""
 	Converts ID to string and checks if it's a valid ID.
 
@@ -233,7 +233,7 @@ def wrangle_id(asset_id:Union[str, int, float]) -> Tuple[bool, str]:
 
 	# is it a string?
 	elif isinstance(asset_id, str):
-		if asset_id.lower().startswith('ref:') and len(asset_id)<=154:
+		if asset_id.startswith('ref:') and len(asset_id)<=154:
 			work_id = asset_id
 			is_valid = True
 		else:
@@ -253,7 +253,7 @@ def wrangle_id(asset_id:Union[str, int, float]) -> Tuple[bool, str]:
 	return is_valid, work_id
 
 @functools.lru_cache()
-def is_json(myjson:str) -> bool:
+def is_json(myjson: str) -> bool:
 	"""
 	Function to check if a string is valid JSON.
 
@@ -269,7 +269,7 @@ def is_json(myjson:str) -> bool:
 		return False
 	return True
 
-def videos_from_file(filename:str, column_name:str='video_id', validate:bool=True, unique:bool=True) -> list:
+def videos_from_file(filename: str, column_name: str='video_id', validate: bool=True, unique: bool=True) -> list:
 	"""
 	Function to read a list of video IDs from an xls/csv file.
 
