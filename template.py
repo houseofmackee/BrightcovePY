@@ -4,7 +4,10 @@ from mackee import main
 #===========================================
 # example callback function
 #===========================================
-def example_function(video):
+def example_function(video: dict):
+	"""
+	This will print out the video ID and the name of the video.
+	"""
 	print(video.get('id'), video.get('name'))
 
 #===========================================

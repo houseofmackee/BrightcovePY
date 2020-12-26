@@ -4,7 +4,10 @@ from mackee import main
 #===========================================
 # callback to find videos with text tracks
 #===========================================
-def find_tt(video):
+def find_tt(video: dict):
+	"""
+	This will prist videos which have text tracks.
+	"""
 	tts = video.get('text_tracks')
 	if tts:
 		print(f'{video.get("id")}, "{video.get("name")}"')

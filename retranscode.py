@@ -4,7 +4,11 @@ from mackee import main, get_cms, get_di
 #===================================================
 # retranscode video and use MP4 if it has no master
 #===================================================
-def retranscode(video):
+def retranscode(video: dict):
+	"""
+	This will retranscode a video using the digital master if it exists.
+	If no master exists it will use the best quality MP4.
+	"""
 	# get some basic info about the video
 	video_id = str(video.get('id'))
 	delivery_type = video.get('delivery_type')
@@ -12,7 +16,7 @@ def retranscode(video):
 	is_shared = video.get('sharing')
 
 	# if it's not legacy or dynamic delivery we bail
-	if delivery_type != 'static_origin' and delivery_type != 'dynamic_origin':
+	if delivery_type not in ['static_origin', 'dynamic_origin']:
 		print(f'{video_id}: can not be retranscoded (delivery type: {delivery_type})')
 		return
 
@@ -33,13 +37,13 @@ def retranscode(video):
 	# otherwise try to find a high resolution MP4 rendition and use that
 	else:
 		# get sources for the video and try to find the biggest MP4 video
-		source_url, source_w, source_h = None, 0, 0
+		source_url, source_w, source_h = '', 0, 0
 		source_list = get_cms().GetVideoSources(video_id=video_id).json()
 		for source in source_list:
 			source_type = source.get('container')
 			if source_type=='MP4':
-				w, h = source.get('width'), source.get('height')
-				if h and w and w>source_w: # checking w/h to avoid error by audio only renditions
+				w, h = source.get('width', 0), source.get('height', 0)
+				if w>source_w: # checking w/h to avoid error by audio only renditions
 					source_w, source_h, source_url = w, h, source.get('src')
 
 		# if a source was found download it, using the video ID as filename

@@ -1,11 +1,14 @@
 #!/usr/bin/env python3
-from mackee import main, get_cms
 import json
+from mackee import main, get_cms
 
 #===========================================
 # callback to disable all default tracks
 #===========================================
-def disable_tt(video):
+def disable_tt(video: dict):
+	"""
+	This will find text tracks with default tracks and disable those defaults.
+	"""
 	# flag to signal we found and changed a default track
 	got_hit = False
 	# try to get all text tracks
@@ -26,7 +29,7 @@ def disable_tt(video):
 			# get the video ID
 			video_id = video.get('id')
 			# create the JSON body
-			json_body = ('{ "text_tracks": '+json.dumps(tts)+' }')
+			json_body = '{ "text_tracks": '+json.dumps(tts)+' }'
 			# make the PATCH call
 			r = get_cms().UpdateVideo(video_id=video_id, json_body=json_body)
 			# check if all went well

@@ -9,13 +9,19 @@ total_duration = 0
 data_lock = Lock()
 
 def show_progress(progress: int) -> None:
+	"""
+	Simple progress counter.
+	"""
 	sys.stderr.write(f'\r{progress} processed...\r')
 	sys.stderr.flush()
 
 #===========================================
 # callback to add up video durations
 #===========================================
-def find_average_duration(video):
+def find_average_duration(video: dict):
+	"""
+	This will add the duration of the video to the total.
+	"""
 	global num_videos
 	global total_duration
 

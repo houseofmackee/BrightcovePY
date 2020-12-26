@@ -4,7 +4,10 @@ from mackee import main
 #===========================================
 # callback to report images for the video
 #===========================================
-def find_images(video):
+def find_images(video: dict):
+	"""
+	Find URLs for poster and thumbnail images.
+	"""
 	images = video.get('images')
 	if images:
 		poster = images.get('poster')

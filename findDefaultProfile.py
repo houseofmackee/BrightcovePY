@@ -28,7 +28,7 @@ except (OSError, JSONDecodeError) as e:
 account_id = args.account or account_id
 
 # create a Ingest Profiles API instance
-ingest_profiles = IngestProfiles( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
+ingest_profiles = IngestProfiles(OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret))
 
 # list of account IDs to check
 acc_ids:list = []

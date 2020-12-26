@@ -1,23 +1,31 @@
 #!/usr/bin/env python3
+from typing import Union
+import time
 import sys
 import argparse
 import pandas
-import time
-from typing import Callable, Tuple, Union, Optional, Dict, Any
 from brightcove.CMS import CMS
 from brightcove.OAuth import OAuth
 from brightcove.utils import load_account_info, normalize_id
 
 # names of the columns in the xls file
-video_id_col = "video_id"
-ref_id_col =  "reference_id"
+video_id_col = 'video_id'
+ref_id_col =  'reference_id'
 
 # function to check if a video ID is valid and then update it
-def update_video(cms:CMS, video_id:str, update_data:Union[str, dict]) -> None:
-	video_id = normalize_id(video_id)
-	if video_id:
-		response = cms.UpdateVideo(video_id=video_id, json_body=update_data).status_code
-		print(f'Updating video ID "{video_id}": {response}')
+def update_video(cms_api: CMS, vid_id: str, update_data: Union[str, dict]) -> None:
+	"""
+	Updates a video using the data in the JSON.
+
+	Args:
+		cms_api (CMS): CMS API instance to use.
+		video_id (str): Video ID to update.
+		update_data (Union[str, dict]): Update data in JSON format.
+	"""
+	vid_id = normalize_id(vid_id)
+	if vid_id:
+		response = cms_api.UpdateVideo(video_id=vid_id, json_body=update_data).status_code
+		print(f'Updating video ID "{vid_id}": {response}')
 
 		if response==429:
 			for remaining in range(3, 0, -1):
@@ -25,7 +33,7 @@ def update_video(cms:CMS, video_id:str, update_data:Union[str, dict]) -> None:
 				sys.stderr.flush()
 				time.sleep(1)
 			# let's call ourself again, shall we?
-			update_video(cms=cms, video_id=video_id, update_data=update_data)
+			update_video(cms_api=cms_api, vid_id=vid_id, update_data=update_data)
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -93,7 +101,7 @@ if args.xls:
 		video_id = str(video_data[row])
 		ref_id = str(ref_data[row])
 		json_body = { "reference_id": ref_id }
-		update_video(cms=cms, video_id=video_id, update_data=json_body)
+		update_video(cms_api=cms, vid_id=video_id, update_data=json_body)
 
 # no pandas, so just use the options from the config file
 else:

@@ -7,7 +7,10 @@ from brightcove.utils import list_to_csv, eprint
 
 videos_processed = 0
 hits_to_process = 0
-def show_progress(progress, total):
+def show_progress(progress: int, total: int):
+	"""
+	Simple progress counter.
+	"""
 	sys.stderr.write(f'\r{progress}/{total} processed...\r')
 	sys.stderr.flush()
 
@@ -44,7 +47,7 @@ while keep_running:
 		body = response.json()
 		hits_to_process = body.get('total_hits')
 		page_key = body.get('page_key')
-		if page_key == None:
+		if not page_key:
 			keep_running = False
 		videos = body.get('videos')
 		if videos:

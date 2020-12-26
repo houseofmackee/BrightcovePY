@@ -12,7 +12,7 @@ show_progress = SimpleProgressDisplay(steps=100, add_info='videos processed')
 #===========================================
 # function to get size of master
 #===========================================
-def get_master_storage(video:dict) -> int:
+def get_master_storage(video: dict) -> int:
 	"""
 	returns size of digital master if avaiable
 	returns 0 if video has no master
@@ -38,7 +38,7 @@ def get_master_storage(video:dict) -> int:
 #===========================================
 # callback getting storage sizes
 #===========================================
-def find_storage_size(video:dict) -> None:
+def find_storage_size(video: dict) -> None:
 	"""
 	adds video ID, delivery type and master storage size to report list
 	"""

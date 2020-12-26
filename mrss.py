@@ -29,11 +29,11 @@ except Exception as e:
 account_id = args.account or account_id
 
 # create a CMS API instance
-mrss = SocialSyndication( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
+mrss = SocialSyndication(OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret))
 
 # add syndication to account
 if args.add:
-	print( mrss.CreateSyndication(account_id=account_id,json_body=args.add).text )
+	print(mrss.CreateSyndication(account_id=account_id,json_body=args.add).text)
 
 # delete one or all syndication
 if args.delete:
@@ -42,7 +42,7 @@ if args.delete:
 		"""
 		Delete a single syndication ID
 		"""
-		print( f'Deleting syndication ID {s_id}: {mrss.DeleteSyndication(account_id=account_id, syndication_id=s_id).status_code}')
+		print(f'Deleting syndication ID {s_id}: {mrss.DeleteSyndication(account_id=account_id, syndication_id=s_id).status_code}')
 
 	# delete all?
 	if args.delete=='all':
@@ -55,8 +55,8 @@ if args.delete:
 
 # list all syndications in an account
 if args.list:
-	pprint( mrss.GetAllSyndications(account_id=account_id).json() )
+	pprint(mrss.GetAllSyndications(account_id=account_id).json())
 
 # get a specific syndication
 if args.get:
-	pprint( mrss.GetSyndication(account_id=account_id, syndication_id=args.get).json() )
+	pprint(mrss.GetSyndication(account_id=account_id, syndication_id=args.get).json())

@@ -4,13 +4,16 @@ from mackee import main, get_cms
 #===========================================
 # callback to disable Offline Playback
 #===========================================
-def disable_offline(video):
-	# does video have DRM?
+def disable_offline(video: dict):
+	"""
+	If video is enabled for offline payback this will disable it.
+	"""
+	# is video offline enabled?
 	if video.get('offline_enabled'):
 		# get the video ID
 		video_id = video.get('id')
 		# create the JSON body
-		json_body = ('{ "offline_enabled": false }')
+		json_body = { "offline_enabled": False }
 		# make the PATCH call
 		r = get_cms().UpdateVideo(video_id=video_id, json_body=json_body)
 		# check if all went well

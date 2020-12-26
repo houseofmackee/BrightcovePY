@@ -4,7 +4,10 @@ from mackee import main, get_cms
 #===========================================
 # callback to delete digital masters
 #===========================================
-def delete_masters(video):
+def delete_masters(video: dict):
+	"""
+	If video has a master this will delete the master.
+	"""
 	if video.get('has_digital_master'):
 		shared = video.get('sharing')
 		if shared and shared.get('by_external_acct'):

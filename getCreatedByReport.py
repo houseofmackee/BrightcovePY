@@ -14,7 +14,7 @@ show_progress = SimpleProgressDisplay(steps=100, add_info='videos processed')
 #===========================================
 # callback to check who uploaded the video
 #===========================================
-def get_created_by_report(video):
+def get_created_by_report(video: dict):
 	"""
 	Adds creator of the video to the dictionary.
 	"""

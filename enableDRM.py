@@ -4,7 +4,10 @@ from mackee import main, get_cms
 #===========================================
 # callback to enable DRM
 #===========================================
-def enable_drm(video):
+def enable_drm(video: dict):
+	"""
+	If a video is not enabled for DRM this will enable DRM.
+	"""
 	# does video have DRM?
 	if video.get('drm_disabled') == True:
 		# get the video ID

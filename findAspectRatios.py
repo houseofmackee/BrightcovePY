@@ -5,6 +5,9 @@ from brightcove.utils import aspect_ratio
 # callback to find the aspect ratio of videos
 #=============================================
 def find_aspect_ratios(video: dict) -> None:
+	"""
+	This will print out the aspectratio of a video.
+	"""
 	video_id = str(video.get('id'))
 	delivery_type = video.get('delivery_type')
 	source_w, source_h, response = None, None, None

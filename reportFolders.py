@@ -32,7 +32,7 @@ if None in [account_id, client_id, client_secret]:
 account_id = args.account or account_id
 
 # create a CMS API instance
-cms = CMS( oauth=OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
+cms = CMS(oauth=OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret))
 
 row_list = [ ['id', 'account_id', 'name', 'created_at', 'updated_at', 'video_count'] ]
 

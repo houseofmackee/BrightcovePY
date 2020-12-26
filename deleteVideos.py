@@ -7,12 +7,19 @@ from brightcove.CMS import CMS
 from brightcove.OAuth import OAuth
 from brightcove.utils import load_account_info, eprint, wrangle_id, videos_from_file, list_to_csv
 
-def show_progress(progress:int) -> None:
+def show_progress(progress: int) -> None:
+	"""
+	Simple progess counter.
+	"""
 	sys.stderr.write(f'\r{progress} processed...\r')
 	sys.stderr.flush()
 
 # function to check if a video ID is valid and then delete it
-def delete_video(video_id:str) -> List:
+def delete_video(video_id: str) -> List:
+	"""
+	Delete video ID in default account.
+	Returns list [video ID, response]
+	"""
 	global cms
 	_, work_id = wrangle_id(video_id)
 	if work_id:

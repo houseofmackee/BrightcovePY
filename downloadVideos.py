@@ -1,12 +1,15 @@
 #!/usr/bin/env python3
-from mackee import main, get_cms
 import requests # pip3 install requests
 from clint.textui import progress # pip3 install clint
+from mackee import main, get_cms
 
 #===========================================
 # download highest res MP4 from a video
 #===========================================
-def download_video(video):
+def download_video(video: dict):
+	"""
+	This will download the highest resolution MP4 from a video.
+	"""
 	video_id = str(video.get('id'))
 	source_url, source_w, source_h = None, 0, 0
 

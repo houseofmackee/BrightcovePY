@@ -4,14 +4,17 @@ from mackee import main, get_cms
 #===========================================
 # callback to disable DRM
 #===========================================
-def disable_drm(video):
+def disable_drm(video: dict):
+	"""
+	If video has DRM enabled this will disable DRM.
+	"""
 	# does video have DRM?
-	is_drm_enabled = video.get('drm_disabled')
-	if is_drm_enabled == False:
+	is_drm_disabled = video.get('drm_disabled')
+	if is_drm_disabled == False:
 		# get the video ID
 		video_id = video.get('id')
 		# create the JSON body
-		json_body = ('{ "drm_disabled": true }')
+		json_body = { "drm_disabled": True }
 		# make the PATCH call
 		r = get_cms().UpdateVideo(video_id=video_id, json_body=json_body)
 		# check if all went well

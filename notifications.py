@@ -28,7 +28,7 @@ except Exception as e:
 account_id = args.account or account_id
 
 # create a CMS API instance
-cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
+cms = CMS(OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret))
 
 # delete one or all subscriptions
 if args.delete:

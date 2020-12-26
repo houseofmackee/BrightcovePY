@@ -44,7 +44,7 @@ except Exception as e:
 	sys.exit(2)
 
 # create a CMS API instance
-cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
+cms = CMS(OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret))
 
 # init variables for ze loop
 current_year = start_year

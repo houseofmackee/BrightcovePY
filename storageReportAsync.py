@@ -15,7 +15,7 @@ show_progress = SimpleProgressDisplay(steps=100, add_info='videos processed')
 #===========================================
 # function to get size of master
 #===========================================
-def get_master_storage(video:dict) -> int:
+def get_master_storage(video: dict) -> int:
 	"""
 	Function to get the size of the digital master for a video.
 
@@ -39,7 +39,7 @@ def get_master_storage(video:dict) -> int:
 #===========================================
 # function to get size of all renditions
 #===========================================
-def get_rendition_sizes(video:dict) -> dict:
+def get_rendition_sizes(video: dict) -> dict:
 	"""
 	Function to get the sizes of all rendtions for a video.
 
@@ -110,7 +110,7 @@ def get_rendition_sizes(video:dict) -> dict:
 #===========================================
 # callback getting storage sizes
 #===========================================
-def find_storage_size(video:dict) -> None:
+def find_storage_size(video: dict) -> None:
 	"""
 	Function to add a list with all storage info for a video to the global report list.
 	"""

@@ -4,7 +4,10 @@ from mackee import main
 #===========================================
 # callback to find legacy delivery videos
 #===========================================
-def find_legacy(video):
+def find_legacy(video: dict):
+	"""
+	Finds videos which are on Legacy Delivery.
+	"""
 	if video.get('delivery_type') == 'static_origin':
 		print(f'{video.get("id")}, "{video.get("name")}"')
 

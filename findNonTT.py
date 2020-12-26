@@ -4,7 +4,10 @@ from mackee import main
 #===========================================
 # callback to find videos with text tracks
 #===========================================
-def find_non_tt(video):
+def find_non_tt(video: dict):
+	"""
+	This prints video IDs which have no text tracks.
+	"""
 	if not video.get('text_tracks'):
 		print( video.get('id') )
 
