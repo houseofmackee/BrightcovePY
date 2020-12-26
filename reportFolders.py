@@ -1,17 +1,10 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-from mackee import CMS
-from mackee import OAuth
-from mackee import load_account_info
-from mackee import list_to_csv
-
-# account/API credentials (can be None to use user defaults)
-account_id = None
-client_id = None
-client_secret = None
-
-cms = None
+from brightcove.CMS import CMS
+from brightcove.OAuth import OAuth
+from brightcove.utils import load_account_info
+from brightcove.utils import list_to_csv, eprint
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -21,6 +14,11 @@ parser.add_argument('--out', metavar='<output filename>', type=str, help='Name a
 
 # parse the args
 args = parser.parse_args()
+
+# account/API credentials (can be None to use user defaults)
+account_id = ''
+client_id = ''
+client_secret = ''
 
 # get account info from config file if not hardcoded
 if None in [account_id, client_id, client_secret]:
@@ -34,7 +32,7 @@ if None in [account_id, client_id, client_secret]:
 account_id = args.account or account_id
 
 # create a CMS API instance
-cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
+cms = CMS( oauth=OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 row_list = [ ['id', 'account_id', 'name', 'created_at', 'updated_at', 'video_count'] ]
 
@@ -46,6 +44,8 @@ if response.status_code == 200:
 		row = [ folder.get(field) for field in row_list[0] ]
 		row_list.append(row)
 
-
 #write list to file
-list_to_csv(row_list, args.out)
+try:
+	list_to_csv(row_list, args.out)
+except Exception as e:
+	eprint(f'{e}')

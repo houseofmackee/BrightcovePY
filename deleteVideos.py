@@ -1,23 +1,11 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-import csv
 import concurrent.futures
 from typing import List
-from mackee import eprint
-from mackee import CMS
-from mackee import OAuth
-from mackee import wrangle_id
-from mackee import videos_from_file
-from mackee import load_account_info
-
-# account/API credentials (can be None to use user defaults)
-account_id = None
-client_id = None
-client_secret = None
-
-cms = None
-opts = None
+from brightcove.CMS import CMS
+from brightcove.OAuth import OAuth
+from brightcove.utils import load_account_info, eprint, wrangle_id, videos_from_file, list_to_csv
 
 def show_progress(progress:int) -> None:
 	sys.stderr.write(f'\r{progress} processed...\r')
@@ -49,8 +37,14 @@ parser.add_argument('--column', metavar='<column name>', type=str, help='Name of
 # parse the args
 args = parser.parse_args()
 
+# account/API credentials (can be None to use user defaults)
+account_id = ''
+client_id = ''
+client_secret = ''
+opts:dict = {}
+
 # get account info from config file if not hardcoded
-if account_id is None and client_id is None and client_secret is None:
+if '' in [account_id, client_id, client_secret]:
 	try:
 		account_id, client_id, client_secret, opts = load_account_info(args.config)
 	except Exception as e:
@@ -64,18 +58,21 @@ account_id = args.account or account_id
 cms = CMS( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # list to contain all video IDs
-videoList = None
+video_list = []
 
 # if we have an xls/csv
 if args.xls:
-	videoList = videos_from_file(args.xls, column_name=args.column if args.column else 'video_id')
+	try:
+		video_list = videos_from_file(args.xls, column_name=args.column if args.column else 'video_id')
+	except Exception as e:
+		print(e)
 
 # otherwise just use the options from the config file
 elif opts:
-	videoList = opts.get('video_ids')
+	video_list = opts.get('video_ids')
 
 # either no list or "all" was found -> bail
-if not videoList or videoList[0] == 'all':
+if not video_list or video_list[0] == 'all':
 	eprint('Error: invalid or missing list of videos in config file.')
 
 # delete 'em
@@ -83,7 +80,7 @@ else:
 	videos_processed = 0
 	row_list = [['operation','video_id','result']]
 	with concurrent.futures.ThreadPoolExecutor(max_workers = 5) as executor:
-		future_to_video_id = {executor.submit(delete_video, video_id): video_id for video_id in videoList}
+		future_to_video_id = {executor.submit(delete_video, video_id): video_id for video_id in video_list}
 		for future in concurrent.futures.as_completed(future_to_video_id):
 			video = future_to_video_id[future]
 			try:
@@ -102,11 +99,6 @@ else:
 
 	#write list to file
 	try:
-		with open('report.csv' if not args.report else args.report, 'w', newline='', encoding='utf-8') as file:
-			try:
-				writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
-				writer.writerows(row_list)
-			except Exception as e:
-				eprint(f'\nError writing CSV data to file: {e}')
+		list_to_csv(row_list=row_list, filename=args.report)
 	except Exception as e:
-		eprint(f'\nError creating outputfile: {e}')
+		eprint(f'\n{e}')

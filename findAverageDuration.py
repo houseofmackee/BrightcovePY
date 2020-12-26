@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 import sys
-from mackee import main, TimeString as ts
+from mackee import main
+from brightcove.utils import TimeString as ts
 from threading import Lock
 
 num_videos = 0

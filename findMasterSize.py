@@ -1,30 +1,13 @@
 #!/usr/bin/env python3
-from createReport import show_progress
-import sys
 import time
 from threading import Lock
 from requests.exceptions import RequestException
-from mackee import main, eprint, GetCMS, GetArgs, TimeString, list_to_csv
+from mackee import main, eprint, get_cms, get_args
+from brightcove.utils import TimeString, list_to_csv, SimpleProgressDisplay
 
 data_lock = Lock()
-
 row_list = [ ['video_id','delivery_type','master_size'] ]
-
-class show_progress_gen():
-	def __init__(self, steps:int=1) -> None:
-		self.videos_processed = 0
-		self.steps = steps
-		self.lock = Lock()
-
-	def __call__(self, force_display:bool=False):
-		with self.lock:
-			if not force_display:
-				self.videos_processed += 1
-			if force_display or self.videos_processed%self.steps==0:
-				sys.stderr.write(f'\r{self.videos_processed} processed...\r')
-				sys.stderr.flush()
-
-show_progress = show_progress_gen(100)
+show_progress = SimpleProgressDisplay(steps=100, add_info='videos processed')
 
 #===========================================
 # function to get size of master
@@ -42,7 +25,7 @@ def get_master_storage(video:dict) -> int:
 
 	if video.get('has_digital_master'):
 		try:
-			response = GetCMS().GetDigitalMasterInfo(video_id=video.get('id'))
+			response = get_cms().GetDigitalMasterInfo(video_id=video.get('id'))
 		except RequestException:
 			return -1
 		else:
@@ -72,10 +55,10 @@ def find_storage_size(video:dict) -> None:
 if __name__ == '__main__':
 	s = time.perf_counter()
 	main(find_storage_size)
-	show_progress(True)
+	show_progress(force_display=True)
 
 	#write list to file
-	list_to_csv(row_list, GetArgs().o)
+	list_to_csv(row_list, get_args().o)
 
 	elapsed = time.perf_counter() - s
 	eprint(f"\n{__file__} executed in {TimeString.from_seconds(elapsed)}.")

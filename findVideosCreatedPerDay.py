@@ -2,9 +2,9 @@
 import sys
 import argparse
 from calendar import monthrange
-from mackee import CMS
-from mackee import OAuth
-from mackee import load_account_info
+from brightcove.CMS import CMS
+from brightcove.OAuth import OAuth
+from brightcove.utils import load_account_info
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -56,10 +56,10 @@ while not stop_search:
 	print(f'Searching for videos created {current_year}/{current_month:02}:')
 
 	# get number of days in a month
-	_, daysInMonth =  monthrange(current_year, current_month)
+	days_in_week, days_in_month =  monthrange(current_year, current_month)
 
 	# find how many videos were created each day in a month
-	for currentDay in range(1,daysInMonth+1):
+	for currentDay in range(1,days_in_month+1):
 		query = f'+created_at:{current_year}-{current_month:02}-{currentDay:02}T00:00:00.000Z..{current_year}-{current_month:02}-{currentDay:02}T23:59:59.000Z'
 		print(f'{currentDay}. {cms.GetVideoCount(search_query=query)}')
 

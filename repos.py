@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-from mackee import DeliverySystem
-from mackee import OAuth
-from mackee import load_account_info
+from brightcove.DeliverySystem import DeliverySystem
+from brightcove.OAuth import OAuth
+from brightcove.utils import load_account_info
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])

@@ -1,42 +1,46 @@
 #!/usr/bin/env python3
-from mackee import main, GetArgs, list_to_csv
 from threading import Lock
-import sys
+from csv import Error as CSVError
+from time import perf_counter
+from mackee import main, get_args
+from brightcove.utils import list_to_csv, eprint
+from brightcove.utils import SimpleProgressDisplay, TimeString
+from brightcove.utils import get_value, default_split
 
-row_list = [ ['id', 'name', 'state', 'reference_id', 'created_at', 'tags'] ]
+# list of information to be added to the report (edit as needed)
+row_list = [ ('account_id','id', 'name', 'state', 'reference_id', 'created_at', 'tags', 'created_by.type') ]
 
-counter_lock = Lock()
+# some globals
 data_lock = Lock()
+show_progress = SimpleProgressDisplay(steps=100, add_info='videos processed')
 
-videos_processed = 0
+def create_report(video: dict) -> None:
+	"""
+	Function to add a row of information about a video object to the report.
 
-def show_progress(progress):
-	sys.stderr.write(f'\r{progress} processed...\r')
-	sys.stderr.flush()
+	Args:
+		video (dict): video object obtained from the CMS API.
+	"""
 
-def create_csv(video):
-	global row_list
-	global videos_processed
-
-	row = [ video.get(field) for field in row_list[0] ]
-
+	row = (get_value(video, *default_split(field, separator=':', maxsplits=1)) for field in row_list[0])
 	with data_lock:
 		row_list.append(row)
-
-	with counter_lock:
-		videos_processed += 1
-
-	if videos_processed%100==0:
-		show_progress(videos_processed)
+		show_progress()
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	#generate the CSV list
-	main(create_csv)
-	show_progress(videos_processed)
+	# generate the report
+	s = perf_counter()
+	main(create_report)
+	show_progress(force_display=True)
 
-	#write list to file
-	list_to_csv(row_list, GetArgs().o)
+	# write report to CSV file
+	try:
+		list_to_csv(row_list, get_args().o)
+	except (OSError, CSVError) as e:
+		eprint(f'\n{e}')
 
+	elapsed = perf_counter() - s
+	eprint(f"\n{__file__} executed in {TimeString.from_seconds(elapsed)}.")

@@ -1,11 +1,12 @@
 #!/usr/bin/env python3
 import sys
 import argparse
-from mackee import OAuth
-from mackee import IngestProfiles
-from mackee import load_account_info
-from mackee import videos_from_file
-from mackee import eprint
+from json import JSONDecodeError
+from brightcove.OAuth import OAuth
+from brightcove.IngestProfiles import IngestProfiles
+from brightcove.utils import load_account_info
+from brightcove.utils import videos_from_file
+from brightcove.utils import eprint
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -19,7 +20,7 @@ args = parser.parse_args()
 # get account info from config file
 try:
 	account_id, client_id, client_secret, opts = load_account_info(args.config)
-except Exception as e:
+except (OSError, JSONDecodeError) as e:
 	print(e)
 	sys.exit(2)
 
@@ -30,17 +31,21 @@ account_id = args.account or account_id
 ingest_profiles = IngestProfiles( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # list of account IDs to check
-acc_ids = []
+acc_ids:list = []
 
 # if list is empty try to get it from xls or config JSON
 if not acc_ids:
 	# if we have an xls/csv
 	if args.xls:
-		acc_ids = videos_from_file(args.xls, column_name='account_id')
+		try:
+			acc_ids = videos_from_file(args.xls, column_name='account_id')
+		except Exception as e:
+			print(e)
+			sys.exit(2)
 
 	# otherwise just use the options from the config file
 	elif opts:
-		acc_ids = opts.get('target_account_ids')
+		acc_ids = opts.get('target_account_ids', [])
 
 if acc_ids:
 	print('account_id, display_name, name')

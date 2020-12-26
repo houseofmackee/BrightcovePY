@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-from mackee import main, GetCMS
+from mackee import main, get_cms
 import json
 
 #===========================================
@@ -28,7 +28,7 @@ def disable_tt(video):
 			# create the JSON body
 			json_body = ('{ "text_tracks": '+json.dumps(tts)+' }')
 			# make the PATCH call
-			r = GetCMS().UpdateVideo(video_id=video_id, json_body=json_body)
+			r = get_cms().UpdateVideo(video_id=video_id, json_body=json_body)
 			# check if all went well
 			if r.status_code in [200,202]:
 				print(f'Disabled default track(s) for video ID {video_id} with status {r.status_code}.')

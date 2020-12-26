@@ -1,37 +1,29 @@
 #!/usr/bin/env python3
-from mackee import main, eprint, GetCMS, GetArgs, list_to_csv
-import sys
 import time
+from csv import Error as CSVError
 from threading import Lock
 from collections import defaultdict
+from mackee import main, get_cms, get_args
+from brightcove.utils import list_to_csv, eprint
+from brightcove.utils import SimpleProgressDisplay, TimeString
 
-videos_processed = 0
-counter_lock = Lock()
 data_lock = Lock()
-
-created_by_dict = defaultdict(int)
-
-def show_progress(progress):
-	sys.stderr.write(f'\r{progress} processed...\r')
-	sys.stderr.flush()
+created_by_dict:defaultdict = defaultdict(int)
+show_progress = SimpleProgressDisplay(steps=100, add_info='videos processed')
 
 #===========================================
 # callback to check who uploaded the video
 #===========================================
 def get_created_by_report(video):
-	global created_by_dict
-	global videos_processed
+	"""
+	Adds creator of the video to the dictionary.
+	"""
 
-	creator = GetCMS().GetCreatedBy(video)
+	creator = get_cms().GetCreatedBy(video)
 
 	with data_lock:
 		created_by_dict[creator] += 1
-
-	with counter_lock:
-		videos_processed += 1
-
-	if videos_processed%100==0:
-		show_progress(videos_processed)
+		show_progress()
 
 #===========================================
 # only run code if it's not imported
@@ -39,13 +31,17 @@ def get_created_by_report(video):
 if __name__ == '__main__':
 	s = time.perf_counter()
 	main(get_created_by_report)
-	show_progress(videos_processed)
-	elapsed = time.perf_counter() - s
-	eprint(f"\n{__file__} executed in {elapsed:0.2f} seconds.\n")
+	show_progress(force_display=True)
 
 	row_list = [ ['user_id','number_videos'] ]
 	for x,y in created_by_dict.items():
 		row_list.append([x,y])
 
 	#write list to file
-	list_to_csv(row_list, GetArgs().o)
+	try:
+		list_to_csv(row_list, get_args().o)
+	except (OSError, CSVError) as e:
+		eprint(f'\n{e}')
+
+	elapsed = time.perf_counter() - s
+	eprint(f"\n{__file__} executed in {TimeString.from_seconds(elapsed)}.")

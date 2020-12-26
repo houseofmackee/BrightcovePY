@@ -6,25 +6,25 @@ import sqlite3
 import datetime
 import hashlib
 import threading
-import requests # pip3 install requests
-import boto3 # pip3 install boto3
-import dropbox # pip3 install dropbox
-import boxsdk as box
+import requests
+import boto3
+import dropbox # type: ignore
+import boxsdk as box # type: ignore
+from typing import Callable, Tuple, Union, Optional, Dict, Any
 from pathlib import Path
-from mackee import CMS
-from mackee import OAuth
-from mackee import DynamicIngest
-from mackee import load_account_info
-from mackee import eprint
+from brightcove.CMS import CMS
+from brightcove.OAuth import OAuth
+from brightcove.DynamicIngest import DynamicIngest
+from brightcove.utils import eprint
+from brightcove.utils import load_account_info
 
 # pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
 
 # allowed success response codes
 success_responses = [200,201,202,203,204]
 
-# globals for API stuff
-cms = None
-di = None
+cms:CMS
+di:DynamicIngest
 
 class IngestHistory:
 	def __init__(self, db_name):
@@ -49,7 +49,7 @@ class IngestHistory:
 			conn = sqlite3.connect(db_file)
 			return conn
 		except sqlite3.Error as e:
-			raise(e)
+			raise e
 
 	# close database connection
 	def CloseConnection(self):
@@ -143,8 +143,8 @@ class ProgressPercentage(object):
 			sys.stdout.write("\rProgress: %s / %s  (%.2f%%)\r" % (self._seen_so_far, self._size, percentage))
 			sys.stdout.flush()
 #
-def ingest_video(account_id, video_id, source_url, priority_queue):
-	response = di.SubmitIngest(account_id=account_id, video_id=video_id, source_url=source_url, priority_queue=priority_queue)
+def ingest_video(account_id, video_id, source_url, priority_queue, callbacks):
+	response = di.SubmitIngest(account_id=account_id, video_id=video_id, source_url=source_url, priority_queue=priority_queue, callbacks=callbacks)
 	if response.status_code in success_responses:
 		request_id = response.json().get('id')
 		print(f'Ingest Call ({priority_queue}) result for video ID {video_id}: {response.json()}')
@@ -156,11 +156,11 @@ def ingest_video(account_id, video_id, source_url, priority_queue):
 		eprint(response.text)
 	return None
 
-def create_and_ingest(account_id, filename, source_url, priority):
+def create_and_ingest(account_id, filename, source_url, priority, callbacks):
 	video = cms.CreateVideo(account_id=account_id, video_title=filename)
 	if video.status_code in success_responses:
 		video_id = video.json().get('id')
-		request_id = ingest_video(account_id=account_id, video_id=video_id, source_url=source_url, priority_queue=priority)
+		request_id = ingest_video(account_id=account_id, video_id=video_id, source_url=source_url, priority_queue=priority, callbacks=callbacks)
 		if request_id:
 			return video_id, request_id
 	else:
@@ -178,7 +178,7 @@ def is_video(filename):
 #===========================================
 def main(db_history:IngestHistory):
 	# disable certificate warnings
-	requests.urllib3.disable_warnings()
+	requests.urllib3.disable_warnings() # type: ignore
 
 	# init the argument parsing
 	parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -191,6 +191,7 @@ def main(db_history:IngestHistory):
 	parser.add_argument('--boxtokens', metavar='<Box API token>', type=str, help='Tokens for Box API access')
 	parser.add_argument('--folder', metavar='<path to folder>', type=str, help='Name and path of local folder to ingest from (use / or \\\\)')
 	parser.add_argument('--file', metavar='<path to file>', type=str, help='Name and path of local file to ingest from (use / or \\\\)')
+	parser.add_argument('--callback', metavar='<callbackURL>', type=str, help='URL for ingest callbacks')
 	parser.add_argument('--account', metavar='<account ID>', type=str, help='Brightcove Account ID to ingest videos into')
 	parser.add_argument('--profile', metavar='<ingest profile name>', type=str, help='Brightcove ingest profile name to use to ingest videos')
 	parser.add_argument('--config', metavar='<path to config file>', type=str, help='Name and path of account config information file')
@@ -225,6 +226,8 @@ def main(db_history:IngestHistory):
 	# get local folder if available
 	local_folder = args.folder
 
+	callback = [args.callback] if args.callback else []
+
 	# error out if we have neither S3 nor Dropbox info
 	if not any([s3_bucket_name, dbx_folder, box_folder, local_folder, args.file]):
 		eprint('Error: no S3 bucket, Dropbox folder, local folder, file or tokens specified.\n')
@@ -252,7 +255,7 @@ def main(db_history:IngestHistory):
 	# create the OAuth token from the account config info file
 	oauth = OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret)
 	cms = CMS(oauth)
-	di = DynamicIngest(oAuth=oauth, ingest_profile=ingest_profile, priority_queue=ingest_priority)
+	di = DynamicIngest(oauth=oauth, ingest_profile=ingest_profile, priority_queue=ingest_priority)
 
 	# this needs moving outside, but for now I'm whatever about it
 	def ingest_single_file(file_path:str):
@@ -266,7 +269,7 @@ def main(db_history:IngestHistory):
 				print(f'Uploading file "{file_path}" to temporary S3 bucket.')
 				upload_url = di.UploadFile(account_id=account_id, video_id=video_id, file_name=file_path,callback=ProgressPercentage(file_path))
 				if upload_url:
-					request_id = ingest_video(account_id=account_id, video_id=video_id, source_url=upload_url['api_request_url'], priority_queue=ingest_priority)
+					request_id = ingest_video(account_id=account_id, video_id=video_id, source_url=upload_url['api_request_url'], priority_queue=ingest_priority, callbacks=callback)
 					if request_id and not args.dbignore:
 						db_history.AddIngestHistory(account_id=account_id, video_id=video_id, request_id=request_id, remote_url=file_path)
 				else:
@@ -286,7 +289,7 @@ def main(db_history:IngestHistory):
 	if s3_bucket_name:
 		# Let's use Amazon S3
 		try:
-			boto3.Session(profile_name=s3_profile_name)
+			boto3.Session(profile_name=s3_profile_name) # type: ignore
 		except:
 			print(f'Error: no AWS credentials found for profile "{s3_profile_name}"')
 		else:
@@ -295,15 +298,15 @@ def main(db_history:IngestHistory):
 				bucket = s3.Bucket(s3_bucket_name).objects.all()
 				filenames = [obj.key for obj in bucket if is_video(obj.key)]
 			except Exception as e:
-				eprint(f'Error accessing bucket "{s3_bucket_name}" for profile "{s3_profile_name}".\n')
+				eprint(f'Error accessing bucket "{s3_bucket_name}" for profile "{s3_profile_name}: {e}"\n')
 			else:
 				for filename in filenames:
-					s3_url = f'https://{s3_bucket_name}.s3.amazonaws.com/'+((filename).replace(' ', '%20'))
+					s3_url = f's3://{s3_bucket_name}.s3.amazonaws.com/'+((filename).replace(' ', '%20'))
 					hash_value = db_history.CreateHash(account_id, s3_url)
 					ingest_record = db_history.FindHashInIngestHistory(hash_value)
 					if ingest_record is None or args.dbignore:
 						print(f'Ingesting: "{s3_url}"')
-						video_id, request_id = create_and_ingest(account_id, filename, s3_url, ingest_priority)
+						video_id, request_id = create_and_ingest(account_id, filename, s3_url, ingest_priority, callbacks=callback)
 						if request_id and not args.dbignore:
 							db_history.AddIngestHistory(account_id=account_id, video_id=video_id, request_id=request_id, remote_url=s3_url)
 					else:
@@ -331,7 +334,7 @@ def main(db_history:IngestHistory):
 					ingest_record = db_history.FindHashInIngestHistory(hash_value)
 					if ingest_record is None or args.dbignore:
 						print(f'Ingesting: "{dbx_path}"')
-						video_id, request_id = create_and_ingest(account_id, filename, source_url, ingest_priority)
+						video_id, request_id = create_and_ingest(account_id, filename, source_url, ingest_priority, callbacks=callback)
 						if request_id and not args.dbignore:
 							db_history.AddIngestHistory(account_id=account_id, video_id=video_id, request_id=request_id, remote_url=source_url)
 					else:
@@ -353,9 +356,9 @@ def main(db_history:IngestHistory):
 			box_oauth = box.OAuth2(client_id=box_client_id, client_secret=box_client_secret, access_token=box_dev_token)
 			box_client = box.Client(box_oauth)
 		except ValueError:
-			eprint(f'Error: unable to parse Box tokens.\n')
+			eprint('Error: unable to parse Box tokens.\n')
 		except:
-			eprint(f'Error: unable to use provided credentials.\n')
+			eprint('Error: unable to use provided credentials.\n')
 		else:
 			filenames = []
 			if box_folder == '.':
@@ -376,7 +379,7 @@ def main(db_history:IngestHistory):
 				ingest_record = db_history.FindHashInIngestHistory(hash_value)
 				if ingest_record is None or args.dbignore:
 					print(f'Ingesting: "{box_path}"')
-					video_id, request_id = create_and_ingest(account_id, filename, source_url, ingest_priority)
+					video_id, request_id = create_and_ingest(account_id, filename, source_url, ingest_priority, callbacks=callback)
 					if request_id and not args.dbignore:
 						db_history.AddIngestHistory(account_id=account_id, video_id=video_id, request_id=request_id, remote_url=source_url, hash_value=hash_value)
 				else:

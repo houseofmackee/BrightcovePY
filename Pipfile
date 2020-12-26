@@ -11,12 +11,17 @@ boto3 = "*"
 dropbox = "*"
 boxsdk = "*"
 pandas = "*"
+clint = "*"
+xlrd = "*"
 
 [dev-packages]
 pytest = "*"
 mypy = "*"
 ipdb = "*"
 pylint = "*"
+boto3-stubs = "*"
+data-science-types = "*"
+pyflakes = "*"
 
 [requires]
 python_version = "3.8"

@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 import sys
-from mackee import PlayerManagement
-from mackee import OAuth
-from mackee import load_account_info
+from brightcove.PlayerManagement import PlayerManagement
+from brightcove.OAuth import OAuth
+from brightcove.utils import load_account_info
 
 # edit details as required
 account_id = ''
@@ -31,7 +31,7 @@ for account in account_list:
 	print(f'Processing players in account ID {account}:')
 
 	# get the items in the list of players
-	player_list = pms.GetListOfPlayers(account_id=account).json()['items']
+	player_list = pms.GetListOfPlayers(account_id=account).json().get('items', [])
 
 	# patch every player in the account using the above JSON body
 	for player in player_list:

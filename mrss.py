@@ -2,9 +2,9 @@
 import sys
 import argparse
 from pprint import pprint
-from mackee import SocialSyndication
-from mackee import OAuth
-from mackee import load_account_info
+from brightcove.SocialSyndication import SocialSyndication
+from brightcove.OAuth import OAuth
+from brightcove.utils import load_account_info
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
@@ -39,6 +39,9 @@ if args.add:
 if args.delete:
 	# the actual delete function
 	def delete_sid(s_id):
+		"""
+		Delete a single syndication ID
+		"""
 		print( f'Deleting syndication ID {s_id}: {mrss.DeleteSyndication(account_id=account_id, syndication_id=s_id).status_code}')
 
 	# delete all?

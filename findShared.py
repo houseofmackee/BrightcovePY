@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-import mackee
+from mackee import main
 
 #===========================================
 # callback to find videos into the account
@@ -13,4 +13,4 @@ def find_shared(video):
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	mackee.main(find_shared)
+	main(find_shared)
