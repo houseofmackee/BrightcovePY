@@ -1,10 +1,9 @@
 {
-	"account_id":"account_ID_here",
-    "client_id":"client_ID_here",
-	"client_secret":"client_secret_here",
-	"account_ids":[
-	],
-	"video_ids":[
+	"account_id": "account_ID_here",
+    "client_id": "client_ID_here",
+	"client_secret": "client_secret_here",
+	"account_ids": [],
+	"video_ids": [
 		"all"
 	]
 }
