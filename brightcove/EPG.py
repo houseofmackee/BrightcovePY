@@ -19,16 +19,17 @@ class EPG(Base):
 
 	Methods:
 	--------
-	GetAllCPChannels(self, account_id:str='') -> Response
+	GetAllCPChannels(self, account_id: str='') -> Response
 		Get a list of all Cloud Playout channels for an account.
 
-	GetEPG(self, channel_id:str, query:str='', account_id:str='') -> Response
+	GetEPG(self, channel_id: str, query: str='', account_id: str='') -> Response
 		Get EPG for a specific channel.
 	"""
 
+	# base URL for all API calls
 	base_url ='https://cm.cloudplayout.brightcove.com/accounts/{account_id}'
 
-	def __init__(self, oauth:OAuth, query:str='') -> None:
+	def __init__(self, oauth: OAuth, query: str='') -> None:
 		"""
 		Args:
 			oauth (OAuth): OAuth instance to use for the API calls.
@@ -37,7 +38,7 @@ class EPG(Base):
 
 		super().__init__(oauth=oauth, query=query)
 
-	def GetAllCPChannels(self, account_id:str='') -> Response:
+	def GetAllCPChannels(self, account_id: str='') -> Response:
 		"""
 		Get a list of all Cloud Playout channels for an account.
 
@@ -48,10 +49,10 @@ class EPG(Base):
 			Response: API response as requests Response object.
 		"""
 
-		url = f'{EPG.base_url}/cp_channels'.format(account_id=account_id or self.oauth.account_id)
+		url = f'{self.base_url}/cp_channels'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url=url, headers=self.oauth.get_headers())
 
-	def GetEPG(self, channel_id:str, query:str='', account_id:str='') -> Response:
+	def GetEPG(self, channel_id: str, query: str='', account_id: str='') -> Response:
 		"""
 		Get EPG for a specific channel.
 
