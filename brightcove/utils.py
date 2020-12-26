@@ -36,7 +36,7 @@ class TimeString():
 	def from_minutes(cls, minutes:Union[int, float], fmt:str=None) -> str:
 		return cls.from_seconds(minutes*60, fmt)
 
-class SimpleProgressDisplay(object):
+class SimpleProgressDisplay():
 	"""
 	Class to provide a simple progress indicator.
 	"""
@@ -66,7 +66,6 @@ def empty_function(*args, **kwargs):
 	"""
 	It's an empty function.
 	"""
-	pass
 
 # function to print to stderr
 def eprint(*args, **kwargs):
@@ -86,7 +85,6 @@ def is_shared_by(video:dict) -> bool:
 	Checks if a video was shared by an account.
 	Returns True if it was shared by another account, False otherwise.
 	"""
-
 	shared = video.get('sharing')
 	if shared and shared.get('by_external_acct'):
 		return True
@@ -97,7 +95,6 @@ def is_shared_to(video:dict) -> bool:
 	Checks if a video was shared to an account.
 	Returns True if it was shared to another account, False otherwise.
 	"""
-
 	shared = video.get('sharing')
 	if shared and shared.get('to_external_acct'):
 		return True
@@ -115,7 +112,6 @@ def aspect_ratio(width: int , height: int) -> Tuple[int, int]:
 	Returns:
 		Tuple[int, int]: ratio of width to height
 	"""
-
 	def gcd(a, b):
 		return a if b == 0 else gcd(b, a % b)
 
@@ -140,7 +136,6 @@ def list_to_csv(row_list:list, filename:Optional[str]):
 	Returns:
 		bool: True if CSV successfully created, False otherwise.
 	"""
-
 	try:
 		with open(filename if filename else 'report.csv', 'w', newline='', encoding='utf-8') as file:
 			writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
@@ -160,7 +155,6 @@ def load_account_info(input_filename:Optional[str]=None) -> Tuple[str, str, str,
 	Returns:
 		Tuple[str, str, str, dict]: account ID, client ID, client secret and the full deserialized JSON object.
 	"""
-
 	# if no config file was passed we use the default
 	input_filename = input_filename or expanduser('~')+'/account_info.json'
 
@@ -197,7 +191,6 @@ def normalize_id(asset_id:Union[str, int, float]) -> str:
 	Returns:
 		str: string representation of the ID, None if invalid ID.
 	"""
-
 	_, response = wrangle_id(asset_id)
 	return response
 
@@ -212,7 +205,6 @@ def is_valid_id(asset_id:Union[str, int, float]) -> bool:
 	Returns:
 		bool: True if it's a valid ID, False otherwise.
 	"""
-
 	response, _ = wrangle_id(asset_id)
 	return response
 
@@ -227,7 +219,6 @@ def wrangle_id(asset_id:Union[str, int, float]) -> Tuple[bool, str]:
 	Returns:
 		(bool, str): True and string representation of ID if valid, False and None otherwise.
 	"""
-
 	is_valid = False
 	work_id = ''
 
@@ -272,7 +263,6 @@ def is_json(myjson:str) -> bool:
 	Returns:
 		bool: true if myjson is valid JSON, false otherwise.
 	"""
-
 	try:
 		_ = json.loads(myjson)
 	except:
@@ -292,7 +282,6 @@ def videos_from_file(filename:str, column_name:str='video_id', validate:bool=Tru
 	Returns:
 		List: List object with the video IDs from the file. None if there was an error processing the file.
 	"""
-
 	video_list = []
 	try:
 		if filename.lower().endswith('csv'):
@@ -334,9 +323,8 @@ def fetch_value(data: dict, key: str, default: str=''):
 		[type]: Value of key in dictionary if it exists, otherwise the provided default value.
 
 	Raises:
-	IndexError: If provided index is out of bounds.
+		IndexError: If provided index is out of bounds.
 	"""
-
 	value = default
 
 	if data and key:
@@ -367,15 +355,13 @@ def get_value(video: dict, field: str, default: str=''):
 	Returns:
 		str: Content of the field or default value if field doesn't exist.
 	"""
-
 	if '.' in field:
 		primary, secondary = field.split('.', 1)
 		try:
 			value = fetch_value(video, primary, default)
 			if value == default or value is None:
 				return default
-			else:
-				return get_value(value, secondary, default)
+			return get_value(value, secondary, default)
 		except TypeError:
 			return f'ERROR: primary/secondary field error -> {primary}/{secondary}'
 		except IndexError as e:
@@ -401,7 +387,6 @@ def default_split(data: str, separator: str=' ', default: str='', maxsplits: int
 	Returns:
 		list: List of split values.
 	"""
-
 	result = []
 
 	if maxsplits <= 0:

@@ -55,7 +55,6 @@ class DynamicIngest(Base):
 			ingest_profile (str, optional): Default ingest profile to use for ingests. Defaults to ''.
 			priority_queue (str, optional): Default priority queue to use for ingests. Defaults to 'normal'.
 		"""
-
 		super().__init__(oauth=oauth)
 		self.__ip = IngestProfiles(oauth)
 		self.__ingest_profile = self.SetIngestProfile(ingest_profile)
@@ -73,7 +72,6 @@ class DynamicIngest(Base):
 		Returns:
 			str: Profile ID if valid, '' otherwise.
 		"""
-
 		profile = self.__ingest_profile
 		if profile_id and self.__ip.ProfileExists(account_id=account_id, profile_id=profile_id):
 			profile = profile_id
@@ -93,7 +91,6 @@ class DynamicIngest(Base):
 		Returns:
 			str: ID or name of profile which was actually set as default.
 		"""
-
 		if profile_id and self.__ip.ProfileExists(account_id=self.oauth.account_id, profile_id=profile_id):
 			self.__ingest_profile:str = profile_id
 		else:
@@ -110,7 +107,6 @@ class DynamicIngest(Base):
 		Returns:
 			str: Name of the priority queue which was actually set as default.
 		"""
-
 		if priority_queue in ['low', 'normal', 'high']:
 			self.__priority_queue:str = priority_queue
 		else:
@@ -132,7 +128,6 @@ class DynamicIngest(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		account_id = account_id or self.oauth.account_id
 		url = f'{DynamicIngest.base_url}/videos/{video_id}/ingest-requests'.format(account_id=account_id)
 		data = {
@@ -146,8 +141,7 @@ class DynamicIngest(Base):
 		}
 		if not callbacks:
 			data.pop('callbacks', None)
-
-		return self.session.post(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(data))
+		return self.session.post(url=url, headers=self.oauth.headers, data=self._json_to_string(data))
 
 	def SubmitIngest(self, video_id: str, source_url: str, capture_images: bool=True, priority_queue: str='', callbacks: Optional[list]=None, profile_id: str='', account_id: str='') -> Response:
 		"""
@@ -165,7 +159,6 @@ class DynamicIngest(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		account_id = account_id or self.oauth.account_id
 		url = f'{DynamicIngest.base_url}/videos/{video_id}/ingest-requests'.format(account_id=account_id)
 		data = {
@@ -179,8 +172,7 @@ class DynamicIngest(Base):
 		}
 		if not callbacks:
 			data.pop('callbacks', None)
-
-		return self.session.post(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(data))
+		return self.session.post(url=url, headers=self.oauth.headers, data=self._json_to_string(data))
 
 	def UploadFile(self, video_id: str, file_name: str, callback: Optional[Callable]=None, account_id: str='') -> dict:
 		"""
@@ -196,9 +188,8 @@ class DynamicIngest(Base):
 		Returns:
 			dict: Dictionary with the relevant URLs returned by the CMS API. Empty in case of an error.
 		"""
-
 		url = f'{CMS.base_url}/videos/{video_id}/upload-urls/{file_name}'.format(account_id=account_id or self.oauth.account_id)
-		response = self.session.get(url=url, headers=self.oauth.get_headers())
+		response = self.session.get(url=url, headers=self.oauth.headers)
 		if response.status_code in DynamicIngest.success_responses:
 			upload_urls_response = response.json()
 			try:

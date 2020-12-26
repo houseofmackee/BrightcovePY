@@ -41,7 +41,6 @@ class PlaybackDevices(Base):
 		Args:
 			oauth (OAuth): OAuth instance to use for the API calls.
 		"""
-
 		super().__init__(oauth=oauth)
 
 	def GetAllUserDevices(self, user_id: str, account_id: str='') -> Response:
@@ -55,9 +54,8 @@ class PlaybackDevices(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/users/{user_id}/devices'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url=url, headers=self.oauth.get_headers())
+		return self.session.get(url=url, headers=self.oauth.headers)
 
 	def DeleteAllUserDevices(self, user_id: str, account_id: str='') -> Response:
 		"""
@@ -70,9 +68,8 @@ class PlaybackDevices(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/users/{user_id}/devices'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.delete(url=url, headers=self.oauth.get_headers())
+		return self.session.delete(url=url, headers=self.oauth.headers)
 
 	def UpdateUserDevice(self, user_id: str, device_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -87,9 +84,8 @@ class PlaybackDevices(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/users/{user_id}/devices/{device_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.patch(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.patch(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def DeleteUserDevice(self, user_id: str, device_id: str, account_id: str='') -> Response:
 		"""
@@ -103,6 +99,5 @@ class PlaybackDevices(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/users/{user_id}/devices/{device_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.delete(url=url, headers=self.oauth.get_headers())
+		return self.session.delete(url=url, headers=self.oauth.headers)

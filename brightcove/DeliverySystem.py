@@ -51,7 +51,6 @@ class DeliverySystem(Base):
 		Args:
 			oauth (OAuth): OAuth instance to use for the API calls
 		"""
-
 		super().__init__(oauth=oauth)
 
 	def ListRepositories(self, account_id: str='') -> Response:
@@ -64,9 +63,8 @@ class DeliverySystem(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = (self.base_url).format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url=url, headers=self.oauth.get_headers())
+		return self.session.get(url=url, headers=self.oauth.headers)
 
 	def GetRepositoryDetails(self, repo_name: str, account_id: str='') -> Response:
 		"""
@@ -79,9 +77,8 @@ class DeliverySystem(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/{repo_name}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def DeleteRepository(self, repo_name: str, account_id: str='') -> Response:
 		"""
@@ -94,9 +91,8 @@ class DeliverySystem(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/{repo_name}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.delete(url, headers=self.oauth.get_headers())
+		return self.session.delete(url, headers=self.oauth.headers)
 
 	def CreateRepository(self, repo_name: str, account_id: str='') -> Response:
 		"""
@@ -109,9 +105,8 @@ class DeliverySystem(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/{repo_name}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.put(url, headers=self.oauth.get_headers())
+		return self.session.put(url, headers=self.oauth.headers)
 
 	def ListFilesInRepository(self, repo_name: str, account_id: str='') -> Response:
 		"""
@@ -124,9 +119,8 @@ class DeliverySystem(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/{repo_name}/files'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def DeleteFileInRepository(self, repo_name: str, file_name: str, account_id: str='') -> Response:
 		"""
@@ -140,9 +134,8 @@ class DeliverySystem(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/{repo_name}/files/{file_name}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.delete(url, headers=self.oauth.get_headers())
+		return self.session.delete(url, headers=self.oauth.headers)
 
 	def AddFileToRepository(self, repo_name: str, file_name: str, account_id: str='') -> Response:
 		"""
@@ -156,9 +149,8 @@ class DeliverySystem(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/{repo_name}/files/{basename(file_name)}'.format(account_id=account_id or self.oauth.account_id)
 		upload_data = MultipartEncoder( fields={'contents': (None, open(file_name, 'rb'), 'text/plain')} )
-		access_token = self.oauth.get_access_token()
+		access_token = self.oauth.access_token
 		headers = { 'Authorization': f'Bearer {access_token}', 'Content-Type': upload_data.content_type }
 		return self.session.put(url, headers=headers, data=upload_data)

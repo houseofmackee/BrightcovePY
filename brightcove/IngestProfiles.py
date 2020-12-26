@@ -48,6 +48,7 @@ class IngestProfiles(Base):
 		Get a list of all ingest profiles for an account.
 	"""
 
+	# base URL for all API calls
 	base_url = 'https://ingestion.api.brightcove.com/v1/accounts/{account_id}'
 
 	def __init__(self, oauth: OAuth) -> None:
@@ -55,7 +56,6 @@ class IngestProfiles(Base):
 		Args:
 			oauth (OAuth): OAuth instance to use for the API calls.
 		"""
-
 		super().__init__(oauth=oauth)
 		# cache for ProfileExists
 		self.__previousProfile = ''
@@ -78,12 +78,11 @@ class IngestProfiles(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		# if it's not the same as before then find it and cache it
 		account_id = account_id or self.oauth.account_id
 		if account_id != self.__defaultProfileAccount:
 			url = f'{self.base_url}/configuration'.format(account_id=account_id)
-			self.__defaultProfileResponse = self.session.get(url=url, headers=self.oauth.get_headers())
+			self.__defaultProfileResponse = self.session.get(url=url, headers=self.oauth.headers)
 			self.__defaultProfileAccount = account_id
 		# return cached response
 		return self.__defaultProfileResponse
@@ -99,14 +98,13 @@ class IngestProfiles(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		# if it's not the same as before then find it and cache it
 		account_id = account_id or self.oauth.account_id
 		if self.__getProfileAccount != account_id or self.__getProfileID != profile_id:
 			url = f'{self.base_url}/profiles/{profile_id}'.format(account_id=account_id)
 			self.__getProfileID = profile_id
 			self.__getProfileAccount = account_id
-			self.__getProfileResponse = self.session.get(url=url, headers=self.oauth.get_headers())
+			self.__getProfileResponse = self.session.get(url=url, headers=self.oauth.headers)
 		# return cached response
 		return self.__getProfileResponse
 
@@ -121,7 +119,6 @@ class IngestProfiles(Base):
 		Returns:
 			bool: True if ingest profile exists, False otherwise.
 		"""
-
 		# check if it's a valid cached account/profile combo
 		account_id = account_id or self.oauth.account_id
 		if self.__previousProfile == profile_id and self.__previousAccount == account_id:
@@ -146,10 +143,9 @@ class IngestProfiles(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		self.__previousProfile = self.__previousAccount = ''
 		url = f'{self.base_url}/configuration'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.put(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.put(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def SetDefaultProfile(self, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -162,10 +158,9 @@ class IngestProfiles(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		self.__previousProfile = self.__previousAccount = ''
 		url = f'{self.base_url}/configuration'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.post(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.post(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def DeleteIngestProfile(self, profile_id: str, account_id: str='') -> Response:
 		"""
@@ -178,10 +173,9 @@ class IngestProfiles(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		self.__previousProfile = self.__previousAccount = ''
 		url = f'{self.base_url}/profiles/{profile_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.delete(url=url, headers=self.oauth.get_headers())
+		return self.session.delete(url=url, headers=self.oauth.headers)
 
 	def UpdateIngestProfile(self, profile_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -195,10 +189,9 @@ class IngestProfiles(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		self.__previousProfile = self.__previousAccount = ''
 		url = f'{self.base_url}/profiles/{profile_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.put(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.put(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def CreateIngestProfile(self, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -211,9 +204,8 @@ class IngestProfiles(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/profiles'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.post(url=url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.post(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def GetAllIngestProfiles(self, account_id: str='') -> Response:
 		"""
@@ -225,6 +217,5 @@ class IngestProfiles(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/profiles'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url=url, headers=self.oauth.get_headers())
+		return self.session.get(url=url, headers=self.oauth.headers)

@@ -27,11 +27,7 @@ class PlayerManagement(Base):
 		Get a player by ID from an account.
 
 	CreatePlayer(self, json_body: Union[str, dict], account_id: str='') -> Response
-		Create a player. The POST method creates a player by submitting a player configuration. The properties
-		of Brightcove Player you can manipulate with player management are detailed in the API documentation.
-		To create a player, a publisher must decide what properties the final player will have. If no properties
-		are given at creation, a blank player will be created with only the base player skin applied to the
-		player. A user may then use an HTTP PATCH method to update properties after the player has been created.
+		Create a player.
 
 	DeletePlayer(self, player_id: str, account_id: str='') -> Response
 		Delete a player and all embeds associated with it.
@@ -40,9 +36,7 @@ class PlayerManagement(Base):
 		Publish a player for optimization and production use.
 
 	UpdatePlayer(self, player_id: str, json_body: Union[str, dict], account_id: str='') -> Response
-		Update a single player. The PATCH method can be used on a single player to do a VERY limited update.
-		The only fields you can update in this manner are the name and description properties. All other
-		player configuration must be done via the PLAYER CONFIGURATIONS APIs, detailed in the API docs.
+		Update a single player.
 
 	GetPlayerConfiguration(self, player_id: str, branch: str, account_id: str='') -> Response
 		Get a preview or published player configuration.
@@ -73,16 +67,12 @@ class PlayerManagement(Base):
 
 	UpdateEmbedConfiguration(self, player_id: str, embed_id: str, json_body: Union[str, dict], account_id: str='', use_put: bool=False) -> Response
 		Update the configuration for an embed.
-		Note that you will need to publish the altered embed for optimization and production use.
 
 	GetConfigurationCombinations(self, player_id: str, embed_id: str, query: str, account_id: str='') -> Response
 		Retrieve the configuration for a parent/child combination of master and preview branches.
-		Using this endpoint provides a way to view what the resulting configuration would be when combining
-		different combinations of parent and child (also called embed) versions of players.
-		Using this endpoint does not change any configurations, it is only useful for seeing results of
-		merging changes to configurations.
 	"""
 
+	# base URL for all API calls
 	base_url = 'https://players.api.brightcove.com/v2/accounts/{account_id}'
 
 	def __init__(self, oauth: OAuth) -> None:
@@ -90,7 +80,6 @@ class PlayerManagement(Base):
 		Args:
 			oauth (OAuth): OAuth instance to use for the API calls.
 		"""
-
 		super().__init__(oauth=oauth)
 
 	def GetListOfPlayers(self, account_id: str='') -> Response:
@@ -103,9 +92,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def GetSinglePlayer(self, player_id: str, account_id: str='') -> Response:
 		"""
@@ -118,9 +106,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def CreatePlayer(self, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -137,9 +124,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.post(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.post(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def DeletePlayer(self, player_id: str, account_id: str='') -> Response:
 		"""
@@ -152,9 +138,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.delete(url, headers=self.oauth.get_headers())
+		return self.session.delete(url, headers=self.oauth.headers)
 
 	def PublishPlayer(self, player_id: str, account_id: str='') -> Response:
 		"""
@@ -167,9 +152,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}/publish'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.post(url, headers=self.oauth.get_headers())
+		return self.session.post(url, headers=self.oauth.headers)
 
 	def UpdatePlayer(self, player_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -185,9 +169,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.patch(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.patch(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def GetPlayerConfiguration(self, player_id: str, branch: str, account_id: str='') -> Response:
 		"""
@@ -201,9 +184,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}/configuration/{branch}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def UpdatePlayerConfiguration(self, player_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -217,9 +199,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}/configuration'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.patch(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.patch(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def GetAllPlugins(self, template_version: str='') -> Response:
 		"""
@@ -232,11 +213,10 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		if template_version:
 			template_version = f'?template_version={template_version}'
 		url = f'https://players.api.brightcove.com/v2/plugins{template_version}'
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def GetSinglePlugin(self, plugin_id: str) -> Response:
 		"""
@@ -248,12 +228,11 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		if plugin_id:
 			plugin_id = plugin_id.replace('@', '%40')
 			plugin_id = plugin_id.replace('/', '%2F')
 		url = f'https://players.api.brightcove.com/v2/plugins/{plugin_id}'
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def GetAllEmbeds(self, player_id: str, account_id: str='') -> Response:
 		"""
@@ -266,9 +245,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}/embeds'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def GetEmbed(self, player_id: str, embed_id: str, account_id: str='') -> Response:
 		"""
@@ -282,9 +260,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}/embeds/{embed_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def CreateEmbed(self, player_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -298,9 +275,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}/embeds'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.post(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.post(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def DeleteEmbed(self, player_id: str, embed_id: str, account_id: str='') -> Response:
 		"""
@@ -314,9 +290,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}/embeds/{embed_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.delete(url, headers=self.oauth.get_headers())
+		return self.session.delete(url, headers=self.oauth.headers)
 
 	def GetPlayerEmbedConfiguration(self, player_id: str, embed_id: str, branch: str, account_id: str='') -> Response:
 		"""
@@ -331,9 +306,8 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}/embeds/{embed_id}/configuration/{branch}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def UpdateEmbedConfiguration(self, player_id: str, embed_id: str, json_body: Union[str, dict], account_id: str='', use_put: bool=False) -> Response:
 		"""
@@ -350,11 +324,10 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}/embeds/{embed_id}/configuration/'.format(account_id=account_id or self.oauth.account_id)
 		if use_put:
-			return self.session.put(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
-		return self.session.patch(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+			return self.session.put(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+		return self.session.patch(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def GetConfigurationCombinations(self, player_id: str, embed_id: str, query: str, account_id: str='') -> Response:
 		"""
@@ -373,6 +346,5 @@ class PlayerManagement(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/players/{player_id}/embeds/{embed_id}/configuration/merged?{query}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)

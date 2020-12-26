@@ -40,7 +40,6 @@ class Key(Base):
 		Args:
 			oauth (OAuth): OAuth instance to use for the API calls.
 		"""
-
 		super().__init__(oauth=oauth)
 
 	def RegisterPublicKey(self, key_data: str, account_id: str='') -> Response:
@@ -54,10 +53,9 @@ class Key(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/keys'.format(account_id=account_id or self.oauth.account_id)
 		json_body = { "value": key_data }
-		return self.session.post(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.post(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def ListPublicKeys(self, account_id: str='') -> Response:
 		"""
@@ -69,9 +67,8 @@ class Key(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/keys'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def GetPublicKey(self, key_id: str, account_id: str='') -> Response:
 		"""
@@ -84,9 +81,8 @@ class Key(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/keys/{key_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def DeletePublicKey(self, key_id: str, account_id: str='') -> Response:
 		"""
@@ -99,6 +95,5 @@ class Key(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/keys/{key_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.delete(url, headers=self.oauth.get_headers())
+		return self.session.delete(url, headers=self.oauth.headers)

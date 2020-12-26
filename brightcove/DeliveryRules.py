@@ -56,7 +56,6 @@ class DeliveryRules(Base):
 		Args:
 			oauth (OAuth): OAuth instance to use for the API calls.
 		"""
-
 		super().__init__(oauth=oauth)
 
 	def DeliveryRulesEnabled(self, account_id: str='') -> bool:
@@ -69,7 +68,6 @@ class DeliveryRules(Base):
 		Returns:
 			bool: True if account is enabled for Delivery Rules. False otherwise
 		"""
-
 		return self.GetDeliveryRules(account_id=account_id).status_code == 200
 
 	def GetDeliveryRules(self, account_id: str='') -> Response:
@@ -82,9 +80,8 @@ class DeliveryRules(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = (self.base_url).format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def GetConditions(self, account_id: str='') -> Response:
 		"""
@@ -96,9 +93,8 @@ class DeliveryRules(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/conditions'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def UpdateConditions(self, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -111,9 +107,8 @@ class DeliveryRules(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/conditions'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.put(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.put(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def GetActions(self, account_id: str='') -> Response:
 		"""
@@ -125,9 +120,8 @@ class DeliveryRules(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/actions'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def GetSpecificAction(self, action_id: str, account_id: str='') -> Response:
 		"""
@@ -140,9 +134,8 @@ class DeliveryRules(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/actions/{action_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def CreateAction(self, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -155,9 +148,8 @@ class DeliveryRules(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/actions'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.post(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.post(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def UpdateAction(self, action_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -171,9 +163,8 @@ class DeliveryRules(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/actions/{action_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.put(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.put(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def DeleteAction(self, action_id: str, account_id: str='') -> Response:
 		"""
@@ -186,6 +177,5 @@ class DeliveryRules(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/actions/{action_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.delete(url, headers=self.oauth.get_headers())
+		return self.session.delete(url, headers=self.oauth.headers)

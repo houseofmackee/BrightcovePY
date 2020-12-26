@@ -33,9 +33,7 @@ class SocialSyndication(Base):
 		Deletes a syndication.
 
 	UpdateSyndication(self, syndication_id: str, json_body: Union[str, dict], account_id: str='') -> Response
-		Updates the configuration data for a syndication. A Syndication object specifying non-null values for
-		writable fields to be updated should be passed as the request body. Note that the type property cannot
-		be changed from the value specified when the syndication was created.
+		Updates the configuration data for a syndication.
 
 	GetTemplate(self, syndication_id: str, account_id: str='') -> Response
 		Gets a universal syndication's custom feed template.
@@ -52,7 +50,6 @@ class SocialSyndication(Base):
 		Args:
 			oauth (OAuth): OAuth instance to use for the API calls.
 		"""
-
 		super().__init__(oauth=oauth)
 
 	def GetAllSyndications(self, account_id: str='') -> Response:
@@ -65,9 +62,8 @@ class SocialSyndication(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = (self.base_url).format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def GetSyndication(self, syndication_id: str, account_id: str='') -> Response:
 		"""
@@ -80,9 +76,8 @@ class SocialSyndication(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/{syndication_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def CreateSyndication(self, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -95,9 +90,8 @@ class SocialSyndication(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = (self.base_url).format(account_id=account_id or self.oauth.account_id)
-		return self.session.post(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.post(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def DeleteSyndication(self, syndication_id: str, account_id: str='') -> Response:
 		"""
@@ -110,9 +104,8 @@ class SocialSyndication(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/{syndication_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.delete(url, headers=self.oauth.get_headers())
+		return self.session.delete(url, headers=self.oauth.headers)
 
 	def UpdateSyndication(self, syndication_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -128,9 +121,8 @@ class SocialSyndication(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/{syndication_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.patch(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.patch(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
 	def GetTemplate(self, syndication_id: str, account_id: str='') -> Response:
 		"""
@@ -143,9 +135,8 @@ class SocialSyndication(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/{syndication_id}/template'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def UploadTemplate(self, syndication_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
 		"""
@@ -159,6 +150,5 @@ class SocialSyndication(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/{syndication_id}/template'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.put(url, headers=self.oauth.get_headers(), data=self._json_to_string(json_body))
+		return self.session.put(url, headers=self.oauth.headers, data=self._json_to_string(json_body))

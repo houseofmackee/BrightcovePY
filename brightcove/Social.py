@@ -36,6 +36,7 @@ class Social(Base):
 		been distributed to. Note that this endpoint has pagination.
 	"""
 
+	# base URL for all API calls
 	base_url = 'https://edge.social.api.brightcove.com/v1/accounts/{account_id}'
 
 	def __init__(self, oauth: OAuth, query: str='') -> None:
@@ -44,7 +45,6 @@ class Social(Base):
 			oauth (OAuth): OAuth instance to use for the API calls.
 			query (str, optional): Query string to be used by API calls. Defaults to ''.
 		"""
-
 		super().__init__(oauth=oauth, query=query)
 
 	def ListStatusForVideos(self, search_query: str='', account_id: str='') -> Response:
@@ -59,10 +59,9 @@ class Social(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		search_query = search_query or self.search_query
 		url = f'{self.base_url}/videos/status?{search_query}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def ListStatusForVideo(self, video_id: str, search_query: str='', account_id: str='') -> Response:
 		"""
@@ -77,10 +76,9 @@ class Social(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		search_query = search_query or self.search_query
 		url = f'{self.base_url}/videos/{video_id}/status?{search_query}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def ListHistoryForVideos(self, search_query: str='', account_id: str='') -> Response:
 		"""
@@ -94,10 +92,9 @@ class Social(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		search_query = search_query or self.search_query
 		url = f'{self.base_url}/videos/history?{search_query}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)
 
 	def ListHistoryForVideo(self, video_id: str, search_query: str='', account_id: str='') -> Response:
 		"""
@@ -112,7 +109,6 @@ class Social(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		search_query = search_query or self.search_query
 		url = f'{self.base_url}/videos/{video_id}/history?{search_query}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url, headers=self.oauth.get_headers())
+		return self.session.get(url, headers=self.oauth.headers)

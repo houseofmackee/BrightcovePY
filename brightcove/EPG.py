@@ -35,7 +35,6 @@ class EPG(Base):
 			oauth (OAuth): OAuth instance to use for the API calls.
 			query (str, optional): Default search query for this instance.
 		"""
-
 		super().__init__(oauth=oauth, query=query)
 
 	def GetAllCPChannels(self, account_id: str='') -> Response:
@@ -48,9 +47,8 @@ class EPG(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		url = f'{self.base_url}/cp_channels'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url=url, headers=self.oauth.get_headers())
+		return self.session.get(url=url, headers=self.oauth.headers)
 
 	def GetEPG(self, channel_id: str, query: str='', account_id: str='') -> Response:
 		"""
@@ -64,8 +62,7 @@ class EPG(Base):
 		Returns:
 			Response: API response as requests Response object.
 		"""
-
 		base = 'https://sm.cloudplayout.brightcove.com/accounts/{account_id}'
 		query = query or self.search_query
 		url = f'{base}/channels/{channel_id}/epg?{query}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url=url, headers=self.oauth.get_headers())
+		return self.session.get(url=url, headers=self.oauth.headers)
