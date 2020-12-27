@@ -59,9 +59,20 @@ class CMS(Base):
 		return creator
 
 	#===========================================
-	# get number of videos in an account
+	# account based video information
 	#===========================================
+	#region account based video information
 	def GetVideoCount(self, search_query: str='', account_id: str='') -> int:
+		"""
+		Gets count of videos for the account or a search.
+
+		Args:
+			search_query (str, optional): Search query. Defaults to ''.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			int: Number of videos in account, -1 if error occured.
+		"""
 		search_query = search_query or self.search_query
 		url = f'{self.base_url}/videos/count?q={search_query}'.format(account_id=account_id or self.oauth.account_id)
 		response = self.session.get(url, headers=self.oauth.headers)
@@ -69,153 +80,374 @@ class CMS(Base):
 			return int(response.json().get('count'))
 		return -1
 
-	#===========================================
-	# create new video object in an account
-	#===========================================
-	def CreateVideo(self, video_title:str='Video Title', json_body:Optional[Union[dict,str]]=None, account_id:str='') -> Response:
-		url = f'{self.base_url}/videos/'.format(account_id=account_id or self.oauth.account_id)
-		json_body = json_body or { "name": video_title }
-		return self.session.post(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+	def GetVideos(self, page_size: int=20, page_offset: int=0, search_query: str='', account_id: str='') -> Response:
+		"""
+		Gets a page of video objects.
 
-	#===========================================
-	# get a video
-	#===========================================
-	def GetVideo(self, video_id:str, account_id:str='') -> Response:
-		url = f'{self.base_url}/videos/{video_id}'.format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url=url, headers=self.oauth.headers)
+		Args:
+			page_size (int, optional): Number of items to return. Defaults to 20.
+			page_offset (int, optional): Number of items to skip. Defaults to 0.
+			search_query (str, optional): Search query. Defaults to ''.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
 
-	#===========================================
-	# get videos in an account
-	#===========================================
-	def GetVideos(self, page_size:int=20, page_offset:int=0, search_query:str='', account_id:str='') -> Response:
+		Returns:
+			Response: API response as requests Response object.
+		"""
 		search_query = search_query or self.search_query
 		url = f'{self.base_url}/videos?limit={page_size}&offset={page_offset}&sort=created_at&q={search_query}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.headers)
 
-	#===========================================
-	# get light version of videos in an account
-	#===========================================
-	def GetLightVideos(self, page_size=20, page_offset=0, search_query:str='', account_id:str='') -> Response:
+	def GetLightVideos(self, page_size: int=20, page_offset: int=0, search_query: str='', account_id: str='') -> Response:
+		"""
+		Gets a page of video objects with fewer information.
+
+		Args:
+			page_size (int, optional): Number of items to return. Defaults to 20.
+			page_offset (int, optional): Number of items to skip. Defaults to 0.
+			search_query (str, optional): Search query. Defaults to ''.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
 		search_query = search_query or self.search_query
-		url = (self.base_url+'/lightvideos?limit={page_size}&offset={offset}&sort=created_at{query}').format(account_id=account_id or self.oauth.account_id, page_size=page_size, offset=page_offset, query='&q=' + search_query)
+		url = f'{self.base_url}/lightvideos?limit={page_size}&offset={page_offset}&sort=created_at&q={search_query}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.headers)
+	#endregion
 
 	#===========================================
-	# get a video's sources
+	# single video operations
 	#===========================================
-	def GetVideoSources(self, video_id:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/sources').format(account_id=account_id or self.oauth.account_id,video_id=video_id)
-		return self.session.get(url=url, headers=self.oauth.headers)
+	#region video management
+	def CreateVideo(self, video_title: str='Video Title', json_body: Optional[Union[dict,str]]=None, account_id: str='') -> Response:
+		"""
+		Create a new video object in the account.
+		Note: this does not ingest a video file - use the Dynamic Ingest API for ingestion
 
-	#===========================================
-	# get a video's images
-	#===========================================
-	def GetVideoImages(self, video_id:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/images').format(account_id=account_id or self.oauth.account_id,video_id=video_id)
-		return self.session.get(url=url, headers=self.oauth.headers)
+		Args:
+			video_title (str, optional): Name/title of the video. Defaults to 'Video Title'.
+			json_body (Optional[Union[dict,str]], optional): JSON data with metadata. Defaults to None.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
 
-	#===========================================
-	# get a video's audio tracks
-	#===========================================
-	def GetVideoAudioTracks(self, video_id:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/audio_tracks').format(account_id=account_id or self.oauth.account_id,video_id=video_id)
-		return self.session.get(url=url, headers=self.oauth.headers)
-
-	#===========================================
-	# get a specific audio track
-	#===========================================
-	def GetVideoAudioTrack(self, video_id:str, track_id, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/audio_tracks/{trackid}').format(account_id=account_id or self.oauth.account_id,video_id=video_id,trackid=track_id)
-		return self.session.get(url=url, headers=self.oauth.headers)
-
-	#===========================================
-	# delete a specific audio track
-	#===========================================
-	def DeleteVideoAudioTrack(self, video_id:str, track_id, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/audio_tracks/{trackid}').format(account_id=account_id or self.oauth.account_id,video_id=video_id,trackid=track_id)
-		return self.session.delete(url=url, headers=self.oauth.headers)
-
-	#===========================================
-	# update a specific audio track
-	#===========================================
-	def UpdateVideoAudioTrack(self, video_id:str, track_id, json_body, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/audio_tracks/{trackid}').format(account_id=account_id or self.oauth.account_id,video_id=video_id,trackid=track_id)
-		return self.session.patch(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
-
-	#===========================================
-	# delete a video
-	#===========================================
-	def DeleteVideo(self, video_id:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}').format(account_id=account_id or self.oauth.account_id,video_id=video_id)
-		return self.session.delete(url=url, headers=self.oauth.headers)
-
-	#===========================================
-	# get a digital master info
-	#===========================================
-	def GetDigitalMasterInfo(self, video_id:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/digital_master').format(account_id=account_id or self.oauth.account_id,video_id=video_id)
-		return self.session.get(url=url, headers=self.oauth.headers)
-
-	#===========================================
-	# delete a digital master
-	#===========================================
-	def DeleteMaster(self, video_id:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/digital_master').format(account_id=account_id or self.oauth.account_id,video_id=video_id)
-		return self.session.delete(url=url, headers=self.oauth.headers)
-
-	#===========================================
-	# update a video
-	#===========================================
-	def UpdateVideo(self, video_id:str, json_body:Union[str, dict], account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}').format(account_id=account_id or self.oauth.account_id,video_id=video_id)
-		return self.session.patch(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
-
-	#===========================================
-	# get custom fields
-	#===========================================
-	def GetCustomFields(self, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/video_fields').format(account_id=account_id or self.oauth.account_id)
-		return self.session.get(url=url, headers=self.oauth.headers)
-
-	#===========================================
-	# get ingest job status for a video
-	#===========================================
-	def GetStatusOfIngestJob(self, video_id:str, job_id:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/ingest_jobs/{jobid}').format(account_id=account_id or self.oauth.account_id,video_id=video_id,jobid=job_id)
-		return self.session.get(url=url, headers=self.oauth.headers)
-
-	#===========================================
-	# get all ingest jobs status for a video
-	#===========================================
-	def GetStatusOfIngestJobs(self, video_id:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/ingest_jobs').format(account_id=account_id or self.oauth.account_id,video_id=video_id)
-		return self.session.get(url=url, headers=self.oauth.headers)
-
-	#===========================================
-	# variants stuff
-	#===========================================
-	def GetAllVideoVariants(self, video_id:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/variants').format(account_id=account_id or self.oauth.account_id,video_id=video_id)
-		return self.session.get(url=url, headers=self.oauth.headers)
-
-	def CreateVideoVariant(self, video_id:str, json_body:Union[str, dict], account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/variants').format(account_id=account_id or self.oauth.account_id,video_id=video_id)
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/'.format(account_id=account_id or self.oauth.account_id)
+		json_body = json_body or { "name": video_title }
 		return self.session.post(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
-	def GetVideoVariant(self, video_id:str, language:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/variants/{language}').format(account_id=account_id or self.oauth.account_id,video_id=video_id, language=language)
+	def GetVideo(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Gets a video object - you can include up to 10 video ids separated by commas.
+
+		Args:
+			video_id (str): Video ID(s).
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url=url, headers=self.oauth.headers)
 
-	def UpdateVideoVariant(self, video_id:str, language:str, json_body:Union[str, dict], account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/variants/{language}').format(account_id=account_id or self.oauth.account_id,video_id=video_id, language=language)
-		return self.session.patch(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+	def DeleteVideo(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Deletes one or more videos.
+		Note that for this operation you can specify a comma-delimited list of video ids to delete
 
-	def DeleteVideoVariant(self, video_id:str, language:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/variants/{language}').format(account_id=account_id or self.oauth.account_id,video_id=video_id, language=language)
+		Args:
+			video_id (str): Video ID(s).
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.delete(url=url, headers=self.oauth.headers)
 
+	def UpdateVideo(self, video_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Update video metadata - note that this API does not ingest any media files - use the
+		Dynamic Ingest API for ingestion. Also note that replacing WebVTT text tracks is a
+		two-step operation - see Add WebVTT Captions for details.
+
+		Args:
+			video_id (str): Video ID.
+			json_body (Union[str, dict]): JSON data with video metadata.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.patch(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+
+	def GetVideoSources(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Gets an array of sources (renditions) for a video.
+
+		Args:
+			video_id (str): Video ID(s).
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/sources'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.headers)
+
+	def GetVideoImages(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Gets the images for a video.
+
+		Args:
+			video_id (str): Video ID(s).
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/images'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.headers)
+	#endregion
+
 	#===========================================
-	# subscriptions bla bla
+	# audio tracks
+	#===========================================
+	#region audio tracks
+	def GetVideoAudioTracks(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Gets the audio tracks for a video Dynamic Delivery only.
+
+		Args:
+			video_id (str): Video ID.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/audio_tracks'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.headers)
+
+	def GetVideoAudioTrack(self, video_id: str, track_id: str, account_id: str='') -> Response:
+		"""
+		Gets one audio track for a video by its ID Dynamic Delivery only.
+
+		Args:
+			video_id (str): Video ID.
+			track_id (str): Audio track ID.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/audio_tracks/{track_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.headers)
+
+	def DeleteVideoAudioTrack(self, video_id: str, track_id: str, account_id: str='') -> Response:
+		"""
+		Deletes one audio track for a video by its ID Dynamic Delivery only.
+
+		Args:
+			video_id (str): Video ID.
+			track_id (str): Audio track ID.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/audio_tracks/{track_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.delete(url=url, headers=self.oauth.headers)
+
+	def UpdateVideoAudioTrack(self, video_id: str, track_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Updates audio track metadata for a video Dynamic Delivery only.
+
+		Args:
+			video_id (str): Video ID.
+			track_id (str): Audio track ID.
+			json_body (Union[str, dict]): JSON data with the audio track information.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/audio_tracks/{track_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.patch(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+	#endregion
+
+	#===========================================
+	# digital master
+	#===========================================
+	#region digital master
+	def GetDigitalMasterInfo(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Gets the stored digital master for a video, if any.
+
+		Args:
+			video_id (str): Video ID.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/digital_master'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.headers)
+
+	def DeleteDigitalMaster(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Deletes the archived digital master for a video. Be sure to read Digital Master Delete API
+		before using this operation to understand the implications.
+
+		Args:
+			video_id (str): Video ID.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/digital_master'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.delete(url=url, headers=self.oauth.headers)
+	#endregion
+
+	#===========================================
+	# custom fields
+	#===========================================
+	#region custom fields
+	def GetCustomFields(self, account_id: str='') -> Response:
+		"""
+		Gets a list of custom fields for the account.
+
+		Args:
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/video_fields'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.headers)
+	#endregion
+
+	#===========================================
+	# ingest jobs
+	#===========================================
+	#region ingest jobs
+	def GetStatusOfIngestJob(self, video_id: str, job_id: str, account_id: str='') -> Response:
+		"""
+		Get the status of an ingest job associated with a video (including the original ingestion,
+		replacing and retranscoding the video). NOTE: this operation only works for videos that were
+		ingested using Dynamic Delivery profiles.
+
+		Args:
+			video_id (str): Video ID.
+			job_id (str): Ingest job ID.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/ingest_jobs/{job_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.headers)
+
+	def GetStatusOfIngestJobs(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Get the status of all ingest jobs associated with a video (including the original ingestion,
+		replacing and retranscoding the video). NOTE: this operation only works for videos that were
+		ingested using Dynamic Delivery profiles.
+
+		Args:
+			video_id (str): Video ID.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/ingest_jobs'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.headers)
+	#endregion
+
+	#===========================================
+	# variants
+	#===========================================
+	#region variants
+	def GetAllVideoVariants(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Gets the language variants for the video metadata.
+
+		Args:
+			video_id (str): Video ID.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/variants'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.headers)
+
+	def CreateVideoVariant(self, video_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Creates a language variant for a video metadata.
+
+		Args:
+			video_id (str): Video ID.
+			json_body (Union[str, dict]): JSON data with info for the variant.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/variants'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.post(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+
+	def GetVideoVariant(self, video_id: str, language: str, account_id: str='') -> Response:
+		"""
+		Gets the variant for the video metadata for the specified language
+
+		Args:
+			video_id (str): Video ID.
+			language (str): The language for the variant in the language-country code format (example: en-US).
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/variants/{language}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url=url, headers=self.oauth.headers)
+
+	def UpdateVideoVariant(self, video_id: str, language: str, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Updates a language variant for a video metadata.
+
+		Args:
+			video_id (str): Video ID.
+			language (str): The language for the variant in the language-country code format (example: en-US).
+			json_body (Union[str, dict]): JSON data with info for the variant.
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/variants/{language}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.patch(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+
+	def DeleteVideoVariant(self, video_id: str, language: str, account_id: str='') -> Response:
+		"""
+		Deletes a language variant for a video metadata.
+
+		Args:
+			video_id (str): Video ID.
+			language (str): The language for the variant in the language-country code format (example: en-US).
+			account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/variants/{language}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.delete(url=url, headers=self.oauth.headers)
+	#endregion
+
+	#===========================================
+	# notificatons/subscriptions
 	#===========================================
 	#region subscriptions
 	def GetSubscriptionsList(self, account_id: str='') -> Response:
@@ -278,7 +510,7 @@ class CMS(Base):
 	#endregion
 
 	#===========================================
-	# folders stuff
+	# folders
 	#===========================================
 	#region folders
 	def GetFolders(self, account_id: str='') -> Response:
@@ -401,7 +633,7 @@ class CMS(Base):
 	#endregion
 
 	#===========================================
-	# labels stuff
+	# labels
 	#===========================================
 	#region labels
 	def CreateLabel(self, json_body: Union[str, dict], account_id: str='') -> Response:
@@ -468,59 +700,577 @@ class CMS(Base):
 	#endregion
 
 	#===========================================
-	# playlists stuff
+	# playlists
 	#===========================================
-	def GetPlaylistsForVideo(self, video_id:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/references').format(account_id=account_id or self.oauth.account_id, video_id=video_id)
+	#region playlists
+	def GetPlaylistsForVideo(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Gets an array of Manual (EXPLICIT) playlists that contain a video object for the account
+
+		Args:
+			video_id (str): Video ID or reference ID.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/references'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.headers)
 
-	def RemoveVideoFromAllPlaylists(self, video_id:str, account_id:str='') -> Response:
-		url = (self.base_url+'/videos/{video_id}/references').format(account_id=account_id or self.oauth.account_id, video_id=video_id)
+	def RemoveVideoFromAllPlaylists(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Removes the video from all EXPLICIT playlists for the account.
+
+		Args:
+			video_id (str): Video ID or reference ID.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/references'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.delete(url, headers=self.oauth.headers)
 
-	def GetVideosInPlaylist(self, playlist_id, include_details=True, account_id:str='') -> Response:
-		url = (self.base_url+'/playlists/{playlistid}/videos?include_details={details}').format(account_id=account_id or self.oauth.account_id, playlistid=playlist_id, details=('false','true')[include_details])
+	def GetVideosInPlaylist(self, playlist_id: str, include_details: bool=True, account_id: str='') -> Response:
+		"""
+		Gets the video objects for videos in a playlist for the account.
+
+		Args:
+			playlist_id (str): Playlist ID.
+			include_details (bool, optional): When it's False, API call response won't include caption
+				info in [text_tracks] at all and it makes the response returns quicker. Defaults to True.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/playlists/{playlist_id}/videos?include_details={("false","true")[include_details]}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.headers)
 
-	def GetVideoCountInPlaylist(self, playlist_id, account_id:str='') -> Response:
-		url = (self.base_url+'/counts/playlists/{playlistid}/videos').format(account_id=account_id or self.oauth.account_id, playlistid=playlist_id)
+	def GetVideoCountInPlaylist(self, playlist_id: str, account_id: str='') -> Response:
+		"""
+		Gets a count of the videos in a playlist for the account.
+
+		Args:
+			playlist_id (str): Playlist ID.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/counts/playlists/{playlist_id}/videos'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.headers)
 
-	def DeletePlaylist(self, playlist_id, account_id:str='') -> Response:
-		url = (self.base_url+'/playlists/{playlistid}').format(account_id=account_id or self.oauth.account_id, playlistid=playlist_id)
+	def DeletePlaylist(self, playlist_id: str, account_id: str='') -> Response:
+		"""
+		Deletes a playlist.
+
+		Args:
+			playlist_id (str): Playlist ID.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/playlists/{playlist_id}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.delete(url, headers=self.oauth.headers)
 
-	def UpdatePlaylist(self, playlist_id, json_body, account_id:str='') -> Response:
-		url = (self.base_url+'/playlists/{playlistid}').format(account_id=account_id or self.oauth.account_id, playlistid=playlist_id)
+	def UpdatePlaylist(self, playlist_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Updates a playlist for the account.
+
+		Args:
+			playlist_id (str): Playlist ID.
+			json_body (Union[str, dict]): JSON data with the data.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/playlists/{playlist_id}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.patch(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
-	def GetPlaylistByID(self, playlist_id, account_id:str='') -> Response:
-		url = (self.base_url+'/playlists/{playlistid}').format(account_id=account_id or self.oauth.account_id, playlistid=playlist_id)
+	def GetPlaylistByID(self, playlist_id: str, account_id: str='') -> Response:
+		"""
+		Gets one or more playlist objects for the account.
+
+		Args:
+			playlist_id (str): Video Cloud playlist ID, or multiple playlist IDs separated by commas.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/playlists/{playlist_id}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.headers)
 
-	def GetPlaylistCount(self, search_query:str='', account_id:str='') -> Response:
-		search_query = search_query or self.search_query
-		url = (self.base_url+'/counts/playlists?q={query}').format(account_id=account_id or self.oauth.account_id, query=search_query)
+	def GetPlaylistCount(self, search_query: str='', account_id: str='') -> Response:
+		"""
+		Gets a count of playlists in the account for the account.
+
+		Args:
+			search_query (str, optional): Search string. See search guide for details. Defaults to ''.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/counts/playlists?q={search_query or self.search_query}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.headers)
 
-	def GetPlaylists(self, sort='-updated_at', search_query:str='', page_size=100, page_offset=0, account_id:str='') -> Response:
+	def GetPlaylists(self, sort: str='-updated_at', search_query: str='', page_size: int=20, page_offset: int=0, account_id: str='') -> Response:
+		"""
+		Gets a page of playlist objects for the account.
+
+		Args:
+			sort (str, optional): Field to sort results by. Defaults to '-updated_at'.
+			search_query (str, optional): Search query. Defaults to ''.
+			page_size (int, optional): Number of items to return. Defaults to 200.
+			page_offset (int, optional): Number of items to skip. Defaults to 0.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
 		search_query = search_query or self.search_query
 		if sort not in ['name', 'reference_id', 'created_at', 'published_at', 'updated_at', 'schedule.starts_at', 'schedule.ends_at', 'state', 'plays_total', 'plays_trailing_week', '-name', '-reference_id', '-created_at', '-published_at', '-updated_at', '-schedule.starts_at', '-schedule.ends_at', '-state', '-plays_total', '-plays_trailing_week']:
 			sort = '-updated_at'
-		url = (self.base_url+'/playlists?limit={limit}&offset={offset}&sort={sort}&q={query}').format(account_id=account_id or self.oauth.account_id, limit=page_size, offset=page_offset, sort=sort, query=search_query)
+		url = f'{self.base_url}/playlists?limit={page_size}&offset={page_offset}&sort={sort}&q={search_query}'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.headers)
 
-	def CreatePlaylist(self, json_body, account_id:str='') -> Response:
-		url = (self.base_url+'/playlists').format(account_id=account_id or self.oauth.account_id)
+	def CreatePlaylist(self, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Creates a new playlist.
+		A maximum of 100 videos can be added to a playlist (both Manual and Smart). There is no limit
+		to the number of playlists that can be created. The videos that are initially loaded into a
+		playlist in the player is determined by the type of playlist.
+
+		Args:
+			json_body (Union[str, dict]): JSON data with the needed information.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/playlists'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.post(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+	#endregion
 
 	#===========================================
-	# Assets stuff
+	# assets
 	#===========================================
-	def GetDynamicRenditions(self, video_id:str, account_id:str='') -> Response:
+	#region assets
+	def GetAssets(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Gets assets for a given video.
+
+		Args:
+			video_id (str): Video ID.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/assets'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url, headers=self.oauth.headers)
+
+	def GetDynamicRenditions(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Gets a list of dynamic renditions for a Dynamic Delivery video.
+
+		Args:
+			video_id (str): Video ID.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
 		url = f'{self.base_url}/videos/{video_id}/assets/dynamic_renditions'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.headers)
 
-	def GetRenditionList(self, video_id:str, account_id:str='') -> Response:
+	def GetRenditionList(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Gets a list of renditions for a given video.
+		Note: this endpoint is for renditions created using the legacy ingest profiles.
+
+		Args:
+			video_id (str): Video ID.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
 		url = f'{self.base_url}/videos/{video_id}/assets/renditions'.format(account_id=account_id or self.oauth.account_id)
 		return self.session.get(url, headers=self.oauth.headers)
+
+	def GetRendition(self, video_id: str, asset_id: str, account_id: str='') -> Response:
+		"""
+		Gets a specified rendition for a video.
+
+		Args:
+			video_id (str): Video ID.
+			asset_id (str): Asset ID.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/assets/renditions/{asset_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url, headers=self.oauth.headers)
+
+	def DeleteRendition(self, video_id: str, asset_id: str, account_id: str='') -> Response:
+		"""
+		Deletes a remote rendition for the given video. Note: this operation is only for remote renditions
+		for remote asset videos do not use it for renditions created by Video Cloud for ingested videos.
+
+		Args:
+			video_id (str): Video ID.
+			asset_id (str): Asset ID.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/assets/renditions/{asset_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.delete(url, headers=self.oauth.headers)
+
+	def UpdateRendition(self, video_id: str, asset_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Update the location for a remote rendition.
+
+		Args:
+			video_id (str): Video ID.
+			asset_id (str): Asset ID.
+			json_body (Union[str, dict]): JSON data with the needed information.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/assets/renditions/{asset_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.patch(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+
+	def AddRendition(self, video_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Add a remote rendition to the given video.
+
+		Args:
+			video_id (str): Video ID.
+			json_body (Union[str, dict]): JSON data with the needed information.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/assets/renditions'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.post(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+	#endregion
+
+	#===========================================
+	# manifests
+	#===========================================
+	#region manifests
+	@staticmethod
+	def ResolveManifestType(manifest_type: str) -> str:
+		"""
+		Translates a manifest type to the proper API endpoint.
+		"""
+		manifest_types = {
+			"hls" : "hls_manifest",
+			"dash" : "dash_manifests",
+			"hds" : "hds_manifest",
+			"ism" : "ism_manifest",
+			"ismc" : "ismc_manifest"
+		}
+		return manifest_types.get(manifest_type.lower().strip(), '')
+
+	def GetManifestList(self, video_id: str, manifest_type: str, account_id: str='') -> Response:
+		"""
+		Gets a list of manifests of manifest_type for a given video.
+		Note: this method only returns remote asset manifest(s), not for ingested videos.
+
+		Args:
+			video_id (str): Video ID.
+			manifest_type (str): Manifest format type.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		manifest_type = self.ResolveManifestType(manifest_type)
+		url = f'{self.base_url}/videos/{video_id}/assets/{manifest_type}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url, headers=self.oauth.headers)
+
+	def AddManifest(self, video_id: str, manifest_type: str, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Adds the location of an manifest_type file for a remote asset.
+
+		Args:
+			video_id (str): Video ID.
+			manifest_type (str): Manifest format type.
+			json_body (Union[str, dict]): JSON data with the needed information.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		manifest_type = self.ResolveManifestType(manifest_type)
+		url = f'{self.base_url}/videos/{video_id}/assets/{manifest_type}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.post(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+
+	def GetManifest(self, video_id: str, asset_id: str, manifest_type: str, account_id: str='') -> Response:
+		"""
+		Gets a specified manifest_type manifest for a video.
+
+		Args:
+			video_id (str): Video ID.
+			asset_id (str): Asset ID.
+			manifest_type (str): Manifest format type.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		manifest_type = self.ResolveManifestType(manifest_type)
+		url = f'{self.base_url}/videos/{video_id}/assets/{manifest_type}/{asset_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url, headers=self.oauth.headers)
+
+	def DeleteManifest(self, video_id: str, asset_id: str, manifest_type: str, account_id: str='') -> Response:
+		"""
+		Deletes an manifest_type manifest file for a remote asset.
+
+		Args:
+			video_id (str): Video ID.
+			asset_id (str): Asset ID.
+			manifest_type (str): Manifest format type.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		manifest_type = self.ResolveManifestType(manifest_type)
+		url = f'{self.base_url}/videos/{video_id}/assets/{manifest_type}/{asset_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.delete(url, headers=self.oauth.headers)
+
+	def UpdateManifest(self, video_id: str, asset_id: str, manifest_type: str, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Updates the location of a remote manifest_type manifest file for a remote asset.
+
+		Args:
+			video_id (str): Video ID.
+			asset_id (str): Asset ID.
+			manifest_type (str): Manifest format type.
+			json_body (Union[str, dict]): JSON data with the needed information.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		manifest_type = self.ResolveManifestType(manifest_type)
+		url = f'{self.base_url}/videos/{video_id}/assets/{manifest_type}/{asset_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.patch(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+	#endregion
+
+	#===========================================
+	# media sharing
+	#===========================================
+	#region media sharing
+	def ListChannels(self, account_id: str='') -> Response:
+		"""
+		Gets a list of channels (currently there is only one default channel).
+		This is a Master account operation.
+
+		Args:
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/channels'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url, headers=self.oauth.headers)
+
+	def GetChannelDetails(self, channel_name: str='default', account_id: str='') -> Response:
+		"""
+		Gets settings for a sharing channel (currently there is only one default channel).
+		This is a Master account operation.
+
+		Args:
+			channel_name (str, optional): The name of the channel. Defaults to 'default'.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/channels/{channel_name}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url, headers=self.oauth.headers)
+
+	def UpdateChannel(self, json_body: Union[str, dict], channel_name: str='default', account_id: str='') -> Response:
+		"""
+		Updates settings for a sharing channel (currently there is only one default channel).
+		This is a Master account operation
+
+		Args:
+			channel_name (str, optional): The name of the channel. Defaults to 'default'.
+			json_body (Union[str, dict]): JSON data with the needed information.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/channels/{channel_name}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.patch(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+
+	def ListChannelAffiliates(self, channel_name: str='default', account_id: str='') -> Response:
+		"""
+		Gets a list of affiliates for a channel. This is a Master account operation.
+
+		Args:
+			channel_name (str, optional): The name of the channel. Defaults to 'default'.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/channels/{channel_name}/members'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url, headers=self.oauth.headers)
+
+	def AddAffiliate(self, affiliate_account_id: str, json_body: Union[str, dict], channel_name: str='default', account_id: str='') -> Response:
+		"""
+		Adds an affiliate to a channel - this is a Master account operation.
+
+		Args:
+			affiliate_account_id (str): Video Cloud affiliate account ID for media sharing relationships.
+			channel_name (str, optional): The name of the channel. Defaults to 'default'.
+			json_body (Union[str, dict]): JSON data with the needed information.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/channels/{channel_name}/members/{affiliate_account_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.put(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+
+	def RemoveAffiliate(self, affiliate_account_id: str, channel_name: str='default', account_id: str='') -> Response:
+		"""
+		Removes an affiliate from a channel - this is a Master account operation.
+
+		Args:
+			affiliate_account_id (str): Video Cloud affiliate account ID for media sharing relationships.
+			channel_name (str, optional): The name of the channel. Defaults to 'default'.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/channels/{channel_name}/members/{affiliate_account_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.delete(url, headers=self.oauth.headers)
+
+	def ListContracts(self, account_id: str='') -> Response:
+		"""
+		Gets a list of available contracts.
+
+		Args:
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/contracts'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url, headers=self.oauth.headers)
+
+	def GetContract(self, master_account_id: str, account_id: str='') -> Response:
+		"""
+		Gets contract for specific account.
+
+		Args:
+			master_account_id (str): Video Cloud master account ID for media sharing relationships.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/contracts/{master_account_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url, headers=self.oauth.headers)
+
+	def ApproveContract(self, master_account_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Approve a contract - this is an Affiliate account operation.
+
+		Args:
+			master_account_id (str): Video Cloud master account ID for media sharing relationships.
+			json_body (Union[str, dict]): JSON data with the needed information.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/contracts/{master_account_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.patch(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+
+	def ListShares(self, video_id: str, account_id: str='') -> Response:
+		"""
+		Lists the existing shares for an account - this is a Master account operation - do this
+		before sharing to insure that you are not re-sharing to an affiliate, which would
+		overwrite any affiliate metadata changes
+
+		Args:
+			video_id (str): Video ID.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/shares'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url, headers=self.oauth.headers)
+
+	def ShareVideo(self, video_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
+		"""
+		Shares a video to one or more affiliates - this is an Master account operation - if the
+		video has already been shared to an affiliate, this operation will re-share it and
+		overwrite any affiliate metadata changes
+
+		Args:
+			video_id (str): Video ID.
+			json_body (Union[str, dict]): JSON data with the needed information.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/shares'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.post(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+
+	def GetShare(self, video_id: str, affiliate_account_id: str, account_id: str='') -> Response:
+		"""
+		Lists the existing shares for an account - this is a Master account operation - do this before
+		sharing to insure that you are not re-sharing to an affiliate, which would overwrite any
+		affiliate metadata changes
+
+		Args:
+			video_id (str): Video ID.
+			affiliate_account_id (str): Video Cloud affiliate account ID for media sharing relationships.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/shares/{affiliate_account_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.get(url, headers=self.oauth.headers)
+
+	def UnshareVideo(self, video_id: str, affiliate_account_id: str, account_id: str='') -> Response:
+		"""
+		Un-shares a video with a specific affiliate - this is an Master account operation - do this before
+		sharing to insure that you are not re-sharing to an affiliate, which would overwrite any affiliate
+		metadata changes
+
+		Args:
+			video_id (str): Video ID.
+			affiliate_account_id (str): Video Cloud affiliate account ID for media sharing relationships.
+			account_id (str, optional): Video Cloud account ID. Defaults to ''.
+
+		Returns:
+			Response: API response as requests Response object.
+		"""
+		url = f'{self.base_url}/videos/{video_id}/shares/{affiliate_account_id}'.format(account_id=account_id or self.oauth.account_id)
+		return self.session.delete(url, headers=self.oauth.headers)
+	#endregion
