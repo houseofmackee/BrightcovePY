@@ -20,6 +20,233 @@ class CMS(Base):
 
 	Methods:
 	--------
+	GetCreatedBy(video: dict) -> str
+		Gets creator of a video.
+
+	GetVideoCount(self, search_query: str='', account_id: str='') -> int
+		Gets count of videos for the account or a search.
+
+	GetVideos(self, page_size: int=20, page_offset: int=0, search_query: str='', account_id: str='') -> Response
+		Gets a page of video objects.
+
+	GetLightVideos(self, page_size: int=20, page_offset: int=0, search_query: str='', account_id: str='') -> Response
+		Gets a page of video objects with fewer information.
+
+	CreateVideo(self, video_title: str='Video Title', json_body: Optional[Union[dict,str]]=None, account_id: str='') -> Response
+		Create a new video object in the account.
+
+	GetVideo(self, video_id: str, account_id: str='') -> Response
+		Gets a video object.
+
+	DeleteVideo(self, video_id: str, account_id: str='') -> Response
+		Deletes one or more videos.
+
+	UpdateVideo(self, video_id: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Update video metadata.
+
+	GetVideoSources(self, video_id: str, account_id: str='') -> Response
+		Gets an array of sources (renditions) for a video.
+
+	GetVideoImages(self, video_id: str, account_id: str='') -> Response
+		Gets the images for a video.
+
+	GetVideoAudioTracks(self, video_id: str, account_id: str='') -> Response
+		Gets the audio tracks for a video Dynamic Delivery only.
+
+	GetVideoAudioTrack(self, video_id: str, track_id: str, account_id: str='') -> Response
+		Gets one audio track for a video by its ID Dynamic Delivery only.
+
+	DeleteVideoAudioTrack(self, video_id: str, track_id: str, account_id: str='') -> Response
+		Deletes one audio track for a video by its ID Dynamic Delivery only.
+
+	UpdateVideoAudioTrack(self, video_id: str, track_id: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Updates audio track metadata for a video Dynamic Delivery only.
+
+	GetDigitalMasterInfo(self, video_id: str, account_id: str='') -> Response
+		Gets the stored digital master for a video, if any.
+
+	DeleteDigitalMaster(self, video_id: str, account_id: str='') -> Response
+		Deletes the archived digital master for a video.
+
+	GetCustomFields(self, account_id: str='') -> Response
+		Gets a list of custom fields for the account.
+
+	GetStatusOfIngestJob(self, video_id: str, job_id: str, account_id: str='') -> Response
+		Get the status of an ingest job associated with a video.
+
+	GetStatusOfIngestJobs(self, video_id: str, account_id: str='') -> Response
+		Get the status of all ingest jobs associated with a video.
+
+	GetAllVideoVariants(self, video_id: str, account_id: str='') -> Response
+		Gets the language variants for the video metadata.
+
+	CreateVideoVariant(self, video_id: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Creates a language variant for a video metadata.
+
+	GetVideoVariant(self, video_id: str, language: str, account_id: str='') -> Response
+		Gets the variant for the video metadata for the specified language.
+
+	UpdateVideoVariant(self, video_id: str, language: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Updates a language variant for a video metadata.
+
+	DeleteVideoVariant(self, video_id: str, language: str, account_id: str='') -> Response
+		Deletes a language variant for a video metadata.
+
+	GetSubscriptionsList(self, account_id: str='') -> Response
+		Get a list of all notification subscriptions for the account.
+
+	GetSubscription(self, sub_id: str, account_id: str='') -> Response
+		Get a notification subscription for the account.
+
+	CreateSubscription(self, callback_url: str, account_id: str='') -> Response
+		Establishes up to 10 endpoints that video changes should be sent to.
+
+	DeleteSubscription(self, sub_id: str, account_id: str='') -> Response
+		Delete a notification subscription for the account.
+
+	GetFolders(self, account_id: str='') -> Response
+		Gets list of folders for the account.
+
+	CreateFolder(self, folder_name: str, account_id: str='') -> Response
+		Create a new folder for the account.
+
+	GetFolderInformation(self, folder_id: str, account_id: str='') -> Response
+		Gets information about a folder.
+
+	UpdateFolderName(self, folder_id: str, folder_name: str, account_id: str='') -> Response
+		Update the folder name.
+
+	DeleteFolder(self, folder_id: str, account_id: str='') -> Response
+		Delete a folder.
+
+	GetVideosInFolder(self, folder_id: str, page_size: int=20, page_offset: int=0, account_id: str='') -> Response
+		Gets list of video objects in a folder.
+
+	AddVideoToFolder(self, folder_id: str, video_id: str, account_id: str='') -> Response
+		Add a video to a folder.
+
+	RemoveVideoFromFolder(self, folder_id: str, video_id: str, account_id: str='') -> Response
+		Remove a video from a folder.
+
+	CreateLabel(self, json_body: Union[str, dict], account_id: str='') -> Response
+		Create a new label for the account.
+
+	GetLabels(self, account_id: str='') -> Response
+		Gets list of labels for the account.
+
+	UpdateLabel(self, label_path: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Update a label for the account.
+
+	DeleteLabel(self, label_path: str, account_id: str='') -> Response
+		Delete a label.
+
+	GetPlaylistsForVideo(self, video_id: str, account_id: str='') -> Response
+		Gets an array of Manual (EXPLICIT) playlists that contain a video object for the account.
+
+	RemoveVideoFromAllPlaylists(self, video_id: str, account_id: str='') -> Response
+		Removes the video from all EXPLICIT playlists for the account.
+
+	GetVideosInPlaylist(self, playlist_id: str, include_details: bool=True, account_id: str='') -> Response
+		Gets the video objects for videos in a playlist for the account.
+
+	GetVideoCountInPlaylist(self, playlist_id: str, account_id: str='') -> Response
+		Gets a count of the videos in a playlist for the account.
+
+	DeletePlaylist(self, playlist_id: str, account_id: str='') -> Response
+		Deletes a playlist.
+
+	UpdatePlaylist(self, playlist_id: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Updates a playlist for the account.
+
+	GetPlaylistByID(self, playlist_id: str, account_id: str='') -> Response
+		Gets one or more playlist objects for the account.
+
+	GetPlaylistCount(self, search_query: str='', account_id: str='') -> Response
+		Gets a count of playlists in the account for the account.
+
+	GetPlaylists(self, sort: str='-updated_at', search_query: str='', page_size: int=20, page_offset: int=0, account_id: str='') -> Response
+		Gets a page of playlist objects for the account.
+
+	CreatePlaylist(self, json_body: Union[str, dict], account_id: str='') -> Response
+		Creates a new playlist.
+
+	GetAssets(self, video_id: str, account_id: str='') -> Response
+		Gets assets for a given video.
+
+	GetDynamicRenditions(self, video_id: str, account_id: str='') -> Response
+		Gets a list of dynamic renditions for a Dynamic Delivery video.
+
+	GetRenditionList(self, video_id: str, account_id: str='') -> Response
+		Gets a list of renditions for a given video.
+
+	GetRendition(self, video_id: str, asset_id: str, account_id: str='') -> Response
+		Gets a specified rendition for a video.
+
+	DeleteRendition(self, video_id: str, asset_id: str, account_id: str='') -> Response
+		Deletes a remote rendition for the given video.
+
+	UpdateRendition(self, video_id: str, asset_id: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Update the location for a remote rendition.
+
+	AddRendition(self, video_id: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Add a remote rendition to the given video.
+
+	ResolveManifestType(manifest_type: str) -> str
+		Translates a manifest type to the proper API endpoint.
+
+	GetManifestList(self, video_id: str, manifest_type: str, account_id: str='') -> Response
+		Gets a list of manifests of manifest_type for a given video.
+
+	AddManifest(self, video_id: str, manifest_type: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Adds the location of an manifest_type file for a remote asset.
+
+	GetManifest(self, video_id: str, asset_id: str, manifest_type: str, account_id: str='') -> Response
+		Gets a specified manifest_type manifest for a video.
+
+	DeleteManifest(self, video_id: str, asset_id: str, manifest_type: str, account_id: str='') -> Response
+		Deletes an manifest_type manifest file for a remote asset.
+
+	UpdateManifest(self, video_id: str, asset_id: str, manifest_type: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Updates the location of a remote manifest_type manifest file for a remote asset.
+
+	ListChannels(self, account_id: str='') -> Response
+		Gets a list of channels.
+
+	GetChannelDetails(self, channel_name: str='default', account_id: str='') -> Response
+		Gets settings for a sharing channel.
+
+	UpdateChannel(self, json_body: Union[str, dict], channel_name: str='default', account_id: str='') -> Response
+		Updates settings for a sharing channel.
+
+	ListChannelAffiliates(self, channel_name: str='default', account_id: str='') -> Response
+		Gets a list of affiliates for a channel.
+
+	AddAffiliate(self, affiliate_account_id: str, json_body: Union[str, dict], channel_name: str='default', account_id: str='') -> Response
+		Adds an affiliate to a channel.
+
+	RemoveAffiliate(self, affiliate_account_id: str, channel_name: str='default', account_id: str='') -> Response
+		Removes an affiliate from a channel.
+
+	ListContracts(self, account_id: str='') -> Response
+		Gets a list of available contracts.
+
+	GetContract(self, master_account_id: str, account_id: str='') -> Response
+		Gets contract for specific account.
+
+	ApproveContract(self, master_account_id: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Approve a contract.
+
+	ListShares(self, video_id: str, account_id: str='') -> Response
+		Lists the existing shares for an account.
+
+	ShareVideo(self, video_id: str, json_body: Union[str, dict], account_id: str='') -> Response
+		Shares a video to one or more affiliates.
+
+	GetShare(self, video_id: str, affiliate_account_id: str, account_id: str='') -> Response
+		Lists the existing shares for an account.
+
+	UnshareVideo(self, video_id: str, affiliate_account_id: str, account_id: str='') -> Response
+		Un-shares a video with a specific affiliate.
 	"""
 
 	# base URL for API calls
@@ -138,7 +365,7 @@ class CMS(Base):
 
 	def GetVideo(self, video_id: str, account_id: str='') -> Response:
 		"""
-		Gets a video object - you can include up to 10 video ids separated by commas.
+		Gets a video object - you can include up to 10 video IDs separated by commas.
 
 		Args:
 			video_id (str): Video ID(s).
@@ -1211,7 +1438,7 @@ class CMS(Base):
 		"""
 		Lists the existing shares for an account - this is a Master account operation - do this
 		before sharing to insure that you are not re-sharing to an affiliate, which would
-		overwrite any affiliate metadata changes
+		overwrite any affiliate metadata changes.
 
 		Args:
 			video_id (str): Video ID.
@@ -1227,7 +1454,7 @@ class CMS(Base):
 		"""
 		Shares a video to one or more affiliates - this is an Master account operation - if the
 		video has already been shared to an affiliate, this operation will re-share it and
-		overwrite any affiliate metadata changes
+		overwrite any affiliate metadata changes.
 
 		Args:
 			video_id (str): Video ID.
@@ -1244,7 +1471,7 @@ class CMS(Base):
 		"""
 		Lists the existing shares for an account - this is a Master account operation - do this before
 		sharing to insure that you are not re-sharing to an affiliate, which would overwrite any
-		affiliate metadata changes
+		affiliate metadata changes.
 
 		Args:
 			video_id (str): Video ID.
@@ -1261,7 +1488,7 @@ class CMS(Base):
 		"""
 		Un-shares a video with a specific affiliate - this is an Master account operation - do this before
 		sharing to insure that you are not re-sharing to an affiliate, which would overwrite any affiliate
-		metadata changes
+		metadata changes.
 
 		Args:
 			video_id (str): Video ID.
