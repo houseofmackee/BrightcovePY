@@ -9,6 +9,7 @@ packages
 .vscode
 .idea
 .venv
+.env
 .pylintrc
 .*_cache
 *.user
