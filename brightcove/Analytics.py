@@ -1,7 +1,7 @@
 """
 Implements wrapper class and methods to work with Brightcove's Analytics API.
 
-See: https://live.support.brightcove.com/live-api/index.html
+See: https://apis.support.brightcove.com/analytics/index.html
 """
 
 from dataclasses import dataclass
