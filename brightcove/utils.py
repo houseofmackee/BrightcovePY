@@ -19,6 +19,11 @@ class DataClassBase:
     """
     Custom dataclass base class implementing a URL query string generator.
     """
+    _magic_fixes = {
+        'from_': 'from',
+        'dimensions_for_live_analytics': 'dimensions%20for%20live%20analytics'
+    }
+
     def __str__(self):
         result = '?'
         for field in datafields(self):
@@ -28,6 +33,7 @@ class DataClassBase:
                 value = str(value)
                 if field.type is bool:
                     value = value.lower()
+                name = self._magic_fixes.get(name, name)
                 result += f'{name}={value}&'
 
         return result[:-1]
