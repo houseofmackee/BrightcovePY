@@ -94,6 +94,7 @@ class AnalyticsLiveQueryParameters(QueryStringDataclassBase):
     def __post_init__(self):
         self.fix_data(
             {
+                'from_': 'from',
                 'dimensions_for_live_analytics': 'dimensions%20for%20live%20analytics'
             }
         )
