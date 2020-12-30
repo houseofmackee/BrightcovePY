@@ -94,6 +94,143 @@ class Live(Base):
 
     Methods:
     --------
+    CreateLiveJob(self, json_body: Union[str, dict]) -> Response
+        Create a live streaming job.
+
+    ListLiveJobs(self, query_parameters: LiveQueryParameters) -> Response
+        List live jobs. Uses pagination.
+
+    GetLiveJobDetails(self, job_id: str) -> Response
+        Get Live Job details.
+
+    CreatePlaybackToken(self, job_id: str, json_body: Union[str, dict]) -> Response
+        The request returns a generated ad_config_id.
+
+    ActivateSEPStream(self, job_id: str) -> Response
+        Activate SEP (static entry point) stream.
+
+    DeactivateSEPStream(self, job_id: str) -> Response
+        Deactivate SEP (static entry point) stream.
+
+    ManualCuePointInsertion(self, job_id: str, json_body: Union[str, dict]) -> Response
+        Inserts a manual Cue-Out with a duration to the Live ingest point.
+
+    AddAdMetadata(self, job_id: str, json_body: Union[str, dict]) -> Response
+        Allows content metadata to be pushed and constantly updated out-of-band from a live stream.
+
+    UpdateAdMetadata(self, job_id: str, json_body: Union[str, dict]) -> Response
+        Allows content metadata to be pushed and constantly updated out-of-band from a live stream.
+
+    DeleteAdMetadata(self, job_id: str) -> Response
+        Deletes ad metadata from a live stream.
+
+    InsertID3TimedMetadata(self, job_id: str, json_body: Union[str, dict]) -> Response
+        Inserts an ID3 timed metadata tag for an ongoing job.
+
+    CancelLiveJob(self, job_id: str) -> Response
+        Cancel a live stream.
+
+    StopLiveJob(self, job_id: str) -> Response
+        Stop a live job.
+
+    CreateRedundantGroup(self, json_body: Union[str, dict]) -> Response
+        Creates a redundant group of live jobs to provide failover in case one stream fails.
+
+    GetRedundantGroups(self, state: str, page_size: int=10) -> Response
+        Get redundant groups for the account.
+
+    AddJobsToRedundantGroup(self, redundant_group_id: str, json_body: Union[str, dict]) -> Response
+        Add Jobs to Redundant Group.
+
+    RemoveJobFromRedundantGroup(self, redundant_group_id: str, job_id: str, force: str='') -> Response
+        Remove the specified Jobs from a Redundant Group.
+
+    GetRedundantGroupStatus(self, redundant_group_id: str) -> Response
+        Get the current status of a redundant group.
+
+    DeleteRedundantGroup(self, redundant_group_id: str, force: str='') -> Response
+        Deletes a redundant group and ends the redundant stream.
+
+    ForceRedundantStreamFailover(self, redundant_group_id: str, json_body: Union[str, dict], force: str='') -> Response
+        Force failover from the on_air stream to a specified secondary stream.
+
+    InsertCuepointForRedundantGroup(self, redundant_group_id: str, json_body: Union[str, dict]) -> Response
+        Manually inserts a cuepoint for a redundant Live job.
+
+    ListRTMPOutputs(self, job_id: str) -> Response
+        Get a list of RTMP outputs.
+
+    CreateRTMPOutput(self, job_id: str, json_body: Union[str, dict]) -> Response
+        Create an RTMP output.
+
+    StopRTMPOutput(self, job_id: str, rtmp_out_id: str) -> Response
+        Stop an RTMP output.
+
+    CreateVODClip(self, json_body: Union[str, dict], job_id: str='') -> Response
+        Create VOD clips from a Live Stream.
+
+    GetVODClipJob(self, jvod_id: str) -> Response
+        Get a VOD clip job by ID.
+
+    ListVODClipJobs(self, job_id: str, query_parameters: LiveClipsQueryParameters) -> Response
+        List VOD clips for a Live Stream.
+
+    CreateAdConfiguration(self, json_body: Union[str, dict]) -> Response
+        Create a configuration for server-side ad application.
+
+    GetAdConfigurations(self) -> Response
+        Get ad applications for the current user.
+
+    GetAccountAdConfigurations(self, live_account_id: str) -> Response
+        Get ad applications for an account.
+
+    GetAdConfiguration(self, application_id: str) -> Response
+        Get an ad application.
+
+    UpdateAdConfiguration(self, application_id: str, json_body: Union[str, dict]) -> Response
+        Update a configuration for server-side ad application.
+
+    DeleteAdConfiguration(self, application_id: str) -> Response
+        Get an ad application.
+
+    CreateBeaconSet(self, json_body: Union[str, dict]) -> Response
+        Creates a beacon set.
+
+    GetBeaconSetForUser(self) -> Response
+        Get all beacon sets for the requesting user..
+
+    UpdateBeaconSet(self, beacon_set_id: str, json_body: Union[str, dict]) -> Response
+        Updates a beacon set.
+
+    DeleteBeaconSet(self, beacon_set_id: str) -> Response
+        Delete an ad application.
+
+    GetBeaconSets(self, live_account_id: str) -> Response
+        Get all beacon sets for an account.
+
+    IngestSlateMediaSourceAsset(self, json_body: Union[str, dict]) -> Response
+        Ingest Slate Media Source Asset.
+
+    GetUserSlateMediaSourceAssets(self) -> Response
+        Get Slate Media Source Assets for the current user.
+
+    DeleteSlateMediaSourceAsset(self, slate_msa_id: str) -> Response
+        Delete Slate Media Source Asset.
+
+    GetSlatesForAccount(self, live_account_id: str) -> Response
+        Get all slates for an account.
+
+    ListCredentials(self) -> Response
+        This endpoint can be used to get user credentials for a given user provided one has an API key.
+
+    CreateCredential(self, json_body: Union[str, dict]) -> Response
+        Create a new credential.
+
+    UpdateCredential(self, credential_id: str, json_body: Union[str, dict]) -> Response
+        Update a credential.
+
+    DeleteCredential(self, credential_id: str) -> Response
+        Delete a credential.
     """
 
     base_url = 'https://api.bcovlive.io/v1'
