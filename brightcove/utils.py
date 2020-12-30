@@ -2,6 +2,7 @@
 Module implementing utility and helper classes and functions for common tasks.
 """
 
+from json.decoder import JSONDecodeError
 import sys
 import functools
 import csv
@@ -15,16 +16,46 @@ from pandas.errors import ParserError
 from xlrd import XLRDError
 
 @dataclass
-class DataClassBase:
+class QueryStringDataclassBase:
     """
     Custom dataclass base class implementing a URL query string generator.
     """
-    _magic_fixes = {
-        'from_': 'from',
-        'dimensions_for_live_analytics': 'dimensions%20for%20live%20analytics'
-    }
+    _fix_data = {}
+    _valid_data = {}
+
+    def valid_data(self, new_data: dict) -> dict:
+        """
+        Adds more data to the validation dict.
+        """
+        self._valid_data.update(new_data)
+        return self._valid_data
+
+    def fix_data(self, new_data: dict) -> dict:
+        """
+        Adds more data to the replacement dict.
+        """
+        self._fix_data.update(new_data)
+        return self._fix_data
+
+    def validate(self, name: str, value: str) -> bool:
+        """
+        Validates "value" for "name" if a list of allowed values for "name" exists in _valid_data dict.
+        """
+        check_me = self._valid_data.get(name, [])
+        if check_me and value not in check_me:
+            return False
+        return True
+
+    def fix(self, name: str) -> str:
+        """
+        Returns replacement for "name" if one exists in _fix_data dict.
+        """
+        return self._fix_data.get(name, name)
 
     def __str__(self):
+        """
+        Returns the dataclass fields as a URL query string.
+        """
         result = '?'
         for field in datafields(self):
             name = field.name
@@ -33,9 +64,11 @@ class DataClassBase:
                 value = str(value)
                 if field.type is bool:
                     value = value.lower()
-                name = self._magic_fixes.get(name, name)
-                result += f'{name}={value}&'
-
+                name = self.fix(name)
+                if self.validate(name, value):
+                    result += f'{name}={value}&'
+                else:
+                    raise ValueError(f'Error: "{value}" is not a valid value for {name}')
         return result[:-1]
 
 class TimeString():
@@ -84,17 +117,23 @@ class SimpleProgressDisplay():
                     sys.stderr.write('\rProgress: %s %s\r' % (self._counter, self._add_info) )
                 sys.stdout.flush()
 
-def empty_function(*args, **kwargs):
+def empty_function(*args, **kwargs): #pylint: disable = E, W, R, C
     """
     It's an empty function.
     """
 
 # function to print to stderr
 def eprint(*args, **kwargs):
+    """
+    Print message to stderr.
+    """
     print(*args, file=sys.stderr, **kwargs)
 
 # decorator for static variables
 def static_vars(**kwargs):
+    """
+    Static variables decorator.
+    """
     def decorate(func):
         for k in kwargs:
             setattr(func, k, kwargs[k])
@@ -247,13 +286,8 @@ def wrangle_id(asset_id: Union[str, int, float]) -> Tuple[bool, str]:
 
     # is it an int?
     if isinstance(asset_id, int) and asset_id > 0:
-        try:
             work_id = str(asset_id)
-        except:
             is_valid = False
-        else:
-            is_valid = True
-
     # is it a string?
     elif isinstance(asset_id, str):
         if asset_id.startswith('ref:') and len(asset_id)<=154:
@@ -262,11 +296,10 @@ def wrangle_id(asset_id: Union[str, int, float]) -> Tuple[bool, str]:
         else:
             try:
                 work_id = str(int(asset_id))
-            except:
+            except ValueError:
                 is_valid = False
             else:
                 is_valid = True
-
     # is it a float?
     elif isinstance(asset_id, float):
         if asset_id.is_integer():
@@ -288,7 +321,7 @@ def is_json(myjson: str) -> bool:
     """
     try:
         _ = json.loads(myjson)
-    except:
+    except (TypeError, OverflowError, ValueError, JSONDecodeError):
         return False
     return True
 
