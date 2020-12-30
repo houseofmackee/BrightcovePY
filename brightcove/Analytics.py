@@ -8,10 +8,14 @@ from dataclasses import dataclass
 from requests.models import Response
 from .Base import Base
 from .OAuth import OAuth
-from .utils import DataClassBase
+from .utils import QueryStringDataclassBase
+
+VALID_DIMENSIONS = ('account', 'city', 'country', 'region', 'date', 'date-time', 'device_os', 'device_type',
+                    'player', 'referrer_domain', 'destination_domain', 'search_terms', 'social_platform',
+                    'source_type', 'video')
 
 @dataclass
-class AnalyticsQueryParameters(DataClassBase):
+class AnalyticsQueryParameters(QueryStringDataclassBase):
     """
     Dataclass defining URL query parameters for Analytics calls.
     """
@@ -42,8 +46,26 @@ class AnalyticsQueryParameters(DataClassBase):
     reconciled: bool = True                 # If True, only reconciled data is returned; if False, only realtime data is
                                             # returned; if not present, both reconciled and realtime data are returned.
 
+    def __post_init__(self):
+        """
+        Add data validation information.
+        """
+        self.fix_data(
+            {
+                'from_': 'from'
+            }
+        )
+
+        self.valid_data(
+            {
+                'dimensions': VALID_DIMENSIONS,
+                'where': VALID_DIMENSIONS,
+                'format': ('csv', 'json', 'xlxs')
+            }
+        )
+
 @dataclass
-class AnalyticsLiveQueryParameters(DataClassBase):
+class AnalyticsLiveQueryParameters(QueryStringDataclassBase):
     """
     Dataclass defining URL query parameters for Live Analytics calls.
     """
@@ -68,6 +90,23 @@ class AnalyticsLiveQueryParameters(DataClassBase):
                                                 # (1535654206775) or a date in the format yyyy-mm-dd (such as 2013-09-26)
     to: str = 'now'                             # End time for the period covered by the report — now or epoch time in milliseconds
                                                 # (1535654206775) or a date in the format yyyy-mm-dd (such as 2013-09-26)
+
+    def __post_init__(self):
+        self.fix_data(
+            {
+                'dimensions_for_live_analytics': 'dimensions%20for%20live%20analytics'
+            }
+        )
+
+        self.valid_data(
+            {
+                'dimensions%20for%20live%20analytics': VALID_DIMENSIONS,
+                'where': VALID_DIMENSIONS,
+                'metrics':
+                    ('video_impression', 'video_view', 'video_seconds_viewed', 'alive_ss_ad_start',
+                    'fingerprint_count', 'ccu'),
+            }
+        )
 
 class Analytics(Base):
     """
