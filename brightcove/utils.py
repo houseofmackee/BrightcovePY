@@ -12,16 +12,16 @@ from threading import Lock
 from os.path import expanduser, getsize
 from typing import Tuple, Union
 from pandas import read_csv, read_excel #type: ignore
-from pandas.errors import ParserError
-from xlrd import XLRDError
+from pandas.errors import ParserError #type: ignore
+from xlrd import XLRDError #type: ignore
 
 @dataclass
 class QueryStringDataclassBase:
     """
     Custom dataclass base class implementing a URL query string generator.
     """
-    _fix_data = {}
-    _valid_data = {}
+    _fix_data: dict = {}
+    _valid_data: dict = {}
 
     def valid_data(self, new_data: dict) -> dict:
         """
