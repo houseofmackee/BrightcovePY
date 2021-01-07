@@ -20,8 +20,8 @@ class QueryStringDataclassBase:
     """
     Custom dataclass base class implementing a URL query string generator.
     """
-    _fix_data: dict = {}
-    _valid_data: dict = {}
+    _fix_data = {}
+    _valid_data = {}
 
     def valid_data(self, new_data: dict) -> dict:
         """
