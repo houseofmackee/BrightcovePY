@@ -12,9 +12,7 @@ def disable_tt(video: dict):
 	# flag to signal we found and changed a default track
 	got_hit = False
 	# try to get all text tracks
-	tts = video.get('text_tracks')
-	# check if we found some
-	if tts:
+	if tts := video.get('text_tracks'):
 		# go through all tracks
 		for track in tts:
 			#check if it's a default track

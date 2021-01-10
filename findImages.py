@@ -8,8 +8,7 @@ def find_images(video: dict):
 	"""
 	Find URLs for poster and thumbnail images.
 	"""
-	images = video.get('images')
-	if images:
+	if images := video.get('images'):
 		poster = images.get('poster')
 		thumb  = images.get('thumbnail')
 

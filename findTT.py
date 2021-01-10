@@ -6,10 +6,9 @@ from mackee import main
 #===========================================
 def find_tt(video: dict):
 	"""
-	This will prist videos which have text tracks.
+	This will find and list videos which have text tracks.
 	"""
-	tts = video.get('text_tracks')
-	if tts:
+	if tts := video.get('text_tracks'):
 		print(f'{video.get("id")}, "{video.get("name")}"')
 		for track in tts:
 			print(track.get('srclang'))

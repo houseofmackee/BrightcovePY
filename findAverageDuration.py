@@ -1,45 +1,35 @@
 #!/usr/bin/env python3
-import sys
+from threading import Lock
 from mackee import main
 from brightcove.utils import TimeString as ts
-from threading import Lock
+from brightcove.utils import SimpleProgressDisplay
 
 num_videos = 0
 total_duration = 0
 data_lock = Lock()
-
-def show_progress(progress: int) -> None:
-	"""
-	Simple progress counter.
-	"""
-	sys.stderr.write(f'\r{progress} processed...\r')
-	sys.stderr.flush()
+show_progress = SimpleProgressDisplay(steps=100, add_info='videos processed')
 
 #===========================================
 # callback to add up video durations
 #===========================================
 def find_average_duration(video: dict):
-	"""
-	This will add the duration of the video to the total.
-	"""
-	global num_videos
-	global total_duration
+    """
+    This will add the duration of the video to the total.
+    """
+    global num_videos
+    global total_duration
 
-	duration = video.get('duration')
-	if duration:
-		with data_lock:
-			num_videos += 1
-			total_duration += (duration/1000)
-
-		# display counter every 100 videos
-		if num_videos%100==0:
-			show_progress(num_videos)
+    if duration := video.get('duration'):
+        with data_lock:
+            num_videos += 1
+            total_duration += (duration/1000)
+            show_progress()
 
 #===========================================
 # only run code if it's not imported
 #===========================================
 if __name__ == '__main__':
-	main(find_average_duration)
-	show_progress(num_videos)
-	if num_videos>0:
-		print(f'Average duration for {num_videos} videos with duration information is {ts.from_seconds(total_duration/num_videos)} (HH:MM:SS).')
+    main(find_average_duration)
+    show_progress(force_display=True)
+    if num_videos>0:
+        print(f'Average duration for {num_videos} videos with duration information is {ts.from_seconds(total_duration/num_videos)} (HH:MM:SS).')
