@@ -3,6 +3,7 @@ Module implementing utility and helper classes and functions for common tasks.
 """
 
 from json.decoder import JSONDecodeError
+from math import isinf, isnan
 import sys
 import functools
 import csv
@@ -59,8 +60,7 @@ class QueryStringDataclassBase:
         result = '?'
         for field in datafields(self):
             name = field.name
-            value = getattr(self, name)
-            if value:
+            if value := getattr(self, name):
                 value = str(value)
                 if field.type is bool:
                     value = value.lower()
@@ -140,6 +140,15 @@ def static_vars(**kwargs):
         return func
     return decorate
 
+def is_number(value: str) -> bool:
+    """
+    Check to see if a given str is a valid/useable number.
+    """
+    try:
+        num_value = float(value)
+    except ValueError:
+        return False
+    return not (isnan(num_value) or isinf(num_value))
 
 def is_shared_by(video: dict) -> bool:
     """
