@@ -6,7 +6,7 @@ from mackee import main, get_args
 from brightcove.utils import list_to_csv, eprint
 from brightcove.utils import SimpleProgressDisplay, TimeString
 
-tag_list = [ ('unique_tags_in_account',) ]
+tag_list = ['unique_tags_in_account']
 
 # some globals
 data_lock = Lock()
@@ -20,10 +20,9 @@ def create_report(video: dict) -> None:
         video (dict): video object obtained from the CMS API.
     """
     with data_lock:
-        if tags := video.get('tags',[]):
-            for tag in tags:
-                if (tag,) not in tag_list:
-                    tag_list.append((tag,))
+        for tag in video.get('tags',[]):
+            if tag not in tag_list:
+                tag_list.append(tag)
         show_progress()
 
 #===========================================

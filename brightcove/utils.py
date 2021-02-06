@@ -206,6 +206,12 @@ def list_to_csv(row_list: list, filename: str=''):
     Returns:
         bool: True if CSV successfully created, False otherwise.
     """
+
+    # convert single column list to required format
+    if not isinstance(row_list[0], (list, tuple)):
+        row_list = [(line,) for line in row_list]
+
+    # write csv file
     try:
         with open(filename if filename else 'report.csv', 'w', newline='', encoding='utf-8') as file:
             writer = csv.writer(file, quoting=csv.QUOTE_ALL, delimiter=',')
