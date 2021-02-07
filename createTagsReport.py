@@ -20,9 +20,7 @@ def create_report(video: dict) -> None:
         video (dict): video object obtained from the CMS API.
     """
     with data_lock:
-        for tag in video.get('tags',[]):
-            if tag not in tag_list:
-                tag_list.append(tag)
+        tag_list.extend(item for item in video.get('tags',[]) if item not in tag_list)
         show_progress()
 
 #===========================================
