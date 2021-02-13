@@ -172,6 +172,9 @@ class Live(Base):
     GetVODClipJob(self, jvod_id: str) -> Response
         Get a VOD clip job by ID.
 
+    CancelVODClipJob(self, jvod_id: str) -> Response
+        Cancel a VOD clip job by ID.
+
     ListVODClipJobs(self, job_id: str, query_parameters: LiveClipsQueryParameters) -> Response
         List VOD clips for a Live Stream.
 
@@ -635,6 +638,20 @@ class Live(Base):
         """
         url = f'{self.base_url}/vods/{jvod_id}'
         return self.session.get(url, headers=self.headers)
+
+    def CancelVODClipJob(self, jvod_id: str) -> Response:
+        """
+        Cancel a VOD clip job by ID.
+
+        Args:
+            jvod_id (str): VOD job ID.
+
+        Returns:
+            Response: API response as requests Response object.
+        """
+        url = f'{self.base_url}/vods/{jvod_id}/cancel'
+        return self.session.put(url, headers=self.headers)
+
 
     def ListVODClipJobs(self, job_id: str, query_parameters: LiveClipsQueryParameters) -> Response:
         """
