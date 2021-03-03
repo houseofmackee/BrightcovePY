@@ -8,10 +8,12 @@ import sys
 import functools
 import csv
 import json
+import inspect
+from time import perf_counter
 from dataclasses import dataclass, fields as datafields
 from threading import Lock
 from os.path import expanduser, getsize
-from typing import Tuple, Union
+from typing import Iterable, Tuple, Union
 from pandas import read_csv, read_excel #type: ignore
 from pandas.errors import ParserError #type: ignore
 from xlrd import XLRDError #type: ignore
@@ -112,10 +114,28 @@ class SimpleProgressDisplay():
             if force_display or self._counter%self._steps==0:
                 if self._size:
                     percentage = (self._counter / self._size) * 100
-                    sys.stdout.write("\rProgress: %s / %s  (%.2f%%) %s\r" % (self._counter, self._size, percentage, self._add_info))
+                    sys.stdout.write('\rProgress: %s / %s  (%.2f%%) %s\r' % (self._counter, self._size, percentage, self._add_info))
                 else:
                     sys.stderr.write('\rProgress: %s %s\r' % (self._counter, self._add_info) )
                 sys.stdout.flush()
+
+class SimpleTimer():
+    """
+    Class to provide a simple execution timer.
+    """
+    def __init__(self, name: str=''):
+        frm = inspect.stack()[1]
+        mod = inspect.getmodule(frm[0])
+        self.name = name or mod.__file__
+        self.start = perf_counter()
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc_value, exc_traceback):
+        elapsed = perf_counter() - self.start
+        eprint(f'\n{self.name}: executed in {TimeString.from_seconds(elapsed)}.')
+
 
 def empty_function(*args, **kwargs): #pylint: disable = E, W, R, C
     """
@@ -139,6 +159,12 @@ def static_vars(**kwargs):
             setattr(func, k, kwargs[k])
         return func
     return decorate
+
+def is_a_in_b(a: Iterable, b: Iterable) -> bool:
+    """
+    checks if a is a subset of b
+    """
+    return set(a).issubset(set(b))
 
 def is_number(value: str) -> bool:
     """
