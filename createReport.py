@@ -1,7 +1,6 @@
 #!/usr/bin/env python3
 from threading import Lock
 from csv import Error as CSVError
-from time import perf_counter
 from mackee import main, get_args
 from brightcove.utils import list_to_csv, eprint
 from brightcove.utils import SimpleProgressDisplay, SimpleTimer
