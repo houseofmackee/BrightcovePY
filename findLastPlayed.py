@@ -17,6 +17,7 @@ qstr = AnalyticsQueryParameters(
     dimensions = 'video,date',
     limit = 'all',
     reconciled = False,
+    sort = 'date',
     from_ = '-90d')
 
 # make API call
@@ -26,7 +27,7 @@ response = aapi.GetAnalyticsReport(query_parameters=qstr).json().get('items',[])
 result = {}
 for item in response:
     if video := item.get('video'):
-        result[video] = max(result.get(video, ''), item.get('date'))
+        result[video] = item.get('date')
 
 # print result
 pprint(result)
