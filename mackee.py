@@ -92,6 +92,7 @@ def get_args():
         parser.add_argument('-x', type=str, help='XLS/CSV input filename')
         parser.add_argument('-a', type=int, const=10, nargs='?', help='Async processing of videos')
         parser.add_argument('-d', action='store_true', default=False, help='Show debug info messages')
+        parser.add_argument('-l', type=int, const=0, nargs='?', help='Limit to first x amount of videos')
 
         get_args.args = parser.parse_args()
 
@@ -114,6 +115,12 @@ def get_session():
         get_session.session = requests.Session()
         mac_logger.info('Obtained Requests Session')
     return get_session.session
+
+@static_vars(opts=None)
+def get_opts(opts: dict = None) -> dict:
+    if get_opts.opts is None:
+        get_opts.opts = opts
+    return get_opts.opts
 
 #===========================================
 # default processing function
@@ -144,6 +151,9 @@ def get_accounts(account_parameter: str) -> list:
 
     return [account_parameter]
 
+def limit(input_value: int, limit_value: int) -> int:
+    return min(input_value, limit_value) if limit_value else input_value
+
 #===========================================
 # function to fill queue with all videos
 # from a Video Cloud account
@@ -169,10 +179,12 @@ def process_account(work_queue: Queue, account_id: str, cms_obj: CMS) -> None:
         eprint(f'No videos found in account ID {account_id}\'s library.')
         return
 
+    num_videos = limit(num_videos, get_args().l)
+
     eprint(f'Found {num_videos} videos in account ID {account_id}\'s library. Processing them now.')
 
     current_offset = 0
-    page_size = 50
+    page_size = min(50, num_videos)
     retries = 10
 
     while current_offset < num_videos:
@@ -201,7 +213,7 @@ def process_account(work_queue: Queue, account_id: str, cms_obj: CMS) -> None:
                     eprint(f'Warning: error refreshing number of videos in account ID {account_id} -> {e}')
                 else:
                     if current_num_videos > num_videos:
-                        num_videos = current_num_videos
+                        num_videos = limit(current_num_videos, get_args().l)
 
             # looks like we got an empty response (it can happen)
             else:
@@ -341,6 +353,7 @@ def process_input(account_info_file: str='', process_callback: Callable=list_vid
     get_oauth(account_id, client_id, client_secret)
     get_cms(oauth=get_oauth(), query=get_args().q)
     get_di(oauth=get_oauth())
+    get_opts(opts=opts)
 
     # if async is enabled use more than one thread
     max_threads = get_args().a or 1
