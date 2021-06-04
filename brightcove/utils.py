@@ -45,7 +45,7 @@ class QueryStringDataclassBase:
         Validates "value" for "name" if a list of allowed values for "name" exists in _valid_data dict.
         """
         check_me = self._valid_data.get(name, [])
-        if check_me and value not in check_me:
+        if check_me and not set(value.replace(' ','').split(sep=',')).issubset(check_me):
             return False
         return True
 
@@ -70,7 +70,8 @@ class QueryStringDataclassBase:
                 if self.validate(name, value):
                     result += f'{name}={value}&'
                 else:
-                    raise ValueError(f'Error: "{value}" is not a valid value for {name}')
+                    e_msg = f'Error: "{value}" is not a valid value for {name}'
+                    raise ValueError(e_msg)
         return result[:-1]
 
 class TimeString():
