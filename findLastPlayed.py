@@ -7,7 +7,11 @@ from brightcove.OAuth import OAuth
 from brightcove.utils import load_account_info
 
 # get credentials and instantiate Analytics API
-account_id, client_id, client_secret, _ = load_account_info()
+account_id = ''
+client_id = ''
+client_secret = ''
+if not all([account_id, client_id, client_secret]):
+    account_id, client_id, client_secret, _ = load_account_info()
 oauth = OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret)
 aapi = Analytics(oauth)
 
@@ -23,11 +27,5 @@ qstr = AnalyticsQueryParameters(
 # make API call
 response = aapi.GetAnalyticsReport(query_parameters=qstr).json().get('items',[])
 
-# create a dictionary with unique video IDs and their most recent playback date
-result = {}
-for item in response:
-    if video := item.get('video'):
-        result[video] = item.get('date')
-
-# print result
-pprint(result)
+# create a dictionary with unique video IDs and their most recent playback date and print it
+pprint({item.get('video'):item.get('date') for item in response if item.get('video')})
