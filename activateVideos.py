@@ -10,7 +10,7 @@ def activate_video(video: dict):
 	"""
 	if video.get('state')=='INACTIVE':
 		video_id = video.get('id')
-		json = { "state": "ACTIVE" }
+		json = { 'state': 'ACTIVE' }
 		print(f'Activating video ID {video_id}: {get_cms().UpdateVideo(video_id=video_id, json_body=json).status_code}')
 
 #===========================================

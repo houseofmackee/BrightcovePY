@@ -27,7 +27,7 @@ def disable_geo(video: dict):
 		# get the video ID
 		video_id = str(video.get('id'))
 		# create the JSON body
-		json_body = { "geo": None }
+		json_body = { 'geo': None }
 		# make the PATCH call
 		r = get_cms().UpdateVideo(video_id=video_id, json_body=json_body)
 		# check if all went well

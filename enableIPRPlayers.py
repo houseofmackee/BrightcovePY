@@ -21,7 +21,7 @@ if client_id==account_id==client_secret=='':
 pms = PlayerManagement( OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret) )
 
 # define the default JSON Body
-json_body = { "video_cloud": { "base_url": "https://edge-elb.api.brightcove.com/playback/v1/" } }
+json_body = { 'video_cloud': { 'base_url': 'https://edge-elb.api.brightcove.com/playback/v1/' } }
 
 # list of accounts that need patching
 account_list = [ account_id ]

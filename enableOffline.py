@@ -13,7 +13,7 @@ def enable_offline(video: dict):
 		# get the video ID
 		video_id = video.get('id')
 		# create the JSON body
-		json_body = { "offline_enabled": True }
+		json_body = { 'offline_enabled': True }
 		# make the PATCH call
 		r = get_cms().UpdateVideo(video_id=video_id, json_body=json_body)
 		# check if all went well
