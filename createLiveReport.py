@@ -23,11 +23,11 @@ if api_key := args.xkey or getenv('X_API_KEY', ''):
         info_list = ['id', 'state', 'channel_type', 'protocol', 'static', 'sep_state', 'videocloud.video.name']
 
         # print header for CSV
-        print('index', *info_list, sep=', ')
+        print(*info_list, sep=', ')
 
         # get all info from all returned jobs and print it
-        for job_num, job in enumerate(jobs, start=1):
-            print(job_num, *[get_value(job, *default_split(data=field, separator=':', maxsplits=1)) for field in info_list], sep=', ')
+        for job in jobs:
+            print(*[get_value(job, *default_split(data=field, separator=':', maxsplits=1)) for field in info_list], sep=', ')
     else:
         print(f'Error while getting jobs for API key "{api_key}"')
 else:
