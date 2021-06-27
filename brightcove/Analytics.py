@@ -12,7 +12,7 @@ from .utils import QueryStringDataclassBase
 
 VALID_DIMENSIONS = ('account', 'city', 'country', 'region', 'date', 'date-time', 'device_os', 'device_type',
                     'player', 'referrer_domain', 'destination_domain', 'search_terms', 'social_platform',
-                    'source_type', 'video')
+                    'source_type', 'video', 'viewer')
 
 @dataclass
 class AnalyticsQueryParameters(QueryStringDataclassBase):
