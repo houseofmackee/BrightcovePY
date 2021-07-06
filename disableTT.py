@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
-import json
+"""
+Script to disable "default" text tracks in videos.
+"""
 from mackee import main, get_cms
 
 #===========================================
@@ -9,10 +10,10 @@ def disable_tt(video: dict):
     """
     This will find text tracks with default tracks and disable those defaults.
     """
-    # flag to signal we found and changed default tracks
-    got_hit = False
     # try to get all text tracks
     if tts := video.get('text_tracks'):
+        # flag to signal we found and changed default tracks
+        got_hit = False
         # go through all tracks
         for track in tts:
             #check if it's a default track
