@@ -2,7 +2,7 @@
 
 This repository contains tools and modules written in Python to deal with Brightcove related APIs and simplifying tasks such as iterating over the full video library and performing actions on the videos.
 
-Tested version(s) of Python: 3.8.3
+Tested version(s) of Python: 3.9.5
 
 # Notable files
 
@@ -45,6 +45,8 @@ All scripts using mackee.py as a shell have the following command line options a
 **-x**: name and path to an xls/csv file which contains a list of video IDs in a column named "video_id"
 
 **-o**: name and path for an outputfile (if supported by the utility script)
+
+**-l**: limit to first x amount of videos (useful if testing a script and you only need a few videos for validation)
 
 # Support
 
