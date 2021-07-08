@@ -4,7 +4,7 @@ verify_ssl = true
 name = "pypi"
 
 [packages]
-numpy = "==1.19.3"
+numpy = "*"
 requests = "*"
 requests-toolbelt = "*"
 boto3 = "*"
@@ -13,6 +13,7 @@ boxsdk = "*"
 pandas = "*"
 clint = "*"
 xlrd = "*"
+jwt = "*"
 
 [dev-packages]
 pytest = "*"
@@ -26,4 +27,4 @@ build = "*"
 twine = "*"
 
 [requires]
-python_version = "3.8"
+python_version = "3.9"
