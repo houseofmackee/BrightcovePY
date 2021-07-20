@@ -27,7 +27,7 @@ def update_content_type(video: dict):
     # make API call
     response = aapi.SetContentType(video_id=video_id, content_type=content_type)
 
-    # check if we have a scuccess response
+    # check if we have a success response
     if response.status_code in [200,202]:
         print(f'Updated content type for video ID {video_id} with status {response.status_code}.')
     else:
