@@ -9,7 +9,7 @@ from brightcove.Audience import Audience
 @static_vars(aapi=None)
 def get_audience() -> Audience:
     """
-    Returns an OAuth instance. Creates one if it doesn't exist yet.
+    Returns an Audience API instance. Creates one if it doesn't exist yet.
     """
     if not get_audience.aapi:
         get_audience.aapi = Audience(get_oauth())
