@@ -99,6 +99,8 @@ class Audience(Base):
         Get leads for a Video Cloud account.
     GetViewEvents(self, query_parameters: AudienceViewsQueryParameters) -> Response
         Get view events for an account.
+    SetContentType(self, video_id: str, content_type: str, account_id: str='') -> Response
+        Sets the content type for a specific video ID.
     """
 
     # base URL for all API calls
@@ -140,4 +142,22 @@ class Audience(Base):
         """
         url = f'{self.base_url}/view_events{query_parameters}'
         return self.session.get(url, headers=self.oauth.headers)
+    #endregion
+
+    #region Content Type
+    def SetContentType(self, video_id: str, content_type: str, account_id: str='') -> Response:
+        """
+        Sets the content type for a specific video ID.
+
+        Args:
+            video_id (str): Video ID.
+            content_type (str): Content type.
+            account_id (str, optional): Account ID where to set the content type. Defaults to ''.
+
+        Returns:
+            Response: API response as requests Response object.
+        """
+        url = f'{self.base_url}/content-type'.format(account_id=account_id or self.oauth.account_id)
+        json_body = { 'videoId' : video_id, 'contentType' : content_type }
+        return self.session.post(url, headers=self.oauth.headers, data=self._json_to_string(json_body))
     #endregion
