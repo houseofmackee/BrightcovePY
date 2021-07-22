@@ -1,11 +1,11 @@
 #!/usr/bin/env python3
+import re
 import sys
 import argparse
-import re
+from json import JSONDecodeError
 from brightcove.CMS import CMS
 from brightcove.OAuth import OAuth
-from brightcove.utils import load_account_info
-from brightcove.utils import eprint
+from brightcove.utils import load_account_info, eprint
 
 # list of good field names
 good_fields = (
@@ -53,7 +53,7 @@ args = parser.parse_args()
 # get account info from config file if not hardcoded
 try:
     account_id, client_id, client_secret, _ = load_account_info(args.i)
-except Exception as e:
+except (OSError, JSONDecodeError) as e:
     print(e)
     sys.exit(2)
 
@@ -70,7 +70,7 @@ response = cms.GetCustomFields()
 if response.status_code == 200:
     custom_fields : dict = response.json().get('custom_fields', {})
     for field in custom_fields:
-        current_field = field.get('id','')
+        current_field = field.get('id', '')
         if sanitize(current_field) not in good_fields:
             print(current_field)
 else:
