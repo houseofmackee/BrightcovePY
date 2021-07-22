@@ -551,7 +551,7 @@ class CMS(Base):
         Returns:
             Response: API response as requests Response object.
         """
-        url = f'{self.base_url}/videos/video_fields'.format(account_id=account_id or self.oauth.account_id)
+        url = f'{self.base_url}/video_fields'.format(account_id=account_id or self.oauth.account_id)
         return self.session.get(url=url, headers=self.oauth.headers)
     #endregion
 
