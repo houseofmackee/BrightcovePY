@@ -36,9 +36,11 @@ good_fields = (
     'beacon_episode_number',
 )
 
-# function to remove counters and sanitize a field name
 def sanitize(value: str) -> str:
-    return str(re.sub('\d+', '<counter>', value))
+    """
+    function to remove counters and sanitize a field name
+    """
+    return str(re.sub(r'\d+', '<counter>', value))
 
 # init the argument parsing
 parser = argparse.ArgumentParser(prog=sys.argv[0])
