@@ -387,8 +387,9 @@ def process_input(account_info_file: str='', process_callback: Callable=list_vid
         video_list = opts.get('video_ids', [])
 
     if video_list and video_list[0] != 'all':
-        num_videos = len(video_list)
-        eprint(f'Found {num_videos} videos in options file. Processing them now.')
+        # limit number of videos to be processed if a limit was provided using -l
+        num_videos = limit(len(video_list), get_args().l)
+        eprint(f'Found {num_videos} videos in file. Processing them now.')
         # let's put all video IDs in a queue
         for video_id_ in video_list:
             work_queue.put_nowait(video_id_)
