@@ -1,4 +1,6 @@
-#!/usr/bin/env python3
+"""
+Example script showing how to validate Beacon custom fields
+"""
 import re
 import sys
 import argparse
@@ -46,6 +48,7 @@ def sanitize(value: str) -> str:
 parser = argparse.ArgumentParser(prog=sys.argv[0])
 parser.add_argument('-i', metavar='<config filename>', type=str, help='Name and path of account config information file')
 parser.add_argument('-t', metavar='<Brightcove account ID>', type=str, help='Brightcove account ID to use (if different from ID in config)')
+parser.add_argument('-l', action='store_true', default=False, help='List all custom fields')
 
 # parse the args
 args = parser.parse_args()
@@ -71,7 +74,7 @@ if response.status_code == 200:
     custom_fields : dict = response.json().get('custom_fields', {})
     for field in custom_fields:
         current_field = field.get('id', '')
-        if sanitize(current_field) not in good_fields:
+        if sanitize(current_field) not in good_fields or args.l:
             print(current_field)
 else:
     eprint(f'Error while trying to get custom fields: {response.status_code}')
