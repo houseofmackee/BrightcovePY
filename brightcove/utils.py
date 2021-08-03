@@ -329,7 +329,7 @@ def wrangle_id(asset_id: Union[str, int, float]) -> Tuple[bool, str]:
     # is it an int?
     if isinstance(asset_id, int) and asset_id > 0:
             work_id = str(asset_id)
-            is_valid = False
+            is_valid = True
     # is it a string?
     elif isinstance(asset_id, str):
         if asset_id.startswith('ref:') and len(asset_id)<=154:
@@ -439,14 +439,14 @@ def fetch_value(data: dict, key: str, default: str=''):
 
     return value if value else default
 
-def get_value(video: dict, field: str, default: str=''):
+def get_value(data: dict, field: str, default: str=''):
     """
-    Function to get the value from a field in a CMS API response.
+    Function to get the value, represented as a string, from a dictionary.
     Walks down recursively multiple levels of fields separated to
     be able to support custom fields and similar.
 
     Args:
-        video (dict): Video object from CMS API.
+        data (dict): A dictionary.
         field (str): Name of the field to get the value from.
         default (str, optional): Default return value. Defaults to ''.
 
@@ -456,7 +456,7 @@ def get_value(video: dict, field: str, default: str=''):
     if '.' in field:
         primary, secondary = field.split('.', 1)
         try:
-            value = fetch_value(video, primary, default)
+            value = fetch_value(data, primary, default)
             if value == default or value is None:
                 return default
             return get_value(value, secondary, default)
@@ -466,7 +466,7 @@ def get_value(video: dict, field: str, default: str=''):
             return f'ERROR: {e}'
     else:
         try:
-            return fetch_value(video, field, default)
+            return fetch_value(data, field, default)
         except IndexError as e:
             return f'ERROR: {e}'
 
