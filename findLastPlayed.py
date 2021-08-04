@@ -20,12 +20,24 @@ qstr = AnalyticsQueryParameters(
     accounts = account_id,
     dimensions = 'video,date',
     limit = 'all',
+    fields= 'video.name,video_view',
     reconciled = False,
     sort = 'date',
-    from_ = '-90d')
+    from_ = '-30d')
+
+# fields that shoul;d be reported in addition to the video ID
+report_fields = ['date', 'video_view', 'video.name']
 
 # make API call
-response = aapi.GetAnalyticsReport(query_parameters=qstr).json().get('items',[])
+response = aapi.GetAnalyticsReport(query_parameters=qstr).json().get('items', [])
 
 # create a dictionary with unique video IDs and their most recent playback date and print it
-pprint({item.get('video'):item.get('date') for item in response if item.get('video')})
+if response:
+    unique_videos = {item.get('video'):[item.get(field) for field in report_fields] for item in response if item.get('video')}
+
+    if unique_videos:
+        print('video_id', *report_fields, sep=', ')
+        for video, date in unique_videos.items():
+            print(video, *date, sep=', ')
+
+#pprint({item.get('video'):item.get('date') for item in response if item.get('video')})
