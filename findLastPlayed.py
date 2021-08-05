@@ -1,17 +1,32 @@
 """
-script to find the most recent playback date for videos which had playback within the last 90 days
+script to find the most recent playback date for videos which had playback within the last 30 days
 """
+import sys
+import argparse
 from pprint import pprint
 from brightcove.Analytics import Analytics, AnalyticsQueryParameters
 from brightcove.OAuth import OAuth
 from brightcove.utils import load_account_info
 
-# get credentials and instantiate Analytics API
-account_id = ''
-client_id = ''
-client_secret = ''
-if not all([account_id, client_id, client_secret]):
-    account_id, client_id, client_secret, _ = load_account_info()
+# init the argument parsing
+parser = argparse.ArgumentParser(prog=sys.argv[0])
+parser.add_argument('-i', metavar='<config filename>', type=str, help='Name and path of account config information file')
+parser.add_argument('-t', metavar='<Brightcove Account ID>', type=str, help='Brightcove Account ID to use (if different from ID in config)')
+
+# parse the args
+args = parser.parse_args()
+
+# get account info from config file
+try:
+	account_id, client_id, client_secret, _ = load_account_info(args.i)
+except Exception as e:
+	print(e)
+	sys.exit(2)
+
+# if account ID was provided override the one from config
+account_id = args.t or account_id
+
+# get OAuth and Analytics API instance
 oauth = OAuth(account_id=account_id,client_id=client_id, client_secret=client_secret)
 aapi = Analytics(oauth)
 
