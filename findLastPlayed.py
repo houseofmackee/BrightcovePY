@@ -3,7 +3,7 @@ script to find the most recent playback date for videos which had playback withi
 """
 import sys
 import argparse
-from pprint import pprint
+from json import dumps
 from brightcove.Analytics import Analytics, AnalyticsQueryParameters
 from brightcove.OAuth import OAuth
 from brightcove.utils import load_account_info
@@ -12,6 +12,7 @@ from brightcove.utils import load_account_info
 parser = argparse.ArgumentParser(prog=sys.argv[0])
 parser.add_argument('-i', metavar='<config filename>', type=str, help='Name and path of account config information file')
 parser.add_argument('-t', metavar='<Brightcove Account ID>', type=str, help='Brightcove Account ID to use (if different from ID in config)')
+parser.add_argument('-j', action='store_true', default=False, help='Use JSON output instead of CSV')
 
 # parse the args
 args = parser.parse_args()
@@ -44,15 +45,13 @@ qstr = AnalyticsQueryParameters(
 report_fields = ['date', 'video_view', 'video.name']
 
 # make API call
-response = aapi.GetAnalyticsReport(query_parameters=qstr).json().get('items', [])
+response = aapi.GetAnalyticsReport(query_parameters=qstr).json().get('items', {})
 
 # create a dictionary with unique video IDs and their most recent playback date and print it
-if response:
-    unique_videos = {item.get('video'):[item.get(field) for field in report_fields] for item in response if item.get('video')}
-
-    if unique_videos:
+if unique_videos := {item.get('video'):[item.get(field) for field in report_fields] for item in response if item.get('video')}:
+    if args.j:
+        print(dumps(unique_videos, indent=4, sort_keys=True))
+    else:
         print('video_id', *report_fields, sep=', ')
-        for video, date in unique_videos.items():
-            print(video, *date, sep=', ')
-
-#pprint({item.get('video'):item.get('date') for item in response if item.get('video')})
+        for video, info in unique_videos.items():
+            print(video, *info, sep=', ')
