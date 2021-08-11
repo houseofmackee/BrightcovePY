@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 from mackee import main, get_cms, get_di
 
-#===================================================
-# retranscode video and use MP4 if it has no master
-#===================================================
+#==========================================================
+# retranscode video and use MP4 or FLV if it has no master
+#==========================================================
 def retranscode(video: dict):
     """
     This will retranscode a video using the digital master if it exists.
@@ -34,7 +34,7 @@ def retranscode(video: dict):
     if has_master:
         print(f'{video_id}: retranscoding using digital master -> {get_di().RetranscodeVideo(video_id=video_id, profile_id=ingest_profile,capture_images=capture_images, priority_queue=priority).status_code}')
 
-    # otherwise try to find a high resolution MP4 rendition and use that
+    # otherwise try to find a high resolution MP4 or FLV rendition and use that
     else:
         # get sources for the video and try to find the biggest MP4 or FLV video
         source_url: str = ''
@@ -50,7 +50,7 @@ def retranscode(video: dict):
                     else:
                         source_url = ''
 
-        # if a source was found download it, using the video ID as filename
+        # if a source was found use it as source for replacing the source
         if source_url:
             print(f'{video_id}: retranscoding using highest resolution MP4/FLV ({source_w}x{source_h}) -> {get_di().SubmitIngest(video_id=video_id, source_url=source_url, profile_id=ingest_profile,capture_images=capture_images, priority_queue=priority).status_code}')
 
