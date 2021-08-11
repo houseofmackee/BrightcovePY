@@ -36,22 +36,26 @@ def retranscode(video: dict):
 
     # otherwise try to find a high resolution MP4 rendition and use that
     else:
-        # get sources for the video and try to find the biggest MP4 video
-        source_url, source_w, source_h = '', 0, 0
+        # get sources for the video and try to find the biggest MP4 or FLV video
+        source_url: str = ''
+        source_w, source_h = 0, 0
         source_list = get_cms().GetVideoSources(video_id=video_id).json()
         for source in source_list:
-            if source.get('container') == 'MP4':
+            if source.get('container') == 'MP4' or source.get('codec') == 'ON2':
                 w, h = source.get('width', 0), source.get('height', 0)
-                if w>source_w: # checking w/h to avoid error by audio only renditions
-                    if source_url := source.get('src'):
+                if w > source_w: # checking w/h to avoid error by audio only renditions
+                    source_url = source.get('src', '')
+                    if source_url.startswith('http'):
                         source_w, source_h = w, h
+                    else:
+                        source_url = ''
 
         # if a source was found download it, using the video ID as filename
         if source_url:
-            print(f'{video_id}: retranscoding using highest resolution MP4 ({source_w}x{source_h}) -> {get_di().SubmitIngest(video_id=video_id, source_url=source_url, profile_id=ingest_profile,capture_images=capture_images, priority_queue=priority).status_code}')
+            print(f'{video_id}: retranscoding using highest resolution MP4/FLV ({source_w}x{source_h}) -> {get_di().SubmitIngest(video_id=video_id, source_url=source_url, profile_id=ingest_profile,capture_images=capture_images, priority_queue=priority).status_code}')
 
         else:
-            print(f'{video_id}: can not be retranscoded (no master or MP4 video rendition)')
+            print(f'{video_id}: can not be retranscoded (no master or MP4/FLV video rendition)')
 
 #===================================================
 # only run code if it's not imported
