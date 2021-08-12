@@ -14,6 +14,7 @@ pandas = "*"
 clint = "*"
 xlrd = "*"
 jwt = "*"
+openpyxl = "*"
 
 [dev-packages]
 pytest = "*"
