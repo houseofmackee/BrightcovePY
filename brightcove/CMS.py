@@ -958,7 +958,7 @@ class CMS(Base):
         url = f'{self.base_url}/videos/{video_id}/references'.format(account_id=account_id or self.oauth.account_id)
         return self.session.delete(url, headers=self.oauth.headers)
 
-    def GetVideosInPlaylist(self, playlist_id: str, include_details: bool=True, account_id: str='') -> Response:
+    def GetVideosInPlaylist(self, playlist_id: str, include_details: bool=True, limit: int=100, offset: int=0, account_id: str='') -> Response:
         """
         Gets the video objects for videos in a playlist for the account.
 
@@ -966,12 +966,14 @@ class CMS(Base):
             playlist_id (str): Playlist ID.
             include_details (bool, optional): When it's False, API call response won't include caption
                 info in [text_tracks] at all and it makes the response returns quicker. Defaults to True.
+            limit (int, optional): Number of videos to return. Defaults to 100.
+            offset (int, optional): Number of videos to skip. Defaults to 0.
             account_id (str, optional): Video Cloud account ID. Defaults to ''.
 
         Returns:
             Response: API response as requests Response object.
         """
-        url = f'{self.base_url}/playlists/{playlist_id}/videos?include_details={("false","true")[include_details]}'.format(account_id=account_id or self.oauth.account_id)
+        url = f'{self.base_url}/playlists/{playlist_id}/videos?include_details={("false","true")[include_details]}&limit={limit}&offset={offset}'.format(account_id=account_id or self.oauth.account_id)
         return self.session.get(url, headers=self.oauth.headers)
 
     def GetVideoCountInPlaylist(self, playlist_id: str, account_id: str='') -> Response:
