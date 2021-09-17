@@ -37,7 +37,7 @@ cms = CMS(oauth=OAuth(account_id=account_id,client_id=client_id, client_secret=c
 # make API call
 response = cms.GetCustomFields()
 
-# list all fields that don't match known Beacon field patterns
+# copy all fields from one account to the other
 if response.status_code == 200:
     custom_fields : dict = response.json()
     for field in custom_fields:
