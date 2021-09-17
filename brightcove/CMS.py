@@ -551,8 +551,24 @@ class CMS(Base):
         Returns:
             Response: API response as requests Response object.
         """
-        url = f'{self.base_url}/video_fields'.format(account_id=account_id or self.oauth.account_id)
+        url = f'{self.base_url}/video_fields/custom_fields'.format(account_id=account_id or self.oauth.account_id)
         return self.session.get(url=url, headers=self.oauth.headers)
+
+    def CreateCustomField(self, json_body: Union[str, dict], account_id: str='') -> Response:
+        """
+        Create a custom field for the account.
+
+        Args:
+            json_body (Union[str, dict]): JSON data with info for the custom field.
+            account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+        Returns:
+            Response: API response as requests Response object.
+        """
+        url = f'{self.base_url}/video_fields/custom_fields'.format(account_id=account_id or self.oauth.account_id)
+        return self.session.post(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+
+
     #endregion
 
     #===========================================
