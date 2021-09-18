@@ -71,7 +71,7 @@ response = cms.GetCustomFields()
 
 # list all fields that don't match known Beacon field patterns
 if response.status_code == 200:
-    custom_fields : dict = response.json().get('custom_fields', {})
+    custom_fields : dict = response.json()
     for field in custom_fields:
         current_field = field.get('id', '')
         if sanitize(current_field) not in good_fields or args.l:
