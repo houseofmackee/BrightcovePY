@@ -68,8 +68,23 @@ class CMS(Base):
     DeleteDigitalMaster(self, video_id: str, account_id: str='') -> Response
         Deletes the archived digital master for a video.
 
-    GetCustomFields(self, account_id: str='') -> Response
+    GetVideoFields(self, account_id: str='') -> Response
         Gets a list of custom fields for the account.
+
+    GetCustomFields(self, account_id: str='') -> Response
+        Gets a list of custom fields from account.
+
+    GetCustomField(self, custom_field_id: str, account_id: str='') -> Response
+        Gets a specific custom field from the account.
+
+    CreateCustomField(self, json_body: Union[str, dict], account_id: str='') -> Response
+        Create a custom field in account.
+
+    UpdateCustomField(self, custom_field_id: str, json_body: Union[str, dict], account_id: str='') -> Response
+        Update a custom field.
+
+    DeleteCustomField(self, custom_field_id: str, account_id: str='') -> Response
+        Delete a specific custom field.
 
     GetStatusOfIngestJob(self, video_id: str, job_id: str, account_id: str='') -> Response
         Get the status of an ingest job associated with a video.
@@ -541,9 +556,22 @@ class CMS(Base):
     # custom fields
     #===========================================
     #region custom fields
+    def GetVideoFields(self, account_id: str='') -> Response:
+        """
+        Gets a list of video fields from account.
+
+        Args:
+            account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+        Returns:
+            Response: API response as requests Response object.
+        """
+        url = f'{self.base_url}/video_fields'.format(account_id=account_id or self.oauth.account_id)
+        return self.session.get(url=url, headers=self.oauth.headers)
+
     def GetCustomFields(self, account_id: str='') -> Response:
         """
-        Gets a list of custom fields for the account.
+        Gets a list of custom fields from account.
 
         Args:
             account_id (str, optional): Brightcove Account ID. Defaults to ''.
@@ -554,9 +582,22 @@ class CMS(Base):
         url = f'{self.base_url}/video_fields/custom_fields'.format(account_id=account_id or self.oauth.account_id)
         return self.session.get(url=url, headers=self.oauth.headers)
 
+    def GetCustomField(self, custom_field_id: str, account_id: str='') -> Response:
+        """
+        Gets a specific custom field from the account.
+
+        Args:
+            custom_field_id (str): ID of custom field to retrieve.
+            account_id (str, optional): Brightcove Account ID. Defaults to ''.
+        Returns:
+            Response: API response as requests Response object.
+        """
+        url = f'{self.base_url}/video_fields/custom_fields/{custom_field_id}'.format(account_id=account_id or self.oauth.account_id)
+        return self.session.get(url=url, headers=self.oauth.headers)
+
     def CreateCustomField(self, json_body: Union[str, dict], account_id: str='') -> Response:
         """
-        Create a custom field for the account.
+        Create a custom field in account.
 
         Args:
             json_body (Union[str, dict]): JSON data with info for the custom field.
@@ -568,7 +609,33 @@ class CMS(Base):
         url = f'{self.base_url}/video_fields/custom_fields'.format(account_id=account_id or self.oauth.account_id)
         return self.session.post(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
 
+    def UpdateCustomField(self, custom_field_id: str, json_body: Union[str, dict], account_id: str='') -> Response:
+        """
+        Update a custom field.
 
+        Args:
+            custom_field_id (str): ID of custom field to update.
+            json_body (Union[str, dict]): JSON data with info for the custom field.
+            account_id (str, optional): Brightcove Account ID. Defaults to ''.
+
+        Returns:
+            Response: API response as requests Response object.
+        """
+        url = f'{self.base_url}/video_fields/custom_fields/{custom_field_id}'.format(account_id=account_id or self.oauth.account_id)
+        return self.session.patch(url=url, headers=self.oauth.headers, data=self._json_to_string(json_body))
+
+    def DeleteCustomField(self, custom_field_id: str, account_id: str='') -> Response:
+        """
+        Delete a specific custom field.
+
+        Args:
+            custom_field_id (str): ID of custom field to retrieve.
+            account_id (str, optional): Brightcove Account ID. Defaults to ''.
+        Returns:
+            Response: API response as requests Response object.
+        """
+        url = f'{self.base_url}/video_fields/custom_fields/{custom_field_id}'.format(account_id=account_id or self.oauth.account_id)
+        return self.session.delete(url=url, headers=self.oauth.headers)
     #endregion
 
     #===========================================
